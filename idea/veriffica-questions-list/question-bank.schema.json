@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Veriffica Question Bank",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "sourceFile",
+    "allowedAnswers",
+    "questions",
+    "explanations"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "sourceFile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "allowedAnswers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/allowedAnswer"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/questionItem"
+      }
+    },
+    "explanations": {
+      "type": "object",
+      "patternProperties": {
+        "^exp_.+$": {
+          "$ref": "#/$defs/explanationEntry"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "partId": {
+      "type": "string",
+      "enum": ["part2", "part3", "part4", "part5"]
+    },
+    "questionId": {
+      "type": "string",
+      "pattern": "^q_.+$"
+    },
+    "questionGroupId": {
+      "type": "string",
+      "pattern": "^g_.+$"
+    },
+    "explanationRef": {
+      "type": "string",
+      "pattern": "^exp_.+$"
+    },
+    "allowedAnswer": {
+      "type": "string",
+      "enum": ["yes", "no", "dont_know"]
+    },
+    "nullableString": {
+      "type": ["string", "null"]
+    },
+    "questionItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "groupId",
+        "part",
+        "section",
+        "subsection",
+        "label",
+        "order"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/questionId"
+        },
+        "groupId": {
+          "$ref": "#/$defs/questionGroupId"
+        },
+        "part": {
+          "$ref": "#/$defs/partId"
+        },
+        "section": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subsection": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 10,
+          "multipleOf": 10
+        },
+        "explanationRef": {
+          "$ref": "#/$defs/explanationRef"
+        }
+      }
+    },
+    "explanationEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["legacyNumber", "text"],
+      "properties": {
+        "legacyNumber": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

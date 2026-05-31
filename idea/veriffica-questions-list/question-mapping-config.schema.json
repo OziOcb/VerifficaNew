@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Veriffica Question Mapping Config",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "sourceFile", "visibilityModel", "questionGroups"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "sourceFile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "visibilityModel": {
+      "$ref": "#/$defs/visibilityModel"
+    },
+    "questionGroups": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/questionGroup"
+      }
+    }
+  },
+  "$defs": {
+    "partId": {
+      "type": "string",
+      "enum": ["part2", "part3", "part4", "part5"]
+    },
+    "visibilityAxis": {
+      "type": "string",
+      "enum": ["base", "fuelType", "transmission", "drive", "bodyType"]
+    },
+    "fuelType": {
+      "type": "string",
+      "enum": ["petrol", "diesel", "hybrid", "electric"]
+    },
+    "transmissionType": {
+      "type": "string",
+      "enum": ["manual", "automatic"]
+    },
+    "driveType": {
+      "type": "string",
+      "enum": ["2wd", "4wd"]
+    },
+    "bodyType": {
+      "type": "string",
+      "enum": [
+        "sedan",
+        "hatchback",
+        "suv",
+        "coupe",
+        "convertible",
+        "van",
+        "pickup",
+        "other"
+      ]
+    },
+    "runtimeFlag": {
+      "type": "string",
+      "enum": [
+        "chargingPortEquipped",
+        "evBatteryDocsAvailable",
+        "turboEquipped",
+        "mechanicalCompressorEquipped",
+        "importedFromEU"
+      ]
+    },
+    "part1Field": {
+      "type": "string",
+      "enum": ["fuelType", "transmission", "drive", "bodyType"]
+    },
+    "questionGroupId": {
+      "type": "string",
+      "pattern": "^g_.+$"
+    },
+    "nullableString": {
+      "type": ["string", "null"]
+    },
+    "visibleWhen": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fuelType": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fuelType"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "transmission": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/transmissionType"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "drive": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/driveType"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "bodyType": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/bodyType"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "visibilityModel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "formula", "emptyBuckets", "runtimeFlags"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "additive-buckets"
+        },
+        "formula": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/visibilityAxis"
+          },
+          "minItems": 5,
+          "uniqueItems": true
+        },
+        "emptyBuckets": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["drive", "bodyType"],
+          "properties": {
+            "drive": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/driveType"
+              },
+              "uniqueItems": true
+            },
+            "bodyType": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/bodyType"
+              },
+              "uniqueItems": true
+            }
+          }
+        },
+        "runtimeFlags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/runtimeFlag"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "questionGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "part",
+        "order",
+        "section",
+        "subsection",
+        "dependsOnFields",
+        "visibleWhen"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/questionGroupId"
+        },
+        "part": {
+          "$ref": "#/$defs/partId"
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 10,
+          "multipleOf": 10
+        },
+        "section": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subsection": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "dependsOnFields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/part1Field"
+          },
+          "uniqueItems": true
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/visibleWhen"
+        },
+        "requiresEquipmentFlag": {
+          "$ref": "#/$defs/runtimeFlag"
+        }
+      }
+    }
+  }
+}
