@@ -5,7 +5,7 @@ project_name: veriffica
 hints:
   language_family: js
   team_size: solo
-  deployment_target: cloudflare-pages
+  deployment_target: cloudflare-workers
   ci_provider: github-actions
   ci_default_flow: auto-deploy-on-merge
   bootstrapper_confidence: first-class
@@ -28,8 +28,9 @@ covers every auth requirement out of the box (email+password registration, email
 verification, login/logout, password reset — FR-001/002/003/025) and brings
 Postgres with row-level security for the absolute data-isolation guardrail.
 TypeScript-first with Zod schemas at the boundaries suits the strict field-by-field
-Part 1 validation (FR-012). Deployment lands on Cloudflare Pages (the starter
-default) with GitHub Actions auto-deploy-on-merge. Payments, realtime multi-device
+Part 1 validation (FR-012). Deployment lands on Cloudflare Workers (Static
+Assets — the path Astro 6 + `@astrojs/cloudflare` targets; Pages is now in
+maintenance) with GitHub Actions auto-deploy-on-merge. Payments, realtime multi-device
 sync, and AI are out of scope per PRD non-goals. The dominant engineering item —
 the offline-first PWA layer (service worker, on-device store, Change Queue,
 Last-Write-Wins sync, FR-023) — ships with no starter and will be built on top.
