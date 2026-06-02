@@ -46,36 +46,36 @@ build quality gate** only; it does not deploy.
 
 ---
 
-## Phase 0 — Prerequisites (accounts, CLI, credentials) ☐
+## Phase 0 — Prerequisites (accounts, CLI, credentials) ✓
 
 These are human/interactive setup steps an agent cannot do unattended. Do them once, in
 order. They produce three things the later phases assume: a logged-in `wrangler`, a
 hosted Supabase project with its URL + anon key, and a Cloudflare account with
 `workers.dev` enabled.
 
-### 0a — Local toolchain ☐
+### 0a — Local toolchain ✓
 
-- [ ] **Use the pinned Node version.** `.nvmrc` pins `22.14.0`. With nvm:
+- [x] **Use the pinned Node version.** `.nvmrc` pins `22.14.0`. With nvm:
       `nvm install && nvm use` (reads `.nvmrc`). Verify: `node -v` → `v22.14.0`.
-- [ ] **Install dependencies** if not already: `npm install`. This makes `wrangler` and
+- [x] **Install dependencies** if not already: `npm install`. This makes `wrangler` and
       `supabase` available via `npx` (both are devDependencies — no global install
       needed). Verify: `npx wrangler --version` (expect ≥ 4.90) and
       `npx supabase --version`.
   - _Why `npx` not global:_ the repo pins exact CLI versions, so `npx` always runs the
     project's version and avoids "works on my machine" drift from a stale global install.
 
-### 0b — Cloudflare account + Wrangler CLI auth ☐
+### 0b — Cloudflare account + Wrangler CLI auth ✓
 
-- [ ] **Create / confirm a Cloudflare account** at <https://dash.cloudflare.com/sign-up>
+- [x] **Create / confirm a Cloudflare account** at <https://dash.cloudflare.com/sign-up>
       (free tier is enough for the MVP — 100k requests/day per script). Verify the email.
-- [ ] **Enable a `workers.dev` subdomain.** Dashboard → **Workers & Pages**. On first
+- [x] **Enable a `workers.dev` subdomain.** Dashboard → **Workers & Pages**. On first
       visit Cloudflare asks you to **choose a subdomain** (e.g. `your-handle`) — this
       becomes the `*.your-handle.workers.dev` host your Worker serves on. (If you skip it
       here, the first `wrangler deploy` in Phase 3 will prompt for it.)
-- [ ] **Authenticate the CLI.** Run it in this session so output is visible — type
+- [x] **Authenticate the CLI.** Run it in this session so output is visible — type
       `! npx wrangler login` in the Claude prompt. It opens a browser, asks you to
       authorize Wrangler, then stores an OAuth token locally (`~/.config/.wrangler`).
-- [ ] **Verify the login:** `npx wrangler whoami` → should print your account email and
+- [x] **Verify the login:** `npx wrangler whoami` → should print your account email and
       Account ID. Copy the **Account ID** — Workers Builds and some commands reference it.
   - _Edge case — headless / no browser / CI machine:_ skip `wrangler login` and use an
     **API token** instead. Dashboard → **My Profile → API Tokens → Create Token →
@@ -87,24 +87,24 @@ hosted Supabase project with its URL + anon key, and a Cloudflare account with
     set `CLOUDFLARE_ACCOUNT_ID=<id>` in your environment so `wrangler deploy` targets the
     right one instead of erroring on ambiguity.
 
-### 0c — Supabase account + cloud project ☐
+### 0c — Supabase account + cloud project ✓
 
 (The detailed project creation is Phase 2; this step just gets the account and, optionally,
 the Supabase CLI linked so local and cloud stay in sync.)
 
-- [ ] **Create / confirm a Supabase account** at <https://supabase.com/dashboard> (GitHub
+- [x] **Create / confirm a Supabase account** at <https://supabase.com/dashboard> (GitHub
       login is easiest). The free tier covers the MVP.
-- [ ] _(Optional but recommended)_ **Link the Supabase CLI** to your account so you can
+- [x] _(Optional but recommended)_ **Link the Supabase CLI** to your account so you can
       manage the hosted project from the terminal: `npx supabase login` (opens a browser,
       stores an access token). Verify: `npx supabase projects list`.
   - _Why optional:_ the app only needs the project **URL + anon key** (set as Cloudflare
     secrets later), which you can copy from the dashboard without the CLI. The CLI is only
     needed if you later want to push migrations or run `supabase db` commands — not
     required for auth-only MVP.
-- [ ] **Know which two values you'll need** (collected in Phase 2): `SUPABASE_URL` and the
+- [x] **Know which two values you'll need** (collected in Phase 2): `SUPABASE_URL` and the
       `anon` public key (`SUPABASE_KEY`). Found under **Project → Settings → API**.
 
-### 0d — Credentials map (where each secret lives) ☐
+### 0d — Credentials map (where each secret lives) ✓
 
 The classic foot-gun here is the **three** locations the same Supabase pair lives in.
 Keep them straight:
@@ -116,9 +116,9 @@ Keep them straight:
 | **Wrangler/Cloudflare secrets** | Read by the **deployed Worker** at runtime            | No (server-side) |
 | `.env.example`                  | Authoritative template (lists the keys, no values)    | **Yes**          |
 
-- [ ] Confirm `.gitignore` already excludes `.env` and `.dev.vars` (it does) so real keys
+- [x] Confirm `.gitignore` already excludes `.env` and `.dev.vars` (it does) so real keys
       never get committed.
-- [ ] Create the local files when you have values (Phase 2): `cp .env.example .env` and
+- [x] Create the local files when you have values (Phase 2): `cp .env.example .env` and
       `cp .env.example .dev.vars`, then fill both in.
 
 **Exit criteria for Phase 0:** `npx wrangler whoami` succeeds, a Cloudflare `workers.dev`
