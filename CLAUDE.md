@@ -37,4 +37,4 @@ Standard scripts (`dev`, `build`, `lint`, `lint:fix`, `format`) are in `package.
 
 ## Deploy
 
-Cloudflare Workers via `npm run build` then `npx wrangler deploy`. Set `SUPABASE_URL`/`SUPABASE_KEY` as Wrangler/Cloudflare secrets. Use the `/deploy-cf` skill.
+Production (`https://veriffica.veriffica.workers.dev`) **auto-deploys via Cloudflare Workers Builds** on every push to `main` (Cloudflare runs `npm run build` → `npx wrangler deploy`). This is the routine path — no external CI deploy job. The `/deploy-cf` skill (`npm run build` then `npx wrangler deploy`) is the **manual break-glass** path. `SUPABASE_URL`/`SUPABASE_KEY` are Worker **secrets** (`npx wrangler secret put`), not `vars` or build variables, and carry across both paths.

@@ -151,20 +151,38 @@ Route protection is handled in `src/middleware.ts`. Add paths to the `PROTECTED_
 ## Deployment
 
 This project deploys to [Cloudflare Workers](https://workers.cloudflare.com/).
+Production: **https://veriffica.veriffica.workers.dev**
 
-1. Build the project:
+### Auto-deploy (default)
+
+Production deploys automatically via **Cloudflare Workers Builds** on every push to
+`main` — Cloudflare clones the repo, runs `npm run build`, then `npx wrangler deploy`.
+No manual step and no external CI deploy job. Watch runs in the Cloudflare dashboard:
+**Workers & Pages → `veriffica` → Settings → Builds**.
+
+### Manual deploy (break-glass)
+
+Use the `/deploy-cf` skill, or run it by hand:
 
 ```bash
 npm run build
-```
-
-2. Deploy with Wrangler:
-
-```bash
 npx wrangler deploy
 ```
 
-Set `SUPABASE_URL` and `SUPABASE_KEY` as secrets in your Cloudflare dashboard or via `npx wrangler secret put`.
+### Secrets & Supabase Auth config
+
+- Runtime secrets `SUPABASE_URL` and `SUPABASE_KEY` are **Worker secrets**, set once via
+  `npx wrangler secret put <NAME>` (not `vars`, not build variables). They carry across
+  both auto- and manual deploys since both target the same Worker. `SUPABASE_KEY` is the
+  Supabase **publishable key** (`sb_publishable_…`).
+- In the Supabase dashboard → **Authentication → URL Configuration**, set **Site URL** to
+  the production URL above and add `https://veriffica.veriffica.workers.dev/**` to
+  **Redirect URLs**, or auth confirmation links and post-login redirects will break.
+
+### Rollback
+
+`npx wrangler rollback [<version-id>]` reverts the Worker in seconds. Note: Supabase
+schema/auth config changes are **not** covered — revert those in the Supabase dashboard.
 
 ## CI
 

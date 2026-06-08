@@ -222,23 +222,28 @@ Auth cookies/redirects break if Supabase doesn't know the production origin.
 
 ---
 
-## Phase 5 — Wire Cloudflare Workers Builds (native git auto-deploy) ☐
+## Phase 5 — Wire Cloudflare Workers Builds (native git auto-deploy) ✓
 
 This is the user's chosen deploy mechanism — Cloudflare builds & deploys on push, no
 external CI.
 
-- [ ] Cloudflare dashboard → **Workers & Pages → `veriffica` → Settings → Builds →
+**Verified:** push to `main` (commit `a5d9dc7`) auto-triggered a Cloudflare build that
+deployed version `2e9650cf` to 100% within ~1–2 min, no manual step. Live site healthy
+afterward (`/` → 200, `/dashboard` → 302 → `/auth/signin`), confirming runtime secrets
+carried over to the Builds-produced deployment.
+
+- [x] Cloudflare dashboard → **Workers & Pages → `veriffica` → Settings → Builds →
       Connect**. Authorize the GitHub repo. _(Worker name already matches `wrangler.jsonc`
       from Phase 1 — required, or builds fail.)_
-- [ ] Set **production branch = `main`** (see Branch note in Context).
-- [ ] **Build command**: `npm run build`. **Deploy command**: `npx wrangler deploy`
+- [x] Set **production branch = `main`** (see Branch note in Context).
+- [x] **Build command**: `npm run build`. **Deploy command**: `npx wrangler deploy`
       (promotes to production). Leave non-production branches on the default
       `npx wrangler versions upload` (preview version, no promotion) — harmless for an
       MVP and gives ad-hoc preview URLs.
-- [ ] Confirm the Worker's **runtime secrets** (set in Phase 3) are present — Builds
+- [x] Confirm the Worker's **runtime secrets** (set in Phase 3) are present — Builds
       deploys the same Worker, so the secrets carry over. No need to re-enter them in the
       Builds UI (they are Worker secrets, not build vars).
-- [ ] Push a trivial commit to `main` (e.g., a README touch on a feature branch →
+- [x] Push a trivial commit to `main` (e.g., a README touch on a feature branch →
       merge) and confirm Cloudflare runs a build and deploys automatically.
 
 > **Edge case — build-time vs runtime secrets.** Do **not** add `SUPABASE_KEY` as a
@@ -255,21 +260,21 @@ external CI.
 
 ---
 
-## Phase 6 — Verification / smoke tests ☐
+## Phase 6 — Verification / smoke tests ✓
 
 Exercise the **deployed** URL, because the riskiest items (Node-API gaps, edge cookies)
 are invisible to `astro dev`.
 
-- [ ] `curl -I https://veriffica.<subdomain>.workers.dev/` → expect `200`.
-- [ ] In a browser: visit `/dashboard` while logged out → should **redirect to
-      `/auth/signin`** (proves middleware + `createClient()` see the secrets).
-- [ ] **Full auth round-trip on the live URL**: sign up → (confirm email per Phase 2) →
-      sign in → land on `/dashboard` → refresh (session cookie persists) → sign out
-      (cookie cleared). This validates the SSR cookie edge-parity concern directly.
-- [ ] `npx wrangler tail` while clicking through — confirm **no** `nodejs_compat` / Node
-      API runtime errors and no `undefined` Supabase env.
-- [ ] Confirm the Workers Builds run shows green in the dashboard and the deployed version
-      matches the latest `main` commit.
+- [x] `curl -I https://veriffica.veriffica.workers.dev/` → `200`.
+- [x] In a browser: visit `/dashboard` while logged out → **redirects to `/auth/signin`**
+      (proves middleware + `createClient()` see the secrets).
+- [x] **Full auth round-trip on the live URL**: sign up → confirm email → sign in → land on
+      `/dashboard` → refresh (session persisted) → sign out. Validates SSR cookie
+      edge-parity directly — worked. (Pre-confirmation sign-in correctly returned
+      `error=Email not confirmed`, then the `/?code=…` callback completed confirmation.)
+- [x] `npx wrangler tail` during the round-trip — **every request returned `Ok`**, no
+      `nodejs_compat`/Node-API errors, no `undefined` Supabase env.
+- [x] Workers Builds run green; deployed version (`2e9650cf`) matches latest `main`.
 - [ ] (Optional) Connect the **Cloudflare Workers Observability MCP**
       (`observability.mcp.cloudflare.com/mcp`) for typed log/analytics access; the Worker
       already has `observability.enabled: true`.
@@ -280,17 +285,17 @@ in the Supabase dashboard separately.
 
 ---
 
-## Phase 7 — Update docs to match reality ☐
+## Phase 7 — Update docs to match reality ✓
 
-- [ ] **README.md** "Deployment"/"CI" sections: document that production auto-deploys via
+- [x] **README.md** "Deployment"/"CI" sections: document that production auto-deploys via
       **Cloudflare Workers Builds** on push to `main`; `/deploy-cf` (manual) is the
       break-glass path. Note the production URL and the Supabase Auth URL config step.
-- [ ] **CLAUDE.md** "Deploy" section: add the Workers Builds auto-deploy fact (currently
+- [x] **CLAUDE.md** "Deploy" section: add the Workers Builds auto-deploy fact (currently
       only documents manual `wrangler deploy`).
-- [ ] **`.claude/skills/deploy-cf/SKILL.md`**: add a line clarifying it's the _manual_
+- [x] **`.claude/skills/deploy-cf/SKILL.md`**: add a line clarifying it's the _manual_
       path; routine deploys go through Workers Builds.
 - [ ] Consider capturing the `workerd ≠ Node` / `astro:env` forwarding gotchas as a
-      `/10x-lesson` for future implementations.
+      `/10x-lesson` for future implementations. _(Optional — offered separately.)_
 
 ---
 

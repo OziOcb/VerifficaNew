@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 Deploy to Cloudflare Workers. This has real side effects (ships to production) — only run when the user explicitly invokes `/deploy-cf`.
 
+**This is the manual / break-glass path.** Routine production deploys happen automatically via **Cloudflare Workers Builds** on push to `main` (Cloudflare runs `npm run build` → `npx wrangler deploy`). Use this skill only for out-of-band deploys (e.g. CI down, urgent hotfix, or deploying without a push).
+
 Steps:
 
 1. Confirm the working tree is clean and on the intended branch (`git status`).
