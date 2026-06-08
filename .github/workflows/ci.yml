@@ -1,8 +1,9 @@
 name: CI
 
+# Quality gate only — runs on PRs into main. Production deploys are handled
+# separately by Cloudflare Workers Builds on push to main, so we don't run CI
+# on push too (avoids double-building the same commit).
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
 
