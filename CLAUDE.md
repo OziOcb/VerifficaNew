@@ -30,8 +30,8 @@ Standard scripts (`dev`, `build`, `lint`, `lint:fix`, `format`) are in `package.
 
 ## Git
 
-- Default/CI branch is **`master`** (not `main`).
-- Conventional Commits (`feat:`, `fix:`, `chore:`, …). Work on feature branches off `master`; never commit directly to `master`.
+- Default/CI branch is **`main`**.
+- Conventional Commits (`feat:`, `fix:`, `chore:`, …). Work on feature branches off `main`; never commit directly to `main`.
 - Never `git push` or open a PR unless explicitly asked.
 - A husky `pre-commit` hook runs `lint-staged` (ESLint --fix on `.ts/.tsx/.astro`, Prettier on `.json/.css/.md`).
 
