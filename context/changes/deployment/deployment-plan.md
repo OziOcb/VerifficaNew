@@ -8,7 +8,7 @@ The repo is already **scaffolded** against Cloudflare's `workerd` runtime (Astro
 backend**. Today Supabase runs only against local Docker, secrets exist only in local
 files, and `wrangler.jsonc` still carries the starter's default `name`
 (`10x-astro-starter`). This plan takes the project from "runs locally" to "auto-deploys
-to production on every push to `master`", per `context/foundation/infrastructure.md`
+to production on every push to `main`", per `context/foundation/infrastructure.md`
 (recommended platform: Cloudflare Workers).
 
 **Decisions locked with the user:**
@@ -24,10 +24,10 @@ to production on every push to `master`", per `context/foundation/infrastructure
 The existing GitHub Actions workflow (`.github/workflows/ci.yml`) stays as a **lint +
 build quality gate** only; it does not deploy.
 
-> **Branch note:** This repo's production/CI branch is **`master`** (per CLAUDE.md), not
-> `main`. The user phrased it as "main branch" — we will configure Cloudflare Workers
-> Builds with **production branch = `master`** to match the repo. Flag this at execution
-> time in case the user wants to rename the branch instead.
+> **Branch note (resolved):** The repo only ever had a **`main`** branch — the old
+> `master` references in CLAUDE.md/CI were stale and never matched reality. We
+> standardized on **`main`**: CI triggers, CLAUDE.md, README, and this plan were all
+> updated. Cloudflare Workers Builds will use **production branch = `main`**.
 
 ---
 
@@ -127,31 +127,32 @@ will come from. You're then ready for Phase 1.
 
 ---
 
-## Phase 1 — Repo config fixes ☐
+## Phase 1 — Repo config fixes ✓
 
 Small but **blocking** — Workers Builds fails if the dashboard Worker name ≠
 `wrangler.jsonc` `name`.
 
-- [ ] **Rename the Worker** in `wrangler.jsonc`: `"name": "10x-astro-starter"` →
+- [x] **Rename the Worker** in `wrangler.jsonc`: `"name": "10x-astro-starter"` →
       `"name": "veriffica"`. This also determines the deployed URL
       (`veriffica.<subdomain>.workers.dev`).
   - File: `wrangler.jsonc:3`.
-- [ ] (Optional, cosmetic) Update `package.json` `name` from `10x-astro-starter` to
+- [x] (Optional, cosmetic) Update `package.json` `name` from `10x-astro-starter` to
       `veriffica`.
-- [ ] Sanity-check the rest of `wrangler.jsonc` (already correct): `main` entrypoint,
+- [x] Sanity-check the rest of `wrangler.jsonc` (already correct): `main` entrypoint,
       `compatibility_date` `2026-05-08`, `compatibility_flags: ["nodejs_compat"]`,
       `assets` binding, `observability.enabled: true`. No change needed.
 
 ---
 
-## Phase 2 — Create the production Supabase project (external integration) ☐
+## Phase 2 — Create the production Supabase project (external integration) ✓
 
-- [ ] In the Supabase dashboard, **create a new project** (pick a region close to your
+- [x] In the Supabase dashboard, **create a new project** (pick a region close to your
       users). Wait for provisioning to finish.
-- [ ] Copy from **Settings → API**: the **Project URL** (`SUPABASE_URL`) and the **`anon`
-      public key** (`SUPABASE_KEY`). These are the only two the app reads
-      (`src/lib/supabase.ts:3`).
-- [ ] **Mirror locally** so dev can point at cloud if desired: put both values in
+- [x] Copy from **Settings → API Keys** (dashboard reorganized; use the **Connect** dialog
+      or Settings → API Keys): the **Project URL** (`SUPABASE_URL`) and the **publishable
+      key** `sb_publishable_…` (`SUPABASE_KEY`) — the modern replacement for the legacy
+      `anon` key. These are the only two the app reads (`src/lib/supabase.ts:3`).
+- [x] **Mirror locally** so dev can point at cloud if desired: put both values in
       `.dev.vars` (workerd dev) and `.env` (Supabase CLI). Keep `.env.example`
       authoritative (it already lists both keys).
 
@@ -165,22 +166,29 @@ Small but **blocking** — Workers Builds fails if the dashboard Worker name ≠
 
 ---
 
-## Phase 3 — First manual deploy + production secrets ☐
+## Phase 3 — First manual deploy + production secrets ✓
 
 We deploy once by hand to **create the named Worker** and **set its runtime secrets**,
 _before_ connecting Workers Builds (Builds attaches to an existing Worker).
 
-- [ ] Set runtime secrets on the Worker (interactive, paste-on-prompt):
-      `npx wrangler secret put SUPABASE_URL` and `npx wrangler secret put SUPABASE_KEY`.
+**Deployed URL: `https://veriffica.veriffica.workers.dev`** (subdomain is `veriffica`).
+Live smoke test passed: `/` → 200, `/dashboard` (logged out) → 302 → `/auth/signin`,
+`/auth/signin` → 200 — confirms runtime secrets are present and `createClient()` is
+non-null on the edge.
+
+- [x] Set runtime secrets on the Worker. **Note:** `wrangler secret put` reads the value
+      from a TTY prompt; in a non-interactive shell pipe the value instead
+      (`printf '%s' "<value>" | npx wrangler secret put SUPABASE_URL`) or it can upload an
+      empty secret. Both `SUPABASE_URL` and `SUPABASE_KEY` set this way; verified with
+      `npx wrangler secret list`.
   - These are **runtime secrets** read via `astro:env/server`; they are _not_ baked into
     the build. The env schema marks both `optional: true`, so the build never fails when
     they're absent — but production runtime needs them or `createClient()` returns `null`
     and every protected route redirects to `/auth/signin`.
-- [ ] `npm run build` (Cloudflare adapter → `dist/`).
-- [ ] `npx wrangler deploy`. On first deploy Cloudflare prompts to **register a
-      `workers.dev` subdomain** — accept it. Note the returned URL
-      (`veriffica.<subdomain>.workers.dev`).
-- [ ] Reuse the existing **`/deploy-cf`** skill for this (build + `wrangler deploy`); it
+- [x] `npm run build` (Cloudflare adapter → `dist/`).
+- [x] `npx wrangler deploy`. Auto-enabled `workers.dev` + Preview URLs and auto-provisioned
+      a **KV namespace** (`veriffica-session`) for the `SESSION` binding.
+- [x] Reuse the existing **`/deploy-cf`** skill for this (build + `wrangler deploy`); it
       already documents that secrets must be Cloudflare secrets, not `.dev.vars`.
 
 > **Edge case — `nodejs_compat` / `workerd` ≠ Node (Risk #1 in infra doc).** A transitive
@@ -222,7 +230,7 @@ external CI.
 - [ ] Cloudflare dashboard → **Workers & Pages → `veriffica` → Settings → Builds →
       Connect**. Authorize the GitHub repo. _(Worker name already matches `wrangler.jsonc`
       from Phase 1 — required, or builds fail.)_
-- [ ] Set **production branch = `master`** (see Branch note in Context).
+- [ ] Set **production branch = `main`** (see Branch note in Context).
 - [ ] **Build command**: `npm run build`. **Deploy command**: `npx wrangler deploy`
       (promotes to production). Leave non-production branches on the default
       `npx wrangler versions upload` (preview version, no promotion) — harmless for an
@@ -230,7 +238,7 @@ external CI.
 - [ ] Confirm the Worker's **runtime secrets** (set in Phase 3) are present — Builds
       deploys the same Worker, so the secrets carry over. No need to re-enter them in the
       Builds UI (they are Worker secrets, not build vars).
-- [ ] Push a trivial commit to `master` (e.g., a README touch on a feature branch →
+- [ ] Push a trivial commit to `main` (e.g., a README touch on a feature branch →
       merge) and confirm Cloudflare runs a build and deploys automatically.
 
 > **Edge case — build-time vs runtime secrets.** Do **not** add `SUPABASE_KEY` as a
@@ -241,7 +249,7 @@ external CI.
 > builds will run without Supabase. Expected, per infra doc — don't treat as a failure.
 
 > **Redundancy note.** Existing GitHub Actions CI still runs `astro sync` → lint → build
-> on push/PR to `master` as a quality gate. It does **not** deploy. Keep it; the two
+> on push/PR to `main` as a quality gate. It does **not** deploy. Keep it; the two
 > systems are complementary (GH = gate, CF = deploy). Optionally narrow CI to PRs only to
 > avoid double-building on push — decide at execution.
 
@@ -261,7 +269,7 @@ are invisible to `astro dev`.
 - [ ] `npx wrangler tail` while clicking through — confirm **no** `nodejs_compat` / Node
       API runtime errors and no `undefined` Supabase env.
 - [ ] Confirm the Workers Builds run shows green in the dashboard and the deployed version
-      matches the latest `master` commit.
+      matches the latest `main` commit.
 - [ ] (Optional) Connect the **Cloudflare Workers Observability MCP**
       (`observability.mcp.cloudflare.com/mcp`) for typed log/analytics access; the Worker
       already has `observability.enabled: true`.
@@ -275,7 +283,7 @@ in the Supabase dashboard separately.
 ## Phase 7 — Update docs to match reality ☐
 
 - [ ] **README.md** "Deployment"/"CI" sections: document that production auto-deploys via
-      **Cloudflare Workers Builds** on push to `master`; `/deploy-cf` (manual) is the
+      **Cloudflare Workers Builds** on push to `main`; `/deploy-cf` (manual) is the
       break-glass path. Note the production URL and the Supabase Auth URL config step.
 - [ ] **CLAUDE.md** "Deploy" section: add the Workers Builds auto-deploy fact (currently
       only documents manual `wrangler deploy`).
@@ -305,7 +313,7 @@ code.
 
 ## Open items to confirm at execution time
 
-1. Branch: configure Workers Builds production branch as **`master`** (repo reality) vs
-   the user's spoken "main" — confirm before connecting.
+1. ~~Branch~~ **Resolved**: standardized on **`main`** (the only branch that ever
+   existed); CI, CLAUDE.md, README, and this plan updated accordingly.
 2. Whether to trim the GitHub Actions CI to PR-only (avoid double builds) once Workers
    Builds is live.
