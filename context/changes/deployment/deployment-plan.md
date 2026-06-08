@@ -205,14 +205,14 @@ tail` and look for a Node-API error; prefer a Web-standard/isomorphic replacemen
 
 ---
 
-## Phase 4 — Configure Supabase Auth for the Workers domain (edge case) ☐
+## Phase 4 — Configure Supabase Auth for the Workers domain (edge case) ✓
 
 Auth cookies/redirects break if Supabase doesn't know the production origin.
 
-- [ ] Supabase dashboard → **Authentication → URL Configuration**:
-  - Set **Site URL** to `https://veriffica.<subdomain>.workers.dev`.
-  - Add the same origin (and `…/auth/confirm-email`, `…/dashboard`) to **Redirect URLs**.
-- [ ] Re-deploy is **not** needed for this (it's Supabase-side config).
+- [x] Supabase dashboard → **Authentication → URL Configuration**:
+  - Set **Site URL** to `https://veriffica.veriffica.workers.dev`.
+  - Add the origin (`https://veriffica.veriffica.workers.dev/**`) to **Redirect URLs**.
+- [x] Re-deploy is **not** needed for this (it's Supabase-side config).
 
 > **Edge case — SSR-set auth cookies on the edge (Unknown-unknown in infra doc).** The
 > Supabase session cookie is set server-side in `src/middleware.ts` /
