@@ -188,18 +188,18 @@ Introduce Vitest, a Supabase test helper, and the integration test that proves c
 
 - A's client `select`ing `inspections` returns exactly A's row (not B's).
 - A `select().eq("id", <B's id>)` returns empty (RLS hides it, not a 403).
-- A's `update` targeting B's row affects 0 rows.
-- A's `delete` targeting B's row affects 0 rows.
+- A's `update` targeting B's row affects 0 rows — **must chain `.select()`** and assert the returned array is empty. Under RLS a cross-account write is _not_ an error (PostgREST matches 0 rows and returns success), so asserting "no error" false-passes; assert on returned rows, never on error absence.
+- A's `delete` targeting B's row affects 0 rows — same `.select()`-chained empty-array assertion.
 - A can `insert` a row for itself; an `insert` attempting `owner_id = <B>` is rejected by the `with check` policy.
 - `afterAll` deletes both users (cascade clears inspections).
 
 #### 4. `.env.example` + docs
 
-**File**: `.env.example`, `README.md` (test section)
+**File**: `.env.example`, `README.md` (test section), `CLAUDE.md`
 
-**Intent**: Document the test-only service_role key and how to run the suite.
+**Intent**: Document the test-only service_role key and how to run the suite; fix the two statements this change makes false.
 
-**Contract**: Add commented `SUPABASE_SERVICE_ROLE_KEY=###` to `.env.example` (note: test/local only, never an app secret, never in `astro.config.mjs` env schema). Brief README note: `npx supabase start` → `npm test`. Also document the **prod migration step** for later slices: `supabase link` + `supabase db push`.
+**Contract**: Add commented `SUPABASE_SERVICE_ROLE_KEY=###` to `.env.example` (note: test/local only, never an app secret, never in `astro.config.mjs` env schema). Brief README note: `npx supabase start` → `npm test`. Also document the **prod migration step** for later slices: `supabase link` + `supabase db push`. **Stale-doc fixes**: update `README.md:114` ("No database tables or migrations are required") and the `CLAUDE.md` auth bullet ("no app tables or migrations") — app tables now live under `supabase/migrations/`, regenerate types via `npm run db:types` after schema changes.
 
 #### 5. CI job
 
@@ -207,7 +207,7 @@ Introduce Vitest, a Supabase test helper, and the integration test that proves c
 
 **Intent**: Run the isolation test against a real Supabase instance on every PR.
 
-**Contract**: Add a `db-test` job (parallel to `ci`): checkout → setup-node 22 → `npm ci` → `npx supabase start` → `npx supabase db reset` (applies the migration) → `npm test`, with `SUPABASE_URL`/`SUPABASE_KEY`/`SUPABASE_SERVICE_ROLE_KEY` sourced from `npx supabase status` output (local keys are deterministic). Runner has Docker, which the Supabase CLI needs. Optionally add a types-in-sync check (`npm run db:types && git diff --exit-code`).
+**Contract**: Add a `db-test` job (parallel to `ci`): checkout → setup-node 22 → `npm ci` → `npx supabase start -x studio,imgproxy,inbucket,realtime,storage-api,edge-runtime,logflare,vector` (exclude services the test never touches — tune the list; full start pulls minutes of unused Docker images) → `npx supabase db reset` (applies the migration) → `npm test`, with `SUPABASE_URL`/`SUPABASE_KEY`/`SUPABASE_SERVICE_ROLE_KEY` sourced from `npx supabase status -o env` (local keys are deterministic). Runner has Docker, which the Supabase CLI needs. The job also runs the types-in-sync check (`npm run db:types && git diff --exit-code src/db/database.types.ts`) — required, since committed types otherwise drift silently after the next migration.
 
 ### Success Criteria:
 
@@ -215,7 +215,7 @@ Introduce Vitest, a Supabase test helper, and the integration test that proves c
 
 - Test suite passes locally with Supabase up: `npx supabase start && npm test`
 - Lint passes (test files included): `npm run lint`
-- CI `db-test` job is green on the PR.
+- CI `db-test` job is green on the PR (includes the types-in-sync check).
 
 #### Manual Verification:
 
@@ -297,7 +297,7 @@ Introduce Vitest, a Supabase test helper, and the integration test that proves c
 
 - [ ] 3.1 Test suite passes locally with Supabase up: `npx supabase start && npm test`
 - [ ] 3.2 Lint passes (test files included): `npm run lint`
-- [ ] 3.3 CI `db-test` job is green on the PR
+- [ ] 3.3 CI `db-test` job is green on the PR (includes the types-in-sync check)
 
 #### Manual
 
