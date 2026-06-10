@@ -269,14 +269,14 @@ Introduce Vitest, a Supabase test helper, and the integration test that proves c
 
 #### Automated
 
-- [ ] 1.1 Migration applies cleanly from scratch: `npx supabase db reset`
-- [ ] 1.2 Lint passes: `npm run lint`
-- [ ] 1.3 Build passes: `npm run build`
+- [x] 1.1 Migration applies cleanly from scratch: `npx supabase db reset`
+- [x] 1.2 Lint passes: `npm run lint`
+- [x] 1.3 Build passes: `npm run build`
 
 #### Manual
 
-- [ ] 1.4 Studio shows `inspections` with RLS enabled + four named policies
-- [ ] 1.5 Authenticated insert respects `owner_id`; anon query returns nothing
+- [x] 1.4 Studio shows `inspections` with RLS enabled + four named policies
+- [x] 1.5 Authenticated insert respects `owner_id`; anon query returns nothing
 
 ### Phase 2: Type generation + typed client
 
