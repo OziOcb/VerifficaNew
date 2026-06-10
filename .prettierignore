@@ -1,0 +1,2 @@
+# Supabase-generated types — regenerated via `npm run db:types`, never hand-edited.
+src/db/database.types.ts

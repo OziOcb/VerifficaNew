@@ -269,27 +269,27 @@ Introduce Vitest, a Supabase test helper, and the integration test that proves c
 
 #### Automated
 
-- [x] 1.1 Migration applies cleanly from scratch: `npx supabase db reset`
-- [x] 1.2 Lint passes: `npm run lint`
-- [x] 1.3 Build passes: `npm run build`
+- [x] 1.1 Migration applies cleanly from scratch: `npx supabase db reset` — 726a747
+- [x] 1.2 Lint passes: `npm run lint` — 726a747
+- [x] 1.3 Build passes: `npm run build` — 726a747
 
 #### Manual
 
-- [x] 1.4 Studio shows `inspections` with RLS enabled + four named policies
-- [x] 1.5 Authenticated insert respects `owner_id`; anon query returns nothing
+- [x] 1.4 Studio shows `inspections` with RLS enabled + four named policies — 726a747
+- [x] 1.5 Authenticated insert respects `owner_id`; anon query returns nothing — 726a747
 
 ### Phase 2: Type generation + typed client
 
 #### Automated
 
-- [ ] 2.1 Types regenerate without error: `npm run db:types`
-- [ ] 2.2 Generated file in sync: `npm run db:types && git diff --exit-code src/db/database.types.ts`
-- [ ] 2.3 Type-check/sync passes: `npx astro sync && npm run lint`
-- [ ] 2.4 Build passes: `npm run build`
+- [x] 2.1 Types regenerate without error: `npm run db:types`
+- [x] 2.2 Generated file in sync: `npm run db:types && git diff --exit-code src/db/database.types.ts`
+- [x] 2.3 Type-check/sync passes: `npx astro sync && npm run lint`
+- [x] 2.4 Build passes: `npm run build`
 
 #### Manual
 
-- [ ] 2.5 `supabase.from("inspections")` autocompletes columns in-editor
+- [x] 2.5 `supabase.from("inspections")` autocompletes columns in-editor
 
 ### Phase 3: Vitest isolation proof + CI
 
