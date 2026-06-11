@@ -23,3 +23,36 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+
+  # Runs the RLS isolation suite against a real local Supabase instance so the
+  # per-account data-isolation guarantee is continuously verified on every PR.
+  # The ubuntu runner has Docker, which the Supabase CLI needs.
+  db-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Exclude services the test never touches to skip minutes of Docker pulls.
+      # Keep gotrue/postgrest/kong/postgres-meta — auth, REST, gateway, type-gen need them.
+      - run: npx supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,realtime,storage-api,supavisor
+      - run: npx supabase db reset # applies migrations from scratch
+      # Source the deterministic local keys into the job env under our names.
+      - name: Export local Supabase credentials
+        run: |
+          npx supabase status -o env > supabase.env
+          source supabase.env
+          {
+            echo "SUPABASE_URL=$API_URL"
+            echo "SUPABASE_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
+      # Committed types must not drift after the latest migration.
+      - name: Verify generated types are in sync
+        run: |
+          npm run db:types
+          git diff --exit-code src/db/database.types.ts
+      - run: npm test

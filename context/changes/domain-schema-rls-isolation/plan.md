@@ -295,11 +295,11 @@ Introduce Vitest, a Supabase test helper, and the integration test that proves c
 
 #### Automated
 
-- [ ] 3.1 Test suite passes locally with Supabase up: `npx supabase start && npm test`
-- [ ] 3.2 Lint passes (test files included): `npm run lint`
+- [x] 3.1 Test suite passes locally with Supabase up: `npx supabase start && npm test`
+- [x] 3.2 Lint passes (test files included): `npm run lint`
 - [ ] 3.3 CI `db-test` job is green on the PR (includes the types-in-sync check)
 
 #### Manual
 
-- [ ] 3.4 Test asserts all four commands for cross-account denial
-- [ ] 3.5 Negative control: broken/disabled policy makes the test go red, then reverted
+- [x] 3.4 Test asserts all four commands for cross-account denial
+- [x] 3.5 Negative control: broken/disabled policy makes the test go red, then reverted

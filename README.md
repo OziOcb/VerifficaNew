@@ -111,7 +111,34 @@ npx supabase stop
 
 The local Studio UI is available at `http://localhost:54323`.
 
-No database tables or migrations are required — this project uses Supabase Auth's built-in `auth.users` table only.
+#### Database schema & migrations
+
+App tables live under `supabase/migrations/`. Apply them to your local stack and regenerate the typed schema:
+
+```bash
+npx supabase db reset   # applies all migrations from scratch
+npm run db:types        # regenerates src/db/database.types.ts from the local schema
+```
+
+Run `npm run db:types` after every schema change and commit the result; CI verifies the committed types are in sync.
+
+**Production:** migrations are _not_ part of the Cloudflare deploy pipeline. When a slice first ships a consuming UI, apply them to the hosted project explicitly:
+
+```bash
+npx supabase link --project-ref <project-ref>
+npx supabase db push
+```
+
+#### Running tests
+
+The RLS isolation suite (`tests/inspections.rls.test.ts`) runs against the local Supabase stack:
+
+```bash
+npx supabase start   # if not already running
+npm test
+```
+
+It needs `SUPABASE_SERVICE_ROLE_KEY` in `.env` (test/local only — see `.env.example`) to seed and tear down users; get the local value from `npx supabase status -o env`.
 
 ### Using a cloud Supabase project instead
 
