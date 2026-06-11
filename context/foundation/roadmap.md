@@ -45,7 +45,7 @@ is the _complete, reliable_ loop, not a partial demo.
 | ID   | Change ID                       | Outcome (user can …)                                                          | Prerequisites | PRD refs                               | Status      |
 | ---- | ------------------------------- | ----------------------------------------------------------------------------- | ------------- | -------------------------------------- | ----------- |
 | F-01 | domain-schema-rls-isolation     | (foundation) owner-private domain data persists, invisible to other accounts  | —             | Access Control, FR-006, FR-011         | implemented |
-| F-02 | offline-first-persistence-layer | (foundation) local-first store + Change Queue + LWW sync round-trips a record | F-01          | FR-023, US-03                          | proposed    |
+| F-02 | offline-first-persistence-layer | (foundation) local-first store + Change Queue + LWW sync round-trips a record | F-01          | FR-023, US-03                          | in progress |
 | S-01 | public-home-page                | view a public home page describing the inspection, with log in / register     | —             | FR-005, FR-024                         | ready       |
 | S-02 | inspection-dashboard-lifecycle  | see, start, resume, and delete inspections; hit the 2-inspection limit        | F-01, F-02    | FR-006, FR-007, FR-008, FR-009, US-01  | proposed    |
 | S-03 | part-1-config-validation        | fill & validate Part 1 config and unlock Parts 2–5                            | S-02          | FR-011, FR-012, FR-013, US-01          | proposed    |
@@ -107,7 +107,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Reconciliation edge cases under Last-Write-Wins / Client-Wins (e.g. concurrent edits to the global notes document) — Owner: team. Block: no.
 - **Risk:** This is the #1 blocker (unfamiliar tech, no starter per `tech-stack.md`) and the dominant engineering item. Sequenced eagerly — before the domain slices — so they are built local-first from day one and never need an online-first → offline retrofit (quality goal: no reliability rework). Scope cap: the store/queue/sync contract round-tripping one record, not every entity's reconciliation.
-- **Status:** proposed
+- **Status:** in progress (F-01 prerequisite met; change folder `offline-first-persistence-layer` + branch `feat/offline-first-persistence-layer` created — planning next)
 
 ## Slices
 
@@ -235,20 +235,20 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 ## Backlog Handoff
 
-| Roadmap ID | Change ID                       | Suggested issue title                              | Ready for `/10x-plan` | Notes                                       |
-| ---------- | ------------------------------- | -------------------------------------------------- | --------------------- | ------------------------------------------- |
-| F-01       | domain-schema-rls-isolation     | Domain schema + RLS data-isolation contract        | yes                   | Run `/10x-plan domain-schema-rls-isolation` |
-| F-02       | offline-first-persistence-layer | Offline-first persistence + Change Queue + sync    | no                    | Needs F-01                                  |
-| S-01       | public-home-page                | Public home page (product description + auth CTAs) | yes                   | Run `/10x-plan public-home-page`            |
-| S-02       | inspection-dashboard-lifecycle  | Dashboard + inspection lifecycle (CRUD + limit)    | no                    | Needs F-01, F-02                            |
-| S-03       | part-1-config-validation        | Part 1 config form, validation & Parts 2–5 unlock  | no                    | Needs S-02                                  |
-| S-04       | personalized-question-engine    | Session screen + personalized question generation  | no                    | Needs S-03                                  |
-| S-05       | question-card-answering         | Swipeable answer cards + education + notes         | no                    | Needs S-04                                  |
-| S-06       | summary-scoring-finalize        | Summary distribution, inline edit & finalize       | no                    | North star; needs S-05                      |
-| S-07       | config-change-smart-pruning     | Smart Pruning on config change                     | no                    | Needs S-04, S-05                            |
-| S-08       | offline-inspection-survival     | Offline inspection survival end-to-end             | no                    | Needs F-02, S-05                            |
-| S-09       | account-recovery-deletion       | Password reset + account deletion                  | no                    | Needs F-01                                  |
-| S-10       | settings-profile                | Settings & profile (font size, theme)              | yes                   | Run `/10x-plan settings-profile`            |
+| Roadmap ID | Change ID                       | Suggested issue title                              | Ready for `/10x-plan` | Notes                                                     |
+| ---------- | ------------------------------- | -------------------------------------------------- | --------------------- | --------------------------------------------------------- |
+| F-01       | domain-schema-rls-isolation     | Domain schema + RLS data-isolation contract        | yes                   | Run `/10x-plan domain-schema-rls-isolation`               |
+| F-02       | offline-first-persistence-layer | Offline-first persistence + Change Queue + sync    | yes                   | In progress — `/10x-plan offline-first-persistence-layer` |
+| S-01       | public-home-page                | Public home page (product description + auth CTAs) | yes                   | Run `/10x-plan public-home-page`                          |
+| S-02       | inspection-dashboard-lifecycle  | Dashboard + inspection lifecycle (CRUD + limit)    | no                    | Needs F-01, F-02                                          |
+| S-03       | part-1-config-validation        | Part 1 config form, validation & Parts 2–5 unlock  | no                    | Needs S-02                                                |
+| S-04       | personalized-question-engine    | Session screen + personalized question generation  | no                    | Needs S-03                                                |
+| S-05       | question-card-answering         | Swipeable answer cards + education + notes         | no                    | Needs S-04                                                |
+| S-06       | summary-scoring-finalize        | Summary distribution, inline edit & finalize       | no                    | North star; needs S-05                                    |
+| S-07       | config-change-smart-pruning     | Smart Pruning on config change                     | no                    | Needs S-04, S-05                                          |
+| S-08       | offline-inspection-survival     | Offline inspection survival end-to-end             | no                    | Needs F-02, S-05                                          |
+| S-09       | account-recovery-deletion       | Password reset + account deletion                  | no                    | Needs F-01                                                |
+| S-10       | settings-profile                | Settings & profile (font size, theme)              | yes                   | Run `/10x-plan settings-profile`                          |
 
 ## Open Roadmap Questions
 
