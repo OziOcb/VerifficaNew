@@ -3,7 +3,7 @@ project: Veriffica
 version: 1
 status: draft
 created: 2026-06-09
-updated: 2026-06-09
+updated: 2026-06-11
 prd_version: 1
 main_goal: quality
 top_blocker: skills
@@ -42,20 +42,20 @@ is the _complete, reliable_ loop, not a partial demo.
 
 ## At a glance
 
-| ID   | Change ID                       | Outcome (user can …)                                                          | Prerequisites | PRD refs                               | Status   |
-| ---- | ------------------------------- | ----------------------------------------------------------------------------- | ------------- | -------------------------------------- | -------- |
-| F-01 | domain-schema-rls-isolation     | (foundation) owner-private domain data persists, invisible to other accounts  | —             | Access Control, FR-006, FR-011         | ready    |
-| F-02 | offline-first-persistence-layer | (foundation) local-first store + Change Queue + LWW sync round-trips a record | F-01          | FR-023, US-03                          | proposed |
-| S-01 | public-home-page                | view a public home page describing the inspection, with log in / register     | —             | FR-005, FR-024                         | ready    |
-| S-02 | inspection-dashboard-lifecycle  | see, start, resume, and delete inspections; hit the 2-inspection limit        | F-01, F-02    | FR-006, FR-007, FR-008, FR-009, US-01  | proposed |
-| S-03 | part-1-config-validation        | fill & validate Part 1 config and unlock Parts 2–5                            | S-02          | FR-011, FR-012, FR-013, US-01          | proposed |
-| S-04 | personalized-question-engine    | open the session screen and see questions personalized to their car           | S-03          | FR-010, FR-014, US-01                  | proposed |
-| S-05 | question-card-answering         | answer Parts 2–5 as swipeable cards, with education pop-ups and notes         | S-04          | FR-015, FR-017, FR-018, US-01          | proposed |
-| S-06 | summary-scoring-finalize        | view the Summary distribution, edit inline, and finalize to Completed         | S-05          | FR-019, FR-020, FR-021, US-01          | proposed |
-| S-07 | config-change-smart-pruning     | change config and keep valid answers while orphans are pruned (recompute)     | S-04, S-05    | FR-016, US-02                          | proposed |
-| S-08 | offline-inspection-survival     | lose/regain connectivity mid-inspection with no loss and no logout            | F-02, S-05    | FR-023, US-03                          | proposed |
-| S-09 | account-recovery-deletion       | reset a forgotten password and permanently delete their account               | F-01          | FR-001, FR-002, FR-003, FR-004, FR-025 | proposed |
-| S-10 | settings-profile                | view their profile and control font size and theme                            | —             | FR-022                                 | ready    |
+| ID   | Change ID                       | Outcome (user can …)                                                          | Prerequisites | PRD refs                               | Status      |
+| ---- | ------------------------------- | ----------------------------------------------------------------------------- | ------------- | -------------------------------------- | ----------- |
+| F-01 | domain-schema-rls-isolation     | (foundation) owner-private domain data persists, invisible to other accounts  | —             | Access Control, FR-006, FR-011         | implemented |
+| F-02 | offline-first-persistence-layer | (foundation) local-first store + Change Queue + LWW sync round-trips a record | F-01          | FR-023, US-03                          | proposed    |
+| S-01 | public-home-page                | view a public home page describing the inspection, with log in / register     | —             | FR-005, FR-024                         | ready       |
+| S-02 | inspection-dashboard-lifecycle  | see, start, resume, and delete inspections; hit the 2-inspection limit        | F-01, F-02    | FR-006, FR-007, FR-008, FR-009, US-01  | proposed    |
+| S-03 | part-1-config-validation        | fill & validate Part 1 config and unlock Parts 2–5                            | S-02          | FR-011, FR-012, FR-013, US-01          | proposed    |
+| S-04 | personalized-question-engine    | open the session screen and see questions personalized to their car           | S-03          | FR-010, FR-014, US-01                  | proposed    |
+| S-05 | question-card-answering         | answer Parts 2–5 as swipeable cards, with education pop-ups and notes         | S-04          | FR-015, FR-017, FR-018, US-01          | proposed    |
+| S-06 | summary-scoring-finalize        | view the Summary distribution, edit inline, and finalize to Completed         | S-05          | FR-019, FR-020, FR-021, US-01          | proposed    |
+| S-07 | config-change-smart-pruning     | change config and keep valid answers while orphans are pruned (recompute)     | S-04, S-05    | FR-016, US-02                          | proposed    |
+| S-08 | offline-inspection-survival     | lose/regain connectivity mid-inspection with no loss and no logout            | F-02, S-05    | FR-023, US-03                          | proposed    |
+| S-09 | account-recovery-deletion       | reset a forgotten password and permanently delete their account               | F-01          | FR-001, FR-002, FR-003, FR-004, FR-025 | proposed    |
+| S-10 | settings-profile                | view their profile and control font size and theme                            | —             | FR-022                                 | ready       |
 
 ## Streams
 
@@ -93,7 +93,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Sequenced first because every domain slice writes owner-private data; establishing the RLS isolation contract once (not per-slice) is the cheapest way to honor the absolute data-isolation guardrail. Scope is the minimal inspections table + policy pattern — later slices add tables following it, not a whole schema built ahead.
-- **Status:** ready
+- **Status:** implemented (PR #13; migration applied locally only — prod `db push` deferred to S-02)
 
 ### F-02: Offline-first persistence + sync contract
 
