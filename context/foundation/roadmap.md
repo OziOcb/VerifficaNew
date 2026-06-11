@@ -133,6 +133,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** First user-visible domain slice; exercises F-01 (owner-private inspections) and F-02 (local-first persistence) end-to-end through a real create/resume/delete surface, validating both foundations before deeper flow work.
+- **Deploy note:** F-01's `inspections` migration was applied **locally only** — DB migrations are not in the Cloudflare Workers deploy pipeline. As the first slice that reads/writes `inspections`, S-02 must apply it to the hosted project before its UI ships: `npx supabase link --project-ref <ref>` then `npx supabase db push`. (See README → "Database schema & migrations".)
 - **Status:** proposed
 
 ### S-03: Part 1 config + validation + unlock

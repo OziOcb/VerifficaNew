@@ -70,6 +70,10 @@ const astroConfig = tseslint.config({
 
 export default tseslint.config(
   includeIgnoreFile(gitignorePath),
+  // Supabase-generated types: committed but never hand-edited; regenerated via
+  // `npm run db:types`. Linting/formatting them is self-defeating (changes are
+  // overwritten on regen), and the generator's style trips our rules.
+  { ignores: ["src/db/database.types.ts"] },
   baseConfig,
   reactConfig,
   eslintPluginAstro.configs["flat/recommended"],

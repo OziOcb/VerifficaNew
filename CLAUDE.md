@@ -26,7 +26,8 @@ Standard scripts (`dev`, `build`, `lint`, `lint:fix`, `format`) are in `package.
 - UI: shadcn/ui "new-york" style, components in `@/components/ui`, `lucide-react` icons, `rsc: false`, `.tsx` (see `components.json`).
 - Code style differs from common defaults: **double quotes**, semicolons, 2-space indent, `printWidth: 120`, `trailingComma: "all"`. Prettier sorts Tailwind classes; don't hand-reorder them.
 - ESLint runs `strictTypeChecked` + `stylisticTypeChecked` and `react-compiler` as an **error** — avoid patterns the React Compiler rejects. `no-console` is a warning. Prefix intentionally-unused vars with `_`.
-- Auth uses Supabase Auth's built-in `auth.users` only — no app tables or migrations. Add protected paths to the `PROTECTED_ROUTES` array in `src/middleware.ts`.
+- Auth uses Supabase Auth's built-in `auth.users`. Add protected paths to the `PROTECTED_ROUTES` array in `src/middleware.ts`.
+- App tables live under `supabase/migrations/` (RLS-protected, owner-scoped via `owner_id = (select auth.uid())` — see the `inspections` migration as the template). After any schema change run `npm run db:types` to regenerate `src/db/database.types.ts` and commit it; the SSR client is typed `SupabaseClient<Database>`. RLS isolation is verified by `npm test` (`tests/inspections.rls.test.ts`).
 
 ## Git
 

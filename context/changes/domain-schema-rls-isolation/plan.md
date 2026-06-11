@@ -269,37 +269,37 @@ Introduce Vitest, a Supabase test helper, and the integration test that proves c
 
 #### Automated
 
-- [ ] 1.1 Migration applies cleanly from scratch: `npx supabase db reset`
-- [ ] 1.2 Lint passes: `npm run lint`
-- [ ] 1.3 Build passes: `npm run build`
+- [x] 1.1 Migration applies cleanly from scratch: `npx supabase db reset` — 726a747
+- [x] 1.2 Lint passes: `npm run lint` — 726a747
+- [x] 1.3 Build passes: `npm run build` — 726a747
 
 #### Manual
 
-- [ ] 1.4 Studio shows `inspections` with RLS enabled + four named policies
-- [ ] 1.5 Authenticated insert respects `owner_id`; anon query returns nothing
+- [x] 1.4 Studio shows `inspections` with RLS enabled + four named policies — 726a747
+- [x] 1.5 Authenticated insert respects `owner_id`; anon query returns nothing — 726a747
 
 ### Phase 2: Type generation + typed client
 
 #### Automated
 
-- [ ] 2.1 Types regenerate without error: `npm run db:types`
-- [ ] 2.2 Generated file in sync: `npm run db:types && git diff --exit-code src/db/database.types.ts`
-- [ ] 2.3 Type-check/sync passes: `npx astro sync && npm run lint`
-- [ ] 2.4 Build passes: `npm run build`
+- [x] 2.1 Types regenerate without error: `npm run db:types` — b0b0104
+- [x] 2.2 Generated file in sync: `npm run db:types && git diff --exit-code src/db/database.types.ts` — b0b0104
+- [x] 2.3 Type-check/sync passes: `npx astro sync && npm run lint` — b0b0104
+- [x] 2.4 Build passes: `npm run build` — b0b0104
 
 #### Manual
 
-- [ ] 2.5 `supabase.from("inspections")` autocompletes columns in-editor
+- [x] 2.5 `supabase.from("inspections")` autocompletes columns in-editor — b0b0104
 
 ### Phase 3: Vitest isolation proof + CI
 
 #### Automated
 
-- [ ] 3.1 Test suite passes locally with Supabase up: `npx supabase start && npm test`
-- [ ] 3.2 Lint passes (test files included): `npm run lint`
-- [ ] 3.3 CI `db-test` job is green on the PR (includes the types-in-sync check)
+- [x] 3.1 Test suite passes locally with Supabase up: `npx supabase start && npm test` — 95796e4
+- [x] 3.2 Lint passes (test files included): `npm run lint` — 95796e4
+- [x] 3.3 CI `db-test` job is green on the PR (includes the types-in-sync check) — 95796e4
 
 #### Manual
 
-- [ ] 3.4 Test asserts all four commands for cross-account denial
-- [ ] 3.5 Negative control: broken/disabled policy makes the test go red, then reverted
+- [x] 3.4 Test asserts all four commands for cross-account denial — 95796e4
+- [x] 3.5 Negative control: broken/disabled policy makes the test go red, then reverted — 95796e4
