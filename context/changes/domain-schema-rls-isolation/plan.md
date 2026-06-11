@@ -282,14 +282,14 @@ Introduce Vitest, a Supabase test helper, and the integration test that proves c
 
 #### Automated
 
-- [x] 2.1 Types regenerate without error: `npm run db:types`
-- [x] 2.2 Generated file in sync: `npm run db:types && git diff --exit-code src/db/database.types.ts`
-- [x] 2.3 Type-check/sync passes: `npx astro sync && npm run lint`
-- [x] 2.4 Build passes: `npm run build`
+- [x] 2.1 Types regenerate without error: `npm run db:types` — b0b0104
+- [x] 2.2 Generated file in sync: `npm run db:types && git diff --exit-code src/db/database.types.ts` — b0b0104
+- [x] 2.3 Type-check/sync passes: `npx astro sync && npm run lint` — b0b0104
+- [x] 2.4 Build passes: `npm run build` — b0b0104
 
 #### Manual
 
-- [x] 2.5 `supabase.from("inspections")` autocompletes columns in-editor
+- [x] 2.5 `supabase.from("inspections")` autocompletes columns in-editor — b0b0104
 
 ### Phase 3: Vitest isolation proof + CI
 
