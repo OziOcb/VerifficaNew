@@ -20,3 +20,26 @@ secret list`. Use real Worker secrets — not `wrangler.jsonc` `vars`/build vari
   for runtime config; if a value still reads `undefined`, import from `cloudflare:workers`
   instead of `astro:env/server`.
 - **Applies to**: research, plan, implement, impl-review
+
+## Field casing: camelCase in app code, snake_case in Postgres, convert at one boundary
+
+- **Context**: Any feature reading/writing Supabase domain data through the app —
+  the Dexie/on-device store, React, API endpoints, and the offline sync layer.
+  Applies from F-02 onward and to every domain slice (S-02…S-09).
+- **Problem**: Postgres/Supabase columns are (and must stay) `snake_case` — Supabase
+  explicitly recommends it, camelCase columns require double-quoting everywhere
+  ("YOU WILL FORGET"), and the F-01 migration + RLS policies are the snake_case
+  template every later table copies. But JS/TS app code wants `camelCase`. The naive
+  fix — a hand-written mapper per table — scales linearly (N tables = N mappers =
+  N drift risks).
+- **Rule**: Keep the **database snake_case**. Make **all application layers**
+  (Dexie store, React, fetch payloads, the app-facing side of endpoints)
+  **camelCase**. Confine the snake↔camel conversion to the **single server boundary**
+  where rows cross into/out of `supabase-js` (e.g. the sync endpoint), using **one
+  generic, table-agnostic key-case transformer** (`camelcase-keys`/`snakecase-keys`,
+  `humps`, or a ~10-line recursive helper) — **never a per-table mapper**. Derive
+  camelCase TS types from the generated snake_case types with `type-fest`
+  `CamelCasedPropertiesDeep<…>` so types auto-track `npm run db:types`. Scope the
+  runtime transform to top-level keys and exclude `jsonb` column contents (a blind
+  transform would camelize the data inside a jsonb blob).
+- **Applies to**: frame, research, plan, plan-review, implement, impl-review
