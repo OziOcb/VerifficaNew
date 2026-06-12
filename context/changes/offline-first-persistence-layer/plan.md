@@ -346,12 +346,12 @@ No DB migration in F-02 — it round-trips against F-01's existing `inspections`
 
 #### Automated
 
-- [x] 2.1 Type checking + lint pass: `npx astro sync && npm run lint`
-- [x] 2.2 Endpoint + RLS tests pass: `npm test`
+- [x] 2.1 Type checking + lint pass: `npx astro sync && npm run lint` — 14f5afb
+- [x] 2.2 Endpoint + RLS tests pass: `npm test` — 14f5afb
 
 #### Manual
 
-- [x] 2.3 Authenticated `put` returns camelCase authoritative row with server `updatedAt`; unauthenticated returns 401
+- [x] 2.3 Authenticated `put` returns camelCase authoritative row with server `updatedAt`; unauthenticated returns 401 — 14f5afb
 
 ### Phase 3: Client outbox, sync replay & demo island
 
