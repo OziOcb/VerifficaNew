@@ -334,24 +334,24 @@ No DB migration in F-02 — it round-trips against F-01's existing `inspections`
 
 #### Automated
 
-- [x] 1.1 Deps install cleanly and lockfile updates: `npm install`
-- [x] 1.2 Type checking passes: `npx astro sync && npm run lint`
-- [x] 1.3 Store/queue unit tests pass: `npm test`
+- [x] 1.1 Deps install cleanly and lockfile updates: `npm install` — 496d3bd
+- [x] 1.2 Type checking passes: `npx astro sync && npm run lint` — 496d3bd
+- [x] 1.3 Store/queue unit tests pass: `npm test` — 496d3bd
 
 #### Manual
 
-- [x] 1.4 `Inspection` type resolves to camelCase keys in the editor (CamelCasedPropertiesDeep tracks generated types)
+- [x] 1.4 `Inspection` type resolves to camelCase keys in the editor (CamelCasedPropertiesDeep tracks generated types) — 496d3bd
 
 ### Phase 2: Sync server endpoint + casing boundary
 
 #### Automated
 
-- [ ] 2.1 Type checking + lint pass: `npx astro sync && npm run lint`
-- [ ] 2.2 Endpoint + RLS tests pass: `npm test`
+- [x] 2.1 Type checking + lint pass: `npx astro sync && npm run lint`
+- [x] 2.2 Endpoint + RLS tests pass: `npm test`
 
 #### Manual
 
-- [ ] 2.3 Authenticated `put` returns camelCase authoritative row with server `updatedAt`; unauthenticated returns 401
+- [x] 2.3 Authenticated `put` returns camelCase authoritative row with server `updatedAt`; unauthenticated returns 401
 
 ### Phase 3: Client outbox, sync replay & demo island
 
