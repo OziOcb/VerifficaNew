@@ -334,13 +334,13 @@ No DB migration in F-02 — it round-trips against F-01's existing `inspections`
 
 #### Automated
 
-- [ ] 1.1 Deps install cleanly and lockfile updates: `npm install`
-- [ ] 1.2 Type checking passes: `npx astro sync && npm run lint`
-- [ ] 1.3 Store/queue unit tests pass: `npm test`
+- [x] 1.1 Deps install cleanly and lockfile updates: `npm install`
+- [x] 1.2 Type checking passes: `npx astro sync && npm run lint`
+- [x] 1.3 Store/queue unit tests pass: `npm test`
 
 #### Manual
 
-- [ ] 1.4 `Inspection` type resolves to camelCase keys in the editor (CamelCasedPropertiesDeep tracks generated types)
+- [x] 1.4 `Inspection` type resolves to camelCase keys in the editor (CamelCasedPropertiesDeep tracks generated types)
 
 ### Phase 2: Sync server endpoint + casing boundary
 
