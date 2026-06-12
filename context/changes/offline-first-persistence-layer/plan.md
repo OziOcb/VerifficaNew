@@ -371,14 +371,14 @@ No DB migration in F-02 — it round-trips against F-01's existing `inspections`
 
 #### Automated
 
-- [x] 4.1 Production build emits service worker + precache manifest: `npm run build`
-- [x] 4.2 Type checking + lint pass: `npx astro sync && npm run lint`
-- [x] 4.3 Unit + endpoint tests pass: `npm test`
-- [x] 4.4 Offline round-trip e2e passes: `npm run test:e2e`
+- [x] 4.1 Production build emits service worker + precache manifest: `npm run build` — 083946a
+- [x] 4.2 Type checking + lint pass: `npx astro sync && npm run lint` — 083946a
+- [x] 4.3 Unit + endpoint tests pass: `npm test` — 083946a
+- [x] 4.4 Offline round-trip e2e passes: `npm run test:e2e` — 083946a
 
 #### Manual
 
-- [x] 4.5 Offline reload of `/offline-demo` loads the app shell (not the browser offline page)
-- [x] 4.6 Record saved offline survives the reload and syncs on reconnect
-- [x] 4.7 Sign out/in still works (SW did not cache auth routes / stale shell)
+- [x] 4.5 Offline reload of `/offline-demo` loads the app shell (not the browser offline page) — 083946a
+- [x] 4.6 Record saved offline survives the reload and syncs on reconnect — 083946a
+- [x] 4.7 Sign out/in still works (SW did not cache auth routes / stale shell) — 083946a
 - [ ] 4.8 Deployed sync endpoint smoke-tested with `wrangler tail` (workerd parity)
