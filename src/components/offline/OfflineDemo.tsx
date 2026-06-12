@@ -6,7 +6,7 @@
 import { useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
-import { flushQueue, resetLocalStoreOnUserChange, saveInspection } from "@/lib/sync";
+import { flushQueue, resetLocalStoreOnUserChange, saveInspection, startAutoSync } from "@/lib/sync";
 
 interface Props {
   userId: string | null;
@@ -18,16 +18,15 @@ export default function OfflineDemo({ userId }: Props) {
 
   useEffect(() => {
     // If a different account signed in on this browser, wipe the per-origin store
-    // before draining — then flush anything left queued from a prior session.
-    async function init() {
+    // first, then start resilient outbox draining (online + visibility + retry
+    // net). `startAutoSync` returns a cleanup we run on unmount.
+    let stop: (() => void) | undefined;
+    void (async () => {
       if (userId) await resetLocalStoreOnUserChange(userId);
-      if (navigator.onLine) await flushQueue();
-    }
-    void init();
-    const onOnline = () => void flushQueue();
-    window.addEventListener("online", onOnline);
+      stop = startAutoSync();
+    })();
     return () => {
-      window.removeEventListener("online", onOnline);
+      stop?.();
     };
   }, [userId]);
 
@@ -66,7 +65,7 @@ export default function OfflineDemo({ userId }: Props) {
           >
             <span className="truncate font-mono text-xs">{row.id}</span>
             <span className="px-2">{row.status}</span>
-            <span className={row.synced ? "text-green-600" : "text-amber-600"}>
+            <span data-testid="sync-status" className={row.synced ? "text-green-600" : "text-amber-600"}>
               {row.synced ? "synced" : "pending"}
             </span>
           </li>

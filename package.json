@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "db:types": "supabase gen types typescript --local > src/db/database.types.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.8",
@@ -43,6 +44,8 @@
   "devDependencies": {
     "@eslint/compat": "^2.0.3",
     "@eslint/js": "^9.29.0",
+    "@playwright/test": "^1.60.0",
+    "@vite-pwa/astro": "^1.2.0",
     "eslint": "^9.29.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-astro": "^1.7.0",

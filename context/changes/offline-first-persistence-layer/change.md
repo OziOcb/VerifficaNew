@@ -32,3 +32,13 @@ auth flow clears it. Two related cases, surfaced while testing the Phase 3 demo:
   UI or S-08's "no loss, no logout" work.
 - **Throwaway demo:** `/offline-demo` + `src/components/offline/OfflineDemo.tsx` are
   temporary verification surfaces; remove when S-02's dashboard subsumes them.
+
+- **Deferred check 4.8 (deployed workerd-parity smoke-test):** Phase 4's manual
+  item 4.8 — smoke-test the deployed `/api/inspections/sync` with `npx wrangler
+tail` — is **deferred to S-02**. F-02 round-trips against local Supabase; the
+  `inspections` migration isn't pushed to hosted Supabase until S-02, so a full
+  deployed round-trip isn't possible yet. Workerd parity is already evidenced
+  locally (the endpoint ran on workerd via `wrangler dev` throughout the e2e).
+  When S-02 pushes the migration and deploys, run `wrangler tail` against the
+  live `/api/inspections/sync` to close 4.8. F-02 stays `status: implementing`
+  until then.
