@@ -81,11 +81,18 @@ showed). **This does not fit the codebase:**
   `src/pages/api/auth/signin.ts`.
 
 **Compatible design:** `flushQueue()` should `fetch()`-POST each queued op to a NEW
-server endpoint (e.g. `src/pages/api/inspections/sync.ts`), mirroring
-`/api/auth/*`. Same-origin fetch carries the auth cookie automatically; the
-endpoint reuses the server client, so RLS + cookie auth + the server-only secret
-all keep working. `dexie-reference.md` §3 should be amended to reflect this — its
-`pushToSupabase` is a placeholder, but the implied direct-client model is wrong.
+server endpoint (`src/pages/api/inspections/sync.ts`), mirroring `/api/auth/*`.
+Same-origin fetch carries the auth cookie automatically; the endpoint reuses the
+server client, so RLS + cookie auth + the server-only secret all keep working. The
+endpoint is the **single boundary** with five responsibilities: (a) read the
+authenticated user from `context.locals.user` (401 if absent); (b) strip the
+local-only `synced` flag (no DB column); (c) stamp `owner_id` server-side from the
+session — never trust the client, since RLS `with check` governs inserts;
+(d) convert camelCase→snake_case in / snake_case→camelCase out at this one place
+(Decision #3); (e) handle both `put` (upsert) and `delete`. `dexie-reference.md` §3
+has been amended to this spec — its earlier `upsert(op.payload)` / "send snake_case"
+draft was incomplete (it would have leaked `synced`, double-handled casing, and
+trusted the client's `owner_id`).
 
 ## ⚠️ Interaction #2 — server `updated_at` trigger vs client LWW timestamp
 
@@ -167,7 +174,13 @@ All four are settled and bind `/10x-plan`.
    optimistic ordering hint. (Fine for single-device; no trigger bypass needed.)
 2. **Sync endpoint → single-record upsert.** `POST /api/inspections/sync` takes one
    queued op and upserts the single `inspections` row under RLS. Matches F-02's
-   "round-trip one record" scope cap; no batch/multi-entity endpoint yet.
+   "round-trip one record" scope cap; no batch/multi-entity endpoint yet. The
+   endpoint is the single boundary and carries five responsibilities — see the
+   amended `dexie-reference.md` §3 (now matched to this, no longer divergent):
+   (a) 401 unless `context.locals.user` is set; (b) strip the local-only `synced`
+   flag (no DB column); (c) stamp `owner_id` from the session, never the client
+   (RLS `with check`); (d) camel↔snake conversion at this one place (Decision #3);
+   (e) handle `put` (upsert, returns the authoritative row) and `delete` (204).
 3. **Field casing → camelCase across ALL app layers; snake_case confined to
    Postgres + the single sync endpoint.** Do NOT camelCase the DB (Supabase
    explicitly recommends snake_case; would break the F-01 template). Instead:

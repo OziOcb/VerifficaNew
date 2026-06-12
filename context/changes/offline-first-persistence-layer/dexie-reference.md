@@ -153,7 +153,15 @@ async function flushQueue() {
       body: JSON.stringify(op), // cookie sent automatically (same-origin)
     });
     if (!res.ok) break; // stop on failure; retry on next online event
-    // server returns the authoritative row (incl. server-stamped updated_at)
+    if (op.op === "delete") {
+      // 204 No Content — no body to parse; just drop the local row + queue entry.
+      await db.transaction("rw", db.inspections, db.changeQueue, async () => {
+        await db.inspections.delete(op.entityId);
+        await db.changeQueue.delete(op.seq);
+      });
+      continue;
+    }
+    // server returns the authoritative row (camelCase, incl. server-stamped updatedAt)
     const saved = await res.json();
     await db.transaction("rw", db.inspections, db.changeQueue, async () => {
       await db.inspections.update(op.entityId, { ...saved, synced: 1 });
@@ -163,27 +171,44 @@ async function flushQueue() {
 }
 ```
 
-Server side — new endpoint, same pattern as `src/pages/api/auth/signin.ts`:
+Server side — new endpoint, same pattern as `src/pages/api/auth/signin.ts`. This
+is the **single boundary** that converts casing and re-establishes server
+authority — it strips the local-only `synced` flag, stamps `owner_id` from the
+cookie session (never trusts the client), converts camelCase→snake_case on the way
+in and snake_case→camelCase on the way out, and handles both `put` and `delete`:
 
 ```typescript
 // src/pages/api/inspections/sync.ts
 import type { APIRoute } from "astro";
 import { createClient } from "@/lib/supabase";
+import snakecaseKeys from "snakecase-keys";
+import camelcaseKeys from "camelcase-keys";
 
 export const POST: APIRoute = async (context) => {
   const supabase = createClient(context.request.headers, context.cookies);
   if (!supabase) return new Response("Supabase not configured", { status: 503 });
 
+  const user = context.locals.user; // cookie session, set by src/middleware.ts
+  if (!user) return new Response("Unauthorized", { status: 401 });
+
   const op = await context.request.json();
-  // RLS enforces owner_id = auth.uid(); upsert the mirrored row.
-  const { data, error } = await supabase
-    .from("inspections")
-    .upsert(op.payload) // payload uses snake_case DB column names
-    .select()
-    .single();
+
+  if (op.op === "delete") {
+    // RLS scopes the delete to the owner; no body to return.
+    const { error } = await supabase.from("inspections").delete().eq("id", op.entityId);
+    if (error) return new Response(error.message, { status: 400 });
+    return new Response(null, { status: 204 });
+  }
+
+  // Strip the local-only `synced` flag (no DB column). Server stamps owner_id —
+  // RLS `with check (owner_id = auth.uid())` rejects anything else on insert.
+  const { synced: _synced, ...row } = op.payload;
+  const payload = snakecaseKeys({ ...row, ownerId: user.id }); // camel → snake at the boundary
+
+  const { data, error } = await supabase.from("inspections").upsert(payload).select().single();
 
   if (error) return new Response(error.message, { status: 400 });
-  return Response.json(data); // authoritative row back to the client
+  return Response.json(camelcaseKeys(data, { deep: true })); // snake → camel; authoritative row back
 };
 ```
 
@@ -194,9 +219,13 @@ export const POST: APIRoute = async (context) => {
 - Wire `flushQueue()` to `window.addEventListener("online", …)`.
 - **LWW authority:** the F-01 `set_updated_at()` trigger stamps `updated_at`
   server-side on every write, so the server is the LWW authority — the client
-  adopts the returned `updated_at` rather than pushing its own (research.md,
-  Interaction #2). Send `op.payload` in **snake_case** DB column names to avoid a
-  mapping layer (Interaction #3).
+  adopts the returned row rather than pushing its own `updatedAt` (research.md,
+  Interaction #2 / Decision #1).
+- **Casing:** the store and the `fetch` payload are **camelCase** end-to-end. The
+  sync endpoint is the **single boundary** that converts to/from snake_case (via
+  the key transformer), stamps `owner_id`, and strips the local-only `synced`
+  flag. Do **not** snake_case anything client-side (research.md Decision #3 —
+  supersedes the earlier Interaction #3 snake_case-payload suggestion).
 
 ## 4. React 19 reactivity — `useLiveQuery`
 
