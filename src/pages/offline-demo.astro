@@ -1,0 +1,15 @@
+---
+// THROWAWAY verification page (F-02). `client:only="react"` keeps the Dexie-backed
+// island off the SSR path (IndexedDB has no global in workerd). Remove this page and
+// OfflineDemo.tsx when S-02's dashboard subsumes them.
+import Layout from "@/layouts/Layout.astro";
+import OfflineDemo from "@/components/offline/OfflineDemo";
+
+// Pass the authenticated user id (from middleware) into the island so it can clear
+// the per-origin Dexie store when a different account signs in on this browser.
+const { user } = Astro.locals;
+---
+
+<Layout title="Offline Demo">
+  <OfflineDemo client:only="react" userId={user?.id ?? null} />
+</Layout>

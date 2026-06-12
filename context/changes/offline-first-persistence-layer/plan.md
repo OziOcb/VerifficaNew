@@ -357,15 +357,15 @@ No DB migration in F-02 — it round-trips against F-01's existing `inspections`
 
 #### Automated
 
-- [ ] 3.1 Build succeeds (no SSR indexedDB access): `npm run build`
-- [ ] 3.2 Type checking + lint pass: `npx astro sync && npm run lint`
-- [ ] 3.3 Existing unit tests still pass: `npm test`
+- [x] 3.1 Build succeeds (no SSR indexedDB access): `npm run build`
+- [x] 3.2 Type checking + lint pass: `npx astro sync && npm run lint`
+- [x] 3.3 Existing unit tests still pass: `npm test`
 
 #### Manual
 
-- [ ] 3.4 Online save shows via useLiveQuery and flips to `synced: 1`
-- [ ] 3.5 Offline save is optimistic (`synced: 0`); reconnect drains queue to `synced: 1` with server `updatedAt`
-- [ ] 3.6 No SSR/build `indexedDB` console error
+- [x] 3.4 Online save shows via useLiveQuery and flips to `synced: 1`
+- [x] 3.5 Offline save is optimistic (`synced: 0`); reconnect drains queue to `synced: 1` with server `updatedAt`
+- [x] 3.6 No SSR/build `indexedDB` console error
 
 ### Phase 4: PWA service-worker shell + offline round-trip e2e
 
