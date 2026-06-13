@@ -324,25 +324,25 @@ Two migrations reach hosted Supabase for the first time in Phase 4 (F-01 baselin
 
 #### Automated
 
-- [x] 1.1 Migration applies cleanly to local Supabase
-- [x] 1.2 Limit test passes and existing RLS suite still green: `npm test`
-- [x] 1.3 Linting passes: `npm run lint`
+- [x] 1.1 Migration applies cleanly to local Supabase — 94b90ec
+- [x] 1.2 Limit test passes and existing RLS suite still green: `npm test` — 94b90ec
+- [x] 1.3 Linting passes: `npm run lint` — 94b90ec
 
 #### Manual
 
-- [x] 1.4 3rd INSERT rejected with `inspection_limit_reached`; UPDATE unaffected by the trigger
+- [x] 1.4 3rd INSERT rejected with `inspection_limit_reached`; UPDATE unaffected by the trigger — 94b90ec
 
 ### Phase 2: Mutation server layer
 
 #### Automated
 
-- [ ] 2.1 Type checking + lint pass: `npm run lint`
-- [ ] 2.2 Build passes: `npm run build`
+- [x] 2.1 Type checking + lint pass: `npm run lint`
+- [x] 2.2 Build passes: `npm run build`
 
 #### Manual
 
-- [ ] 2.3 `POST /api/inspections/create` returns 201/409/401 as expected on workerd dev
-- [ ] 2.4 `POST /api/inspections/sync {op:"delete"}` returns 204 and removes the row
+- [x] 2.3 `POST /api/inspections/create` returns 201/409/401 as expected on workerd dev
+- [x] 2.4 `POST /api/inspections/sync {op:"delete"}` returns 204 and removes the row
 
 ### Phase 3: Dashboard UI + stub resume route
 
