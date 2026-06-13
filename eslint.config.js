@@ -65,6 +65,11 @@ const astroConfig = tseslint.config({
     "astro/no-set-html-directive": "error",
     "astro/no-unused-css-selector": "warn",
     "astro/prefer-class-list-directive": "warn",
+    // A top-level `return Astro.redirect(...)` in frontmatter (data-dependent SSR
+    // redirects) crashes this rule under astro-eslint-parser: the return node has
+    // no enclosing-function parent, so the rule's nullThrows blows up. The check
+    // adds little in `.astro` frontmatter, so disable it there.
+    "@typescript-eslint/no-misused-promises": "off",
   },
 });
 

@@ -336,29 +336,29 @@ Two migrations reach hosted Supabase for the first time in Phase 4 (F-01 baselin
 
 #### Automated
 
-- [x] 2.1 Type checking + lint pass: `npm run lint`
-- [x] 2.2 Build passes: `npm run build`
+- [x] 2.1 Type checking + lint pass: `npm run lint` — 3f0e68b
+- [x] 2.2 Build passes: `npm run build` — 3f0e68b
 
 #### Manual
 
-- [x] 2.3 `POST /api/inspections/create` returns 201/409/401 as expected on workerd dev
-- [x] 2.4 `POST /api/inspections/sync {op:"delete"}` returns 204 and removes the row
+- [x] 2.3 `POST /api/inspections/create` returns 201/409/401 as expected on workerd dev — 3f0e68b
+- [x] 2.4 `POST /api/inspections/sync {op:"delete"}` returns 204 and removes the row — 3f0e68b
 
 ### Phase 3: Dashboard UI + stub resume route
 
 #### Automated
 
-- [ ] 3.1 `astro sync` + lint pass (react-compiler clean): `npm run lint`
-- [ ] 3.2 Build passes: `npm run build`
+- [x] 3.1 `astro sync` + lint pass (react-compiler clean): `npm run lint`
+- [x] 3.2 Build passes: `npm run build`
 
 #### Manual
 
-- [ ] 3.3 Empty-state CTA → create → startup pop-up → navigate to stub
-- [ ] 3.4 `Don't show again` suppresses the startup pop-up across reload
-- [ ] 3.5 Tiles grouped Draft/Completed; resume navigates; delete confirms, removes tile, frees slot
-- [ ] 3.6 With 2 inspections, Start opens the limit pop-up; no 3rd created
-- [ ] 3.7 Signout clears Dexie and redirects to `/`
-- [ ] 3.8 Foreign `/inspections/<id>` redirects to `/dashboard`
+- [x] 3.3 Empty-state CTA → create → startup pop-up → navigate to stub
+- [x] 3.4 `Don't show again` suppresses the startup pop-up across reload
+- [x] 3.5 Tiles grouped Draft/Completed; resume navigates; delete confirms, removes tile, frees slot
+- [x] 3.6 With 2 inspections, Start opens the limit pop-up; no 3rd created
+- [x] 3.7 Signout clears Dexie and redirects to `/`
+- [x] 3.8 Foreign `/inspections/<id>` redirects to `/dashboard`
 
 ### Phase 4: Cleanup, hosted deploy & F-02 4.8 closeout
 
