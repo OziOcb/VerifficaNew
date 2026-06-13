@@ -46,7 +46,7 @@ is the _complete, reliable_ loop, not a partial demo.
 | ---- | ------------------------------- | ----------------------------------------------------------------------------- | ------------- | -------------------------------------- | ----------- |
 | F-01 | domain-schema-rls-isolation     | (foundation) owner-private domain data persists, invisible to other accounts  | —             | Access Control, FR-006, FR-011         | implemented |
 | F-02 | offline-first-persistence-layer | (foundation) local-first store + Change Queue + LWW sync round-trips a record | F-01          | FR-023, US-03                          | implemented |
-| S-01 | public-home-page                | view a public home page describing the inspection, with log in / register     | —             | FR-005, FR-024                         | ready       |
+| S-01 | public-home-page                | view a public home page describing the inspection, with log in / register     | —             | FR-005, FR-024                         | implemented |
 | S-02 | inspection-dashboard-lifecycle  | see, start, resume, and delete inspections; hit the 2-inspection limit        | F-01, F-02    | FR-006, FR-007, FR-008, FR-009, US-01  | proposed    |
 | S-03 | part-1-config-validation        | fill & validate Part 1 config and unlock Parts 2–5                            | S-02          | FR-011, FR-012, FR-013, US-01          | proposed    |
 | S-04 | personalized-question-engine    | open the session screen and see questions personalized to their car           | S-03          | FR-010, FR-014, US-01                  | proposed    |
@@ -122,7 +122,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Standalone entry surface with no data dependency; also lands the English-only UI convention (FR-024). Low risk; placed early as a quick independent win that doesn't compete with the north-star chain.
-- **Status:** ready
+- **Status:** implemented
 
 ### S-02: Dashboard + inspection lifecycle
 
@@ -278,4 +278,4 @@ and lives in S-04, not here.
 
 ## Done
 
-(Empty on first generation. `/10x-archive` appends here when a change whose `Change ID` matches a roadmap item is archived.)
+- **S-01: user can view a public home page describing the 5-part inspection, with log in / register actions.** — Archived 2026-06-13 → `context/archive/2026-06-13-public-home-page/`. Lesson: —.
