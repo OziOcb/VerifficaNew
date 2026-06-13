@@ -259,27 +259,27 @@ None — no data or schema involved.
 
 #### Automated
 
-- [x] 1.1 astro sync + type-check pass (`npm run lint`)
-- [x] 1.2 Production build succeeds (`npm run build`)
-- [x] 1.3 No starter/Polish strings remain in src (grep) (home-page boilerplate removed; residual `Layout` default title closes in 2.2)
-- [x] 1.4 Welcome.astro deleted with no remaining importers (grep)
+- [x] 1.1 astro sync + type-check pass (`npm run lint`) — 56ca3c6
+- [x] 1.2 Production build succeeds (`npm run build`) — 56ca3c6
+- [x] 1.3 No starter/Polish strings remain in src (grep) (home-page boilerplate removed; residual `Layout` default title closes in 2.2) — 56ca3c6
+- [x] 1.4 Welcome.astro deleted with no remaining importers (grep) — 56ca3c6
 
 #### Manual
 
-- [x] 1.5 Signed-out `/` shows hero, wedge, 5 parts, benefits, disclaimer, Sign in/Register CTAs
-- [x] 1.6 Signed-in `/` shows Go to Dashboard instead of auth CTAs
-- [x] 1.7 Responsive + visually consistent with auth pages
-- [x] 1.8 Browser tab title reads "Veriffica"
+- [x] 1.5 Signed-out `/` shows hero, wedge, 5 parts, benefits, disclaimer, Sign in/Register CTAs — 56ca3c6
+- [x] 1.6 Signed-in `/` shows Go to Dashboard instead of auth CTAs — 56ca3c6
+- [x] 1.7 Responsive + visually consistent with auth pages — 56ca3c6
+- [x] 1.8 Browser tab title reads "Veriffica" — 56ca3c6
 
 ### Phase 2: English-only convention (FR-024)
 
 #### Automated
 
-- [ ] 2.1 No Polish strings remain in src (grep)
-- [ ] 2.2 No "10x Astro Starter" title remains in src (grep)
-- [ ] 2.3 Build + lint pass
+- [x] 2.1 No Polish strings remain in src (grep)
+- [x] 2.2 No "10x Astro Starter" title remains in src (grep)
+- [x] 2.3 Build + lint pass
 
 #### Manual
 
-- [ ] 2.4 Config banner renders in English with Supabase env unset
-- [ ] 2.5 All visible shell text is English
+- [x] 2.4 Config banner renders in English with Supabase env unset
+- [x] 2.5 All visible shell text is English
