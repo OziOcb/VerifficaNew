@@ -348,17 +348,17 @@ Two migrations reach hosted Supabase for the first time in Phase 4 (F-01 baselin
 
 #### Automated
 
-- [x] 3.1 `astro sync` + lint pass (react-compiler clean): `npm run lint`
-- [x] 3.2 Build passes: `npm run build`
+- [x] 3.1 `astro sync` + lint pass (react-compiler clean): `npm run lint` — 4a23143
+- [x] 3.2 Build passes: `npm run build` — 4a23143
 
 #### Manual
 
-- [x] 3.3 Empty-state CTA → create → startup pop-up → navigate to stub
-- [x] 3.4 `Don't show again` suppresses the startup pop-up across reload
-- [x] 3.5 Tiles grouped Draft/Completed; resume navigates; delete confirms, removes tile, frees slot
-- [x] 3.6 With 2 inspections, Start opens the limit pop-up; no 3rd created
-- [x] 3.7 Signout clears Dexie and redirects to `/`
-- [x] 3.8 Foreign `/inspections/<id>` redirects to `/dashboard`
+- [x] 3.3 Empty-state CTA → create → startup pop-up → navigate to stub — 4a23143
+- [x] 3.4 `Don't show again` suppresses the startup pop-up across reload — 4a23143
+- [x] 3.5 Tiles grouped Draft/Completed; resume navigates; delete confirms, removes tile, frees slot — 4a23143
+- [x] 3.6 With 2 inspections, Start opens the limit pop-up; no 3rd created — 4a23143
+- [x] 3.7 Signout clears Dexie and redirects to `/` — 4a23143
+- [x] 3.8 Foreign `/inspections/<id>` redirects to `/dashboard` — 4a23143
 
 ### Phase 4: Cleanup, hosted deploy & F-02 4.8 closeout
 
