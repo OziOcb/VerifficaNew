@@ -275,11 +275,11 @@ None — no data or schema involved.
 
 #### Automated
 
-- [x] 2.1 No Polish strings remain in src (grep)
-- [x] 2.2 No "10x Astro Starter" title remains in src (grep)
-- [x] 2.3 Build + lint pass
+- [x] 2.1 No Polish strings remain in src (grep) — c8ad11e
+- [x] 2.2 No "10x Astro Starter" title remains in src (grep) — c8ad11e
+- [x] 2.3 Build + lint pass — c8ad11e
 
 #### Manual
 
-- [x] 2.4 Config banner renders in English with Supabase env unset
-- [x] 2.5 All visible shell text is English
+- [x] 2.4 Config banner renders in English with Supabase env unset — c8ad11e
+- [x] 2.5 All visible shell text is English — c8ad11e
