@@ -324,13 +324,13 @@ Two migrations reach hosted Supabase for the first time in Phase 4 (F-01 baselin
 
 #### Automated
 
-- [ ] 1.1 Migration applies cleanly to local Supabase
-- [ ] 1.2 Limit test passes and existing RLS suite still green: `npm test`
-- [ ] 1.3 Linting passes: `npm run lint`
+- [x] 1.1 Migration applies cleanly to local Supabase
+- [x] 1.2 Limit test passes and existing RLS suite still green: `npm test`
+- [x] 1.3 Linting passes: `npm run lint`
 
 #### Manual
 
-- [ ] 1.4 3rd INSERT rejected with `inspection_limit_reached`; UPDATE unaffected by the trigger
+- [x] 1.4 3rd INSERT rejected with `inspection_limit_reached`; UPDATE unaffected by the trigger
 
 ### Phase 2: Mutation server layer
 
