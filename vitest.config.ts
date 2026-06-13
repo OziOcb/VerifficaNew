@@ -19,5 +19,8 @@ export default defineConfig({
     environment: "node",
     // Surface the loaded .env values to process.env for the test helper.
     env,
+    // Playwright owns tests/e2e (its `test`/`expect` are not vitest's). Vitest's
+    // default glob would otherwise try to run the *.spec.ts there and fail.
+    exclude: ["**/node_modules/**", "**/dist/**", "tests/e2e/**"],
   },
 });

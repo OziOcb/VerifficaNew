@@ -20,3 +20,47 @@ secret list`. Use real Worker secrets — not `wrangler.jsonc` `vars`/build vari
   for runtime config; if a value still reads `undefined`, import from `cloudflare:workers`
   instead of `astro:env/server`.
 - **Applies to**: research, plan, implement, impl-review
+
+## Field casing: camelCase in app code, snake_case in Postgres, convert at one boundary
+
+- **Context**: Any feature reading/writing Supabase domain data through the app —
+  the Dexie/on-device store, React, API endpoints, and the offline sync layer.
+  Applies from F-02 onward and to every domain slice (S-02…S-09).
+- **Problem**: Postgres/Supabase columns are (and must stay) `snake_case` — Supabase
+  explicitly recommends it, camelCase columns require double-quoting everywhere
+  ("YOU WILL FORGET"), and the F-01 migration + RLS policies are the snake_case
+  template every later table copies. But JS/TS app code wants `camelCase`. The naive
+  fix — a hand-written mapper per table — scales linearly (N tables = N mappers =
+  N drift risks).
+- **Rule**: Keep the **database snake_case**. Make **all application layers**
+  (Dexie store, React, fetch payloads, the app-facing side of endpoints)
+  **camelCase**. Confine the snake↔camel conversion to the **single server boundary**
+  where rows cross into/out of `supabase-js` (e.g. the sync endpoint), using **one
+  generic, table-agnostic key-case transformer** (`camelcase-keys`/`snakecase-keys`,
+  `humps`, or a ~10-line recursive helper) — **never a per-table mapper**. Derive
+  camelCase TS types from the generated snake_case types with `type-fest`
+  `CamelCasedPropertiesDeep<…>` so types auto-track `npm run db:types`. Scope the
+  runtime transform to top-level keys and exclude `jsonb` column contents (a blind
+  transform would camelize the data inside a jsonb blob).
+- **Applies to**: frame, research, plan, plan-review, implement, impl-review
+
+## Service worker is build-only — test it with `wrangler dev`, never `astro dev`/`preview`
+
+- **Context**: Any phase touching the `@vite-pwa/astro` service worker, PWA shell,
+  offline reload, or precache on this Astro 6 + Cloudflare Workers stack — e.g. F-02,
+  S-08, or edits to `Layout.astro`'s SW registration / the `astro.config.mjs` PWA block.
+- **Problem**: The SW is emitted only by `astro build`; under `npm run dev` there is
+  no `/sw.js`, so offline/SW/precache behavior cannot be exercised in dev at all.
+  Compounding it: the `@astrojs/cloudflare` adapter has no working `astro preview`, and
+  a registered SW persists per origin — since `astro dev` and `wrangler dev` both
+  default to port 4321, a SW left registered from build-testing silently intercepts
+  later `npm run dev` sessions on the same port.
+- **Rule**: Keep `npm run dev` for normal work. To exercise the SW / offline reload /
+  precache, use `npm run build && npx wrangler dev --port 4321` — the only way to serve
+  the built SW locally (the Cloudflare adapter has no `astro preview`; needs local
+  Supabase for auth). Keep the registration in `Layout.astro` guarded by
+  `import.meta.env.PROD`. After SW testing, discard the worker (Incognito window, or
+  DevTools → Application → Service Workers → Unregister) so it can't hijack a later
+  `npm run dev` on port 4321. `npm run test:e2e` already does the build+wrangler step
+  for the automated offline round-trip.
+- **Applies to**: implement, impl-review

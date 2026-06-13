@@ -16,6 +16,8 @@ const { title = "10x Astro Starter" } = Astro.props;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#ffffff" />
     <title>{title}</title>
   </head>
   <body>
@@ -36,6 +38,15 @@ const { title = "10x Astro Starter" } = Astro.props;
       ))
     }
     <slot />
+    <script>
+      // Register the @vite-pwa/astro service worker. It is only emitted by the
+      // production build, so guard on PROD to avoid a 404 during `astro dev`.
+      if (import.meta.env.PROD && "serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          void navigator.serviceWorker.register("/sw.js");
+        });
+      }
+    </script>
   </body>
 </html>
 
