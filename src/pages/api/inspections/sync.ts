@@ -27,7 +27,12 @@ export const POST: APIRoute = async (context) => {
   const user = context.locals.user; // cookie session, set by src/middleware.ts
   if (!user) return new Response("Unauthorized", { status: 401 });
 
-  const body = (await context.request.json()) as SyncOp;
+  let body: SyncOp;
+  try {
+    body = (await context.request.json()) as SyncOp;
+  } catch {
+    return new Response("Invalid JSON body", { status: 400 });
+  }
 
   if (body.op === "delete") {
     // RLS scopes the delete to the owner; no body to return.

@@ -3,7 +3,7 @@ project: Veriffica
 version: 1
 status: draft
 created: 2026-06-09
-updated: 2026-06-11
+updated: 2026-06-13
 prd_version: 1
 main_goal: quality
 top_blocker: skills
@@ -45,7 +45,7 @@ is the _complete, reliable_ loop, not a partial demo.
 | ID   | Change ID                       | Outcome (user can …)                                                          | Prerequisites | PRD refs                               | Status      |
 | ---- | ------------------------------- | ----------------------------------------------------------------------------- | ------------- | -------------------------------------- | ----------- |
 | F-01 | domain-schema-rls-isolation     | (foundation) owner-private domain data persists, invisible to other accounts  | —             | Access Control, FR-006, FR-011         | implemented |
-| F-02 | offline-first-persistence-layer | (foundation) local-first store + Change Queue + LWW sync round-trips a record | F-01          | FR-023, US-03                          | in progress |
+| F-02 | offline-first-persistence-layer | (foundation) local-first store + Change Queue + LWW sync round-trips a record | F-01          | FR-023, US-03                          | implemented |
 | S-01 | public-home-page                | view a public home page describing the inspection, with log in / register     | —             | FR-005, FR-024                         | ready       |
 | S-02 | inspection-dashboard-lifecycle  | see, start, resume, and delete inspections; hit the 2-inspection limit        | F-01, F-02    | FR-006, FR-007, FR-008, FR-009, US-01  | proposed    |
 | S-03 | part-1-config-validation        | fill & validate Part 1 config and unlock Parts 2–5                            | S-02          | FR-011, FR-012, FR-013, US-01          | proposed    |
@@ -108,7 +108,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
   - ~~Reconciliation edge cases under Last-Write-Wins / Client-Wins (e.g. concurrent edits to the global notes document)~~ — **Resolved** (research `context/changes/offline-first-persistence-layer/research.md`). Veriffica is single-device / single-writer (multi-device realtime sync is a non-goal), so plain LWW via an `updated_at` timestamp is adequate and **no CRDT is needed**. Only two real residual edges, both fixable without CRDTs: (1) **multi-tab on one device** → single-leader guard (Web Locks / BroadcastChannel); (2) **global notes blob** → store notes at row/field-level granularity so independent edits never collide ("design to avoid conflicts"). Text CRDTs (Yjs/Automerge) parked — only needed for collaborative editing, which contradicts the non-goals.
 - **Risk:** This is the #1 blocker (unfamiliar tech, no starter per `tech-stack.md`) and the dominant engineering item. Sequenced eagerly — before the domain slices — so they are built local-first from day one and never need an online-first → offline retrofit (quality goal: no reliability rework). Scope cap: the store/queue/sync contract round-tripping one record, not every entity's reconciliation. **De-risked** (see research) by assembling proven, stack-compatible parts rather than building from zero: `@vite-pwa/astro` (Workbox SW shell; exclude Supabase `/api/auth/*` + `PROTECTED_ROUTES` from caching) + **Dexie** (on-device store) + a **hand-rolled outbox** (or `@tanstack/offline-transactions` if multi-tab leader election is wanted for free). RxDB + Supabase replication surveyed and rejected — it pulls in Supabase Realtime, a non-goal.
 - **Decisions** (bind `/10x-plan`; full rationale in `context/changes/offline-first-persistence-layer/research.md`): (1) **LWW = server-authoritative** — F-01's `set_updated_at()` trigger stamps `updated_at`; client adopts the returned row. (2) **Sync endpoint = single-record upsert** — `POST /api/inspections/sync`, one op at a time, under RLS (mirrors `/api/auth/*`; no browser Supabase client / no client-exposed key). (3) **Field casing = camelCase across all app layers, snake_case only in Postgres + the one sync endpoint**, via a generic key-transform + `type-fest` `CamelCasedPropertiesDeep` types — now a project-wide rule in `context/foundation/lessons.md`. (4) **Service worker = in F-02** (`@vite-pwa/astro`; auth routes excluded from caching), so the foundation survives a real offline reload.
-- **Status:** in progress — all 4 plan phases implemented and verified locally on branch `feat/offline-first-persistence-layer` (Dexie store, sync endpoint, client outbox + `startAutoSync`, `@vite-pwa/astro` SW shell, Playwright offline round-trip e2e). **One follow-up remains:** manual check **4.8** — the deployed `wrangler tail` workerd-parity smoke-test of `/api/inspections/sync` — is **deferred to S-02** (which pushes the `inspections` migration to hosted Supabase; see S-02 Deploy note). F-02 flips to `implemented` once 4.8 lands.
+- **Status:** implemented — all 4 plan phases implemented, verified locally on branch `feat/offline-first-persistence-layer` (Dexie store, sync endpoint, client outbox + `startAutoSync`, `@vite-pwa/astro` SW shell, Playwright offline round-trip e2e), and impl-reviewed (`reviews/impl-review.md`, verdict APPROVED). **One follow-up still deferred:** manual check **4.8** — the deployed `wrangler tail` workerd-parity smoke-test of `/api/inspections/sync` — remains **deferred to S-02** (which pushes the `inspections` migration to hosted Supabase; see S-02 Deploy note). It validates a deployed round-trip that isn't possible until S-02; workerd parity is already evidenced locally (the endpoint ran on workerd via `wrangler dev` throughout the e2e).
 
 ## Slices
 
@@ -237,20 +237,20 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 ## Backlog Handoff
 
-| Roadmap ID | Change ID                       | Suggested issue title                              | Ready for `/10x-plan` | Notes                                                     |
-| ---------- | ------------------------------- | -------------------------------------------------- | --------------------- | --------------------------------------------------------- |
-| F-01       | domain-schema-rls-isolation     | Domain schema + RLS data-isolation contract        | yes                   | Run `/10x-plan domain-schema-rls-isolation`               |
-| F-02       | offline-first-persistence-layer | Offline-first persistence + Change Queue + sync    | yes                   | In progress — `/10x-plan offline-first-persistence-layer` |
-| S-01       | public-home-page                | Public home page (product description + auth CTAs) | yes                   | Run `/10x-plan public-home-page`                          |
-| S-02       | inspection-dashboard-lifecycle  | Dashboard + inspection lifecycle (CRUD + limit)    | no                    | Needs F-01, F-02                                          |
-| S-03       | part-1-config-validation        | Part 1 config form, validation & Parts 2–5 unlock  | no                    | Needs S-02                                                |
-| S-04       | personalized-question-engine    | Session screen + personalized question generation  | no                    | Needs S-03                                                |
-| S-05       | question-card-answering         | Swipeable answer cards + education + notes         | no                    | Needs S-04                                                |
-| S-06       | summary-scoring-finalize        | Summary distribution, inline edit & finalize       | no                    | North star; needs S-05                                    |
-| S-07       | config-change-smart-pruning     | Smart Pruning on config change                     | no                    | Needs S-04, S-05                                          |
-| S-08       | offline-inspection-survival     | Offline inspection survival end-to-end             | no                    | Needs F-02, S-05                                          |
-| S-09       | account-recovery-deletion       | Password reset + account deletion                  | no                    | Needs F-01                                                |
-| S-10       | settings-profile                | Settings & profile (font size, theme)              | yes                   | Run `/10x-plan settings-profile`                          |
+| Roadmap ID | Change ID                       | Suggested issue title                              | Ready for `/10x-plan` | Notes                                                          |
+| ---------- | ------------------------------- | -------------------------------------------------- | --------------------- | -------------------------------------------------------------- |
+| F-01       | domain-schema-rls-isolation     | Domain schema + RLS data-isolation contract        | yes                   | Run `/10x-plan domain-schema-rls-isolation`                    |
+| F-02       | offline-first-persistence-layer | Offline-first persistence + Change Queue + sync    | yes                   | Implemented — check 4.8 (deployed smoke-test) deferred to S-02 |
+| S-01       | public-home-page                | Public home page (product description + auth CTAs) | yes                   | Run `/10x-plan public-home-page`                               |
+| S-02       | inspection-dashboard-lifecycle  | Dashboard + inspection lifecycle (CRUD + limit)    | no                    | Needs F-01, F-02                                               |
+| S-03       | part-1-config-validation        | Part 1 config form, validation & Parts 2–5 unlock  | no                    | Needs S-02                                                     |
+| S-04       | personalized-question-engine    | Session screen + personalized question generation  | no                    | Needs S-03                                                     |
+| S-05       | question-card-answering         | Swipeable answer cards + education + notes         | no                    | Needs S-04                                                     |
+| S-06       | summary-scoring-finalize        | Summary distribution, inline edit & finalize       | no                    | North star; needs S-05                                         |
+| S-07       | config-change-smart-pruning     | Smart Pruning on config change                     | no                    | Needs S-04, S-05                                               |
+| S-08       | offline-inspection-survival     | Offline inspection survival end-to-end             | no                    | Needs F-02, S-05                                               |
+| S-09       | account-recovery-deletion       | Password reset + account deletion                  | no                    | Needs F-01                                                     |
+| S-10       | settings-profile                | Settings & profile (font size, theme)              | yes                   | Run `/10x-plan settings-profile`                               |
 
 ## Open Roadmap Questions
 

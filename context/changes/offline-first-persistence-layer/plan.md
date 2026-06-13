@@ -199,6 +199,8 @@ Wire the client side: an atomic optimistic write + enqueue, a FIFO queue-drain t
 - `flushQueue()`: `changeQueue.orderBy("createdAt").toArray()` (FIFO); for each op `fetch("/api/inspections/sync", { method: "POST", headers, body: JSON.stringify(op) })` (same-origin → cookie sent automatically); on `!res.ok` → `break` (retry next online event); on `delete` → 204, drop local row + queue entry in a tx; on `put` → adopt `await res.json()` via `inspections.update(entityId, { ...saved, synced: 1 })` + delete queue entry, in a tx.
 - Wire `window.addEventListener("online", flushQueue)` (and an initial flush on mount if `navigator.onLine`).
 
+> **Implemented as `startAutoSync` (addendum):** the wiring shipped richer than this single listener — `startAutoSync()` drains on **four redundant signals** (`online` event, `visibilitychange`, an initial mount drain, and a bounded 4s retry poll while ops remain queued), behind a `flushing` reentrancy guard, and returns a cleanup. The retry poll is the backstop for a dropped `online` event on an offline-loaded SW page. Also added beyond the original contract: `resetLocalStoreOnUserChange(userId)` wipes the per-origin Dexie store on a shared-device user switch (see `change.md` §Follow-ups).
+
 #### 2. Demo island
 
 **File**: `src/components/offline/OfflineDemo.tsx` (new)
@@ -250,8 +252,8 @@ Add the `@vite-pwa/astro` service worker so the app shell loads on a real offlin
 **Contract**:
 
 - Add dev dep `@vite-pwa/astro`; add it to `integrations` in `astro.config.mjs`.
-- Configure a **static app-shell navigation fallback** for offline navigation (SSR precaches from `dist/client`).
-- **Exclude auth + protected routes from caching**: `/api/auth/{signin,signup,signout}` and the `PROTECTED_ROUTES` paths (`/dashboard`) → `NetworkOnly` / Workbox `navigateFallbackDenylist`, so the SW never serves a stale authenticated shell or caches an auth POST (research Decision #4).
+- Serve offline navigations via a **`NetworkFirst` runtime cache** of visited SSR pages, NOT a static `navigateFallback` shell: SSR emits no static app-shell HTML, so set `navigateFallback: undefined` (a fallback to `/` would point at a non-precached URL and break the SW at startup). Precache only the static client assets (`globPatterns: **/*.{js,css,svg,png,ico,webmanifest}`); the cached SSR document rehydrates the island, which reads Dexie offline. (Implemented at `astro.config.mjs` — supersedes the original `navigateFallback` precache plan, discovered at implement time.)
+- **Exclude auth + protected routes from the page cache**: the `NetworkFirst` `urlPattern` matches `request.mode === "navigate"` only and excludes `/api`, `/auth`, and `/dashboard`, so the SW never serves a stale authenticated shell or caches an auth route (research Decision #4). API POSTs (incl. `/api/inspections/sync` and `/api/auth/*`) are non-navigations and never match the rule.
 - Minimal `manifest` (name/start_url/display) — no icon set or install prompt.
 - Pull current `@vite-pwa/astro` SSR config syntax via Context7 at implement time.
 
