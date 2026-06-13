@@ -259,17 +259,17 @@ None — no data or schema involved.
 
 #### Automated
 
-- [ ] 1.1 astro sync + type-check pass (`npm run lint`)
-- [ ] 1.2 Production build succeeds (`npm run build`)
-- [ ] 1.3 No starter/Polish strings remain in src (grep)
-- [ ] 1.4 Welcome.astro deleted with no remaining importers (grep)
+- [x] 1.1 astro sync + type-check pass (`npm run lint`)
+- [x] 1.2 Production build succeeds (`npm run build`)
+- [x] 1.3 No starter/Polish strings remain in src (grep) (home-page boilerplate removed; residual `Layout` default title closes in 2.2)
+- [x] 1.4 Welcome.astro deleted with no remaining importers (grep)
 
 #### Manual
 
-- [ ] 1.5 Signed-out `/` shows hero, wedge, 5 parts, benefits, disclaimer, Sign in/Register CTAs
-- [ ] 1.6 Signed-in `/` shows Go to Dashboard instead of auth CTAs
-- [ ] 1.7 Responsive + visually consistent with auth pages
-- [ ] 1.8 Browser tab title reads "Veriffica"
+- [x] 1.5 Signed-out `/` shows hero, wedge, 5 parts, benefits, disclaimer, Sign in/Register CTAs
+- [x] 1.6 Signed-in `/` shows Go to Dashboard instead of auth CTAs
+- [x] 1.7 Responsive + visually consistent with auth pages
+- [x] 1.8 Browser tab title reads "Veriffica"
 
 ### Phase 2: English-only convention (FR-024)
 
