@@ -1,7 +1,7 @@
 ---
 change_id: inspection-dashboard-lifecycle
 title: Dashboard + inspection lifecycle (create, resume, delete, 2-inspection limit)
-status: preparing
+status: planned
 created: 2026-06-13
 updated: 2026-06-13
 archived_at: null
