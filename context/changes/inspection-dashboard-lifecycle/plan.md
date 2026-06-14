@@ -370,6 +370,6 @@ Two migrations reach hosted Supabase for the first time in Phase 4 (F-01 baselin
 #### Manual
 
 - [x] 4.3 `db push` applied both migrations to hosted Supabase — bd2f4d6
-- [x] 4.4 Deployed `wrangler tail` shows a clean `/api/inspections/sync` round-trip (no workerd Node-API error)
-- [x] 4.5 F-02 check 4.8 checked off; F-02 and S-02 flipped to `implemented`
-- [x] 4.6 Production create/resume/delete/limit works end-to-end against hosted Supabase
+- [x] 4.4 Deployed `wrangler tail` shows a clean `/api/inspections/sync` round-trip (no workerd Node-API error) — 58acfe2
+- [x] 4.5 F-02 check 4.8 checked off; F-02 and S-02 flipped to `implemented` — 58acfe2
+- [x] 4.6 Production create/resume/delete/limit works end-to-end against hosted Supabase — 58acfe2
