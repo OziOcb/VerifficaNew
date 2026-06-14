@@ -1,10 +1,10 @@
 ---
 change_id: offline-first-persistence-layer
 title: Offline-first persistence + sync contract
-status: implemented
+status: archived
 created: 2026-06-11
 updated: 2026-06-14
-archived_at: null
+archived_at: 2026-06-14T16:57:03Z
 ---
 
 ## Notes
