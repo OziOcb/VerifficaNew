@@ -364,12 +364,12 @@ Two migrations reach hosted Supabase for the first time in Phase 4 (F-01 baselin
 
 #### Automated
 
-- [ ] 4.1 Build passes after demo removal: `npm run build`
-- [ ] 4.2 Full check passes: `npm test` && `npm run lint`
+- [x] 4.1 Build passes after demo removal: `npm run build`
+- [x] 4.2 Full check passes: `npm test` && `npm run lint`
 
 #### Manual
 
-- [ ] 4.3 `db push` applied both migrations to hosted Supabase
+- [x] 4.3 `db push` applied both migrations to hosted Supabase
 - [ ] 4.4 Deployed `wrangler tail` shows a clean `/api/inspections/sync` round-trip (no workerd Node-API error)
 - [ ] 4.5 F-02 check 4.8 checked off; F-02 and S-02 flipped to `implemented`
 - [ ] 4.6 Production create/resume/delete/limit works end-to-end against hosted Supabase
