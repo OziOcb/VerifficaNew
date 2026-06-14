@@ -47,7 +47,7 @@ is the _complete, reliable_ loop, not a partial demo.
 | F-01 | domain-schema-rls-isolation     | (foundation) owner-private domain data persists, invisible to other accounts  | —             | Access Control, FR-006, FR-011         | implemented |
 | F-02 | offline-first-persistence-layer | (foundation) local-first store + Change Queue + LWW sync round-trips a record | F-01          | FR-023, US-03                          | implemented |
 | S-01 | public-home-page                | view a public home page describing the inspection, with log in / register     | —             | FR-005, FR-024                         | implemented |
-| S-02 | inspection-dashboard-lifecycle  | see, start, resume, and delete inspections; hit the 2-inspection limit        | F-01, F-02    | FR-006, FR-007, FR-008, FR-009, US-01  | implemented |
+| S-02 | inspection-dashboard-lifecycle  | see, start, resume, and delete inspections; hit the 2-inspection limit        | F-01, F-02    | FR-006, FR-007, FR-008, FR-009, US-01  | done        |
 | S-03 | part-1-config-validation        | fill & validate Part 1 config and unlock Parts 2–5                            | S-02          | FR-011, FR-012, FR-013, US-01          | proposed    |
 | S-04 | personalized-question-engine    | open the session screen and see questions personalized to their car           | S-03          | FR-010, FR-014, US-01                  | proposed    |
 | S-05 | question-card-answering         | answer Parts 2–5 as swipeable cards, with education pop-ups and notes         | S-04          | FR-015, FR-017, FR-018, US-01          | proposed    |
@@ -136,7 +136,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Risk:** First user-visible domain slice; exercises F-01 (owner-private inspections) and F-02 (local-first persistence) end-to-end through a real create/resume/delete surface, validating both foundations before deeper flow work.
 - **Deploy note:** F-01's `inspections` migration was applied **locally only** — DB migrations are not in the Cloudflare Workers deploy pipeline. As the first slice that reads/writes `inspections`, S-02 must apply it to the hosted project before its UI ships: `npx supabase link --project-ref <ref>` then `npx supabase db push`. (See README → "Database schema & migrations".)
 - **Inherited from F-02 — closed deferred check 4.8 (2026-06-14):** F-02 had deferred its deployed workerd-parity smoke-test because the `inspections` table wasn't on hosted Supabase until this slice's `db push`. S-02 pushed both migrations to hosted Supabase and deployed; `npx wrangler tail` showed clean `/api/inspections/{create,sync}` round-trips on the deployed Worker with no Node-API runtime error, closing F-02's manual item 4.8. (See `context/changes/offline-first-persistence-layer/change.md` Follow-ups.)
-- **Status:** implemented
+- **Status:** done
 
 ### S-03: Part 1 config + validation + unlock
 
@@ -279,3 +279,4 @@ and lives in S-04, not here.
 ## Done
 
 - **S-01: user can view a public home page describing the 5-part inspection, with log in / register actions.** — Archived 2026-06-13 → `context/archive/2026-06-13-public-home-page/`. Lesson: —.
+- **S-02: user can see a tiled dashboard (Draft vs Completed), start a new inspection (with the startup instruction pop-up), resume or hard-delete a tile, and hit the 2-inspection-limit pop-up.** — Archived 2026-06-14 → `context/archive/2026-06-13-inspection-dashboard-lifecycle/`. Lesson: count-based DB-trigger limits aren't concurrency-safe; type-checked ESLint can crash on `.astro` frontmatter (see `context/foundation/lessons.md`).
