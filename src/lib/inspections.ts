@@ -29,6 +29,14 @@ export function hideStartupKey(userId: string): string {
   return `veriffica:hideStartupInstructions:${userId}`;
 }
 
+// Distinctive, stable message the `enforce_inspection_limit` trigger RAISEs when
+// the 2-per-owner cap is hit. The create endpoint matches on it to map the
+// rejection to 409 (match on message, not SQLSTATE — see the migration). Shared
+// from one place so the SQL message, the endpoint matcher, and the limit test
+// can't silently drift apart; `tests/inspections.limit.test.ts` asserts the DB
+// error contains this exact string, so rewording the trigger message fails CI.
+export const INSPECTION_LIMIT_ERROR = "inspection_limit_reached";
+
 // Create one draft inspection. The server stamps every field; we only need to
 // know the outcome. 201 -> the new id; 409 -> the 2-per-owner limit was hit (the
 // dashboard shows the limit pop-up); anything else -> a generic failure.

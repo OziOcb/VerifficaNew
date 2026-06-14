@@ -64,3 +64,34 @@ secret list`. Use real Worker secrets — not `wrangler.jsonc` `vars`/build vari
   `npm run dev` on port 4321. `npm run test:e2e` already does the build+wrangler step
   for the automated offline round-trip.
 - **Applies to**: implement, impl-review
+
+## Count-based limits in DB triggers are not concurrency-safe — acceptable only at trivial scale
+
+- **Context**: Enforcing a per-owner row cap (e.g. the 2-inspection limit) via a
+  BEFORE INSERT trigger that does `select count(*) ... >= N` —
+  `supabase/migrations/20260613204306_inspections_two_limit.sql:20`.
+- **Problem**: count-then-insert has no lock (TOCTOU): two concurrent inserts for
+  the same owner both read count=N-1 and both succeed, exceeding the cap. Blast
+  radius is one extra row, never cross-owner.
+- **Rule**: For single-user/single-device apps at trivial scale, a count-in-trigger
+  cap is acceptable IF paired with a client-side in-flight guard (a `busy` flag) —
+  document the residual race as a known limitation. When a hard guarantee is needed,
+  enforce with a partial unique index / exclusion constraint or `select ... for
+update`, not a bare count.
+- **Applies to**: plan, plan-review, implement, impl-review
+
+## Type-checked ESLint rules can crash on `.astro` frontmatter — scope them off for `.astro`, don't fight the parser
+
+- **Context**: A top-level `return Astro.redirect(...)` (data-dependent SSR
+  redirect) in `.astro` frontmatter — e.g. `src/pages/inspections/[id].astro` —
+  with `@typescript-eslint` type-checked rules enabled via astro-eslint-parser
+  (`eslint.config.js`).
+- **Problem**: `@typescript-eslint/no-misused-promises` throws (not just warns) on
+  that return: astro-eslint-parser gives the return node no enclosing-function
+  parent, so the rule's `nullThrows` blows up and breaks `npm run lint` entirely.
+- **Rule**: When a type-checked TS rule crashes (not misfires) on `.astro`
+  frontmatter, disable that specific rule inside the `.astro` ESLint config block
+  rather than rewriting valid frontmatter to appease it — astro-eslint-parser has
+  known type-info gaps. Keep the disable narrow (one rule, `.astro` only) and
+  comment why.
+- **Applies to**: implement, impl-review
