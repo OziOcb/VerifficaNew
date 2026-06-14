@@ -285,7 +285,7 @@ Add the `@vite-pwa/astro` service worker so the app shell loads on a real offlin
 - [ ] In a built+previewed app, with the network set offline in DevTools, **reloading `/offline-demo` still loads the app shell** (not the browser's offline error page).
 - [ ] A record saved offline is still present after the offline reload, and syncs (`synced: 1`) on reconnect.
 - [ ] Signing out/in still works — the SW did not cache `/api/auth/*` or a stale authenticated shell.
-- [ ] Deployed endpoint smoke-tested with `npx wrangler tail` (workerd parity, `lessons.md`) — no Node-API runtime error from the sync route.
+- [x] Deployed endpoint smoke-tested with `npx wrangler tail` (workerd parity, `lessons.md`) — no Node-API runtime error from the sync route. (Closed by S-02; clean `/api/inspections/{create,sync}` round-trips on the deployed Worker, 2026-06-14.)
 
 **Implementation Note**: After automated + manual verification passes, F-02 is complete; update `change.md` status and the roadmap F-02 status.
 
@@ -383,4 +383,4 @@ No DB migration in F-02 — it round-trips against F-01's existing `inspections`
 - [x] 4.5 Offline reload of `/offline-demo` loads the app shell (not the browser offline page) — 083946a
 - [x] 4.6 Record saved offline survives the reload and syncs on reconnect — 083946a
 - [x] 4.7 Sign out/in still works (SW did not cache auth routes / stale shell) — 083946a
-- [ ] 4.8 Deployed sync endpoint smoke-tested with `wrangler tail` (workerd parity)
+- [x] 4.8 Deployed sync endpoint smoke-tested with `wrangler tail` (workerd parity) — closed by S-02
