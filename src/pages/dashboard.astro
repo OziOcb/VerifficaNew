@@ -1,27 +1,65 @@
 ---
+import camelcaseKeys from "camelcase-keys";
 import Layout from "@/layouts/Layout.astro";
+import DashboardBoard from "@/components/dashboard/DashboardBoard";
+import SignOutButton from "@/components/dashboard/SignOutButton";
+import { createClient } from "@/lib/supabase";
+import type { Inspection } from "@/lib/inspections";
 
+// SSR read surface (NOT offline-first): fetch this owner's inspections under RLS
+// at render — exactly like middleware's server client — then convert the
+// snake_case rows to camelCase at this single boundary (lessons.md "Field
+// casing") before handing them to the island. This frontmatter must never import
+// @/lib/db / @/lib/sync (Dexie has no global on workerd).
 const { user } = Astro.locals;
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+
+let inspections: Inspection[] = [];
+let configured = true;
+if (supabase) {
+  const { data } = await supabase
+    .from("inspections")
+    .select("id,status,name,created_at,updated_at")
+    .order("created_at", { ascending: false });
+  inspections = camelcaseKeys(data ?? [], { deep: true });
+} else {
+  configured = false;
+}
 ---
 
 <Layout title="Dashboard">
-  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
-    <div class="rounded-2xl border border-white/10 bg-white/10 p-8 text-center text-white backdrop-blur-xl">
-      <h1 class="mb-4 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-3xl font-bold text-transparent">
-        Dashboard
-      </h1>
-      <p class="text-blue-100/80">
-        Welcome, <span class="font-semibold text-white">{user?.email}</span>
-      </p>
-      <p class="mt-2 text-sm text-blue-100/50">This page is only for authenticated users.</p>
-      <form method="POST" action="/api/auth/signout" class="mt-6">
-        <button
-          type="submit"
-          class="rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm transition-colors hover:bg-white/20"
-        >
-          Sign out
-        </button>
-      </form>
+  {/* Cosmic shell — matches the public home page (Home.astro). */}
+  <div class="bg-cosmic relative min-h-screen w-full overflow-hidden">
+    <div
+      class="pointer-events-none absolute top-1/4 -left-24 h-[350px] w-[350px] rounded-full bg-purple-500/20 blur-[120px]"
+    >
+    </div>
+    <div
+      class="pointer-events-none absolute top-2/3 -right-16 h-[250px] w-[250px] rounded-full bg-blue-500/15 blur-[100px]"
+    >
+    </div>
+    <div
+      class="pointer-events-none absolute inset-0"
+      style="background-image: radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px), radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 200px 200px, 150px 150px; background-position: 0 0, 40px 60px;"
+    >
+    </div>
+
+    <div class="relative z-10 p-4 sm:p-8">
+      {
+        configured ? (
+          <div class="mx-auto max-w-3xl">
+            <div class="mb-4 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 backdrop-blur-xl">
+              <span class="text-blue-100/70">{user?.email}</span>
+              <SignOutButton client:only="react" />
+            </div>
+            <DashboardBoard client:load inspections={inspections} userId={user?.id ?? ""} />
+          </div>
+        ) : (
+          <div class="mx-auto max-w-3xl rounded-xl border border-white/10 bg-white/5 p-6 text-center text-blue-100/70 backdrop-blur-xl">
+            Supabase is not configured. Set SUPABASE_URL / SUPABASE_KEY to continue.
+          </div>
+        )
+      }
     </div>
   </div>
 </Layout>

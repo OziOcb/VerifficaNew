@@ -1,0 +1,35 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { createClient } from "@/lib/supabase";
+
+// Stub resume/start target (S-02). The real Part 1 / session screen is S-03/S-04.
+// SSR-load the inspection by id under RLS: a foreign or nonexistent id is hidden
+// by RLS and surfaces as null, so we redirect back to the dashboard rather than
+// rendering an empty shell. The route is protected via PROTECTED_ROUTES.
+const { id } = Astro.params;
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+
+const { data: inspection } = supabase
+  ? await supabase
+      .from("inspections")
+      .select("id,name")
+      .eq("id", id ?? "")
+      .maybeSingle()
+  : { data: null };
+
+if (!inspection) {
+  return Astro.redirect("/dashboard");
+}
+---
+
+<Layout title="Inspection">
+  <div class="bg-cosmic min-h-screen w-full">
+    <main class="mx-auto max-w-3xl p-4 sm:p-8">
+      <a href="/dashboard" class="text-sm text-purple-300 transition-colors hover:text-purple-100 hover:underline">
+        &larr; Back to dashboard
+      </a>
+      <h1 class="mt-4 text-2xl font-bold text-white">{inspection.name ?? "Inspection"}</h1>
+      <p class="mt-2 text-blue-100/60">Part 1 — coming in S-03.</p>
+    </main>
+  </div>
+</Layout>

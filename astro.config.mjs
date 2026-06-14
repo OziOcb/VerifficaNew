@@ -41,7 +41,7 @@ export default defineConfig({
           {
             // Server-rendered page navigations: NetworkFirst so online visits get
             // fresh SSR (including the session-stamped userId), while an offline
-            // reload of a previously-visited page (e.g. /offline-demo) is served
+            // reload of a previously-visited page (e.g. /inspections/{id}) is served
             // from cache. The island bundles are precached, so the page rehydrates
             // and reads Dexie offline. Never cache auth or protected routes
             // (research Decision #4) — they stay network-only.
