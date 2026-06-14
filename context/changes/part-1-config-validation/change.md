@@ -1,7 +1,7 @@
 ---
 change_id: part-1-config-validation
 title: Part 1 config form, validation & Parts 2–5 unlock
-status: new
+status: planned
 created: 2026-06-14
 updated: 2026-06-14
 archived_at: null
