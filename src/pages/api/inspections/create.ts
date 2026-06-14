@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { INSPECTION_LIMIT_ERROR } from "@/lib/inspections";
 import { createClient } from "@/lib/supabase";
 
 // Server-authoritative create of ONE draft inspection (S-02). The client sends
@@ -29,8 +30,8 @@ export const POST: APIRoute = async (context) => {
 
   if (error) {
     // The limit trigger raises this distinctive message — surface it as 409.
-    if (error.message.includes("inspection_limit_reached")) {
-      return new Response("inspection_limit_reached", { status: 409 });
+    if (error.message.includes(INSPECTION_LIMIT_ERROR)) {
+      return new Response(INSPECTION_LIMIT_ERROR, { status: 409 });
     }
     return new Response(error.message, { status: 400 });
   }

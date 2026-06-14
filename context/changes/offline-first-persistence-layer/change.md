@@ -3,7 +3,7 @@ change_id: offline-first-persistence-layer
 title: Offline-first persistence + sync contract
 status: implemented
 created: 2026-06-11
-updated: 2026-06-13
+updated: 2026-06-14
 archived_at: null
 ---
 
@@ -33,12 +33,11 @@ auth flow clears it. Two related cases, surfaced while testing the Phase 3 demo:
 - **Throwaway demo:** `/offline-demo` + `src/components/offline/OfflineDemo.tsx` are
   temporary verification surfaces; remove when S-02's dashboard subsumes them.
 
-- **Deferred check 4.8 (deployed workerd-parity smoke-test):** Phase 4's manual
-  item 4.8 — smoke-test the deployed `/api/inspections/sync` with `npx wrangler
-tail` — is **deferred to S-02**. F-02 round-trips against local Supabase; the
-  `inspections` migration isn't pushed to hosted Supabase until S-02, so a full
-  deployed round-trip isn't possible yet. Workerd parity is already evidenced
-  locally (the endpoint ran on workerd via `wrangler dev` throughout the e2e).
-  When S-02 pushes the migration and deploys, run `wrangler tail` against the
-  live `/api/inspections/sync` to close 4.8. F-02 stays `status: implementing`
-  until then.
+- **Deferred check 4.8 (deployed workerd-parity smoke-test) — CLOSED by S-02
+  (2026-06-14):** Phase 4's manual item 4.8 — smoke-test the deployed
+  `/api/inspections/sync` with `npx wrangler tail` — was **deferred to S-02**
+  because the `inspections` migration wasn't pushed to hosted Supabase until then.
+  S-02 pushed both migrations to hosted Supabase and deployed; `wrangler tail`
+  showed clean `/api/inspections/{create,sync}` round-trips on the deployed Worker
+  with no Node-API runtime error. 4.8 is now checked off and F-02 is fully
+  `implemented`.

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Database } from "@/db/database.types";
+import { INSPECTION_LIMIT_ERROR } from "@/lib/inspections";
 import { createConfirmedUser, deleteUser, signInAs } from "./helpers/supabase";
 
 // Proves the 2-inspection-per-owner cap (S-02 / FR-007) is enforced by the
@@ -36,10 +37,14 @@ describe("inspections 2-per-owner limit", () => {
     const second = await client.from("inspections").insert({ owner_id: userId, name: "second" }).select("id").single();
     expect(second.error).toBeNull();
 
-    // The 3rd insert trips the trigger and surfaces as a non-null error.
+    // The 3rd insert trips the trigger and surfaces as a non-null error. The
+    // message MUST contain the shared sentinel — this pins the trigger's RAISE
+    // text to the string `create.ts` maps to 409, so rewording the migration
+    // message (which would silently downgrade the limit case to a generic 400)
+    // fails CI here.
     const third = await client.from("inspections").insert({ owner_id: userId, name: "third" }).select();
     expect(third.error).not.toBeNull();
-    expect(third.error?.message).toContain("inspection_limit_reached");
+    expect(third.error?.message).toContain(INSPECTION_LIMIT_ERROR);
 
     // Deleting one row frees a slot, so a fresh insert succeeds again.
     const del = await client
