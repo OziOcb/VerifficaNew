@@ -48,7 +48,7 @@ is the _complete, reliable_ loop, not a partial demo.
 | F-02 | offline-first-persistence-layer | (foundation) local-first store + Change Queue + LWW sync round-trips a record | F-01          | FR-023, US-03                          | implemented |
 | S-01 | public-home-page                | view a public home page describing the inspection, with log in / register     | —             | FR-005, FR-024                         | implemented |
 | S-02 | inspection-dashboard-lifecycle  | see, start, resume, and delete inspections; hit the 2-inspection limit        | F-01, F-02    | FR-006, FR-007, FR-008, FR-009, US-01  | implemented |
-| S-03 | part-1-config-validation        | fill & validate Part 1 config and unlock Parts 2–5                            | S-02          | FR-011, FR-012, FR-013, US-01          | proposed    |
+| S-03 | part-1-config-validation        | fill & validate Part 1 config and unlock Parts 2–5                            | S-02          | FR-011, FR-012, FR-013, US-01          | in progress |
 | S-04 | personalized-question-engine    | open the session screen and see questions personalized to their car           | S-03          | FR-010, FR-014, US-01                  | proposed    |
 | S-05 | question-card-answering         | answer Parts 2–5 as swipeable cards, with education pop-ups and notes         | S-04          | FR-015, FR-017, FR-018, US-01          | proposed    |
 | S-06 | summary-scoring-finalize        | view the Summary distribution, edit inline, and finalize to Completed         | S-05          | FR-019, FR-020, FR-021, US-01          | proposed    |
@@ -148,7 +148,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Validation (FR-012) is detailed and rule-driven; gating Parts 2–5 here (FR-013) is the precondition for the personalization engine, so it must be correct before S-04.
-- **Status:** proposed
+- **Status:** in progress (branch `feat/part-1-config-validation`; GitHub #5, Linear VER-11)
 
 ### S-04: Session screen + personalized question generation
 
@@ -243,7 +243,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 | F-02       | offline-first-persistence-layer | Offline-first persistence + Change Queue + sync    | yes                   | Implemented — check 4.8 (deployed smoke-test) deferred to S-02 |
 | S-01       | public-home-page                | Public home page (product description + auth CTAs) | yes                   | Run `/10x-plan public-home-page`                               |
 | S-02       | inspection-dashboard-lifecycle  | Dashboard + inspection lifecycle (CRUD + limit)    | no                    | Needs F-01, F-02                                               |
-| S-03       | part-1-config-validation        | Part 1 config form, validation & Parts 2–5 unlock  | no                    | Needs S-02                                                     |
+| S-03       | part-1-config-validation        | Part 1 config form, validation & Parts 2–5 unlock  | in progress           | S-02 done; branch `feat/part-1-config-validation`              |
 | S-04       | personalized-question-engine    | Session screen + personalized question generation  | no                    | Needs S-03                                                     |
 | S-05       | question-card-answering         | Swipeable answer cards + education + notes         | no                    | Needs S-04                                                     |
 | S-06       | summary-scoring-finalize        | Summary distribution, inline edit & finalize       | no                    | North star; needs S-05                                         |

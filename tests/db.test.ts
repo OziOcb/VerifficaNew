@@ -17,6 +17,23 @@ function makeInspection(overrides: Partial<Inspection> = {}): Inspection {
     name: "Test inspection",
     createdAt: now,
     updatedAt: now,
+    // 15 Part 1 config columns: nullable in the DB but required keys on the
+    // widened `Inspection` type, so the fixture must list them (default null).
+    price: null,
+    make: null,
+    model: null,
+    year: null,
+    registrationNumber: null,
+    vin: null,
+    mileage: null,
+    fuelType: null,
+    transmission: null,
+    drive: null,
+    color: null,
+    bodyType: null,
+    doorCount: null,
+    address: null,
+    notes: null,
     synced: 0,
     ...overrides,
   };

@@ -33,10 +33,36 @@ export async function resetLocalStoreOnUserChange(userId: string): Promise<void>
   localStorage.setItem(LAST_OWNER_KEY, userId);
 }
 
+// The 15 Part 1 config columns (camelCase projection of the snake_case DB
+// columns). Non-indexed scalars, so no Dexie `db.version` bump is needed — the
+// `Inspection` type already carries them from the regenerated DB types, and the
+// sync endpoint's top-level snake⇄camel transform round-trips them for free.
+const CONFIG_FIELDS = [
+  "price",
+  "make",
+  "model",
+  "year",
+  "registrationNumber",
+  "vin",
+  "mileage",
+  "fuelType",
+  "transmission",
+  "drive",
+  "color",
+  "bodyType",
+  "doorCount",
+  "address",
+  "notes",
+] as const;
+
+type ConfigField = (typeof CONFIG_FIELDS)[number];
+
 // The minimal shape the caller supplies; the rest of the optimistic row is filled
 // locally. `ownerId`/`createdAt` are placeholders — the server stamps the
 // authoritative values and we adopt them on the way back (research Decision #1).
-type SaveInput = Pick<Inspection, "id"> & Partial<Pick<Inspection, "status" | "name" | "ownerId" | "createdAt">>;
+// The Part 1 config fields are optional: a save may carry some, all, or none.
+type SaveInput = Pick<Inspection, "id"> &
+  Partial<Pick<Inspection, "status" | "name" | "ownerId" | "createdAt" | ConfigField>>;
 
 /**
  * Optimistic local write + outbox enqueue, atomically. The `inspections.put` and
@@ -46,6 +72,10 @@ type SaveInput = Pick<Inspection, "id"> & Partial<Pick<Inspection, "status" | "n
  */
 export async function saveInspection(input: SaveInput): Promise<void> {
   const now = new Date().toISOString();
+  // Project the supplied config fields onto the row, defaulting any the caller
+  // omitted to `null` (the columns are nullable). `Inspection` makes all 15 keys
+  // required, so they must be present even when unset.
+  const config = Object.fromEntries(CONFIG_FIELDS.map((f) => [f, input[f] ?? null])) as Pick<Inspection, ConfigField>;
   const row: Inspection = {
     id: input.id,
     ownerId: input.ownerId ?? "", // server stamps the authoritative owner_id
@@ -53,6 +83,7 @@ export async function saveInspection(input: SaveInput): Promise<void> {
     name: input.name ?? null,
     createdAt: input.createdAt ?? now,
     updatedAt: now, // optimistic ordering hint; overwritten by the server's value
+    ...config,
     synced: 0,
   };
 

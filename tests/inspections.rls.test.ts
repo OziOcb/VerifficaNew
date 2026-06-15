@@ -103,4 +103,27 @@ describe("inspections RLS isolation", () => {
     expect(error).not.toBeNull(); // with-check policy violation is a real error
     expect(data).toBeNull();
   });
+
+  // The S-03 Part 1 config columns are part of the same row, so they inherit the
+  // identical owner-row isolation. Prove an owner can write+read their own config
+  // and that the other owner cannot read those config values back.
+  it("A can write its own Part 1 config and read it back", async () => {
+    const { data, error } = await aClient
+      .from("inspections")
+      .update({ make: "Toyota", model: "Corolla", fuel_type: "hybrid", year: 2020 })
+      .eq("id", aRowId)
+      .select("make, model, fuel_type, year")
+      .single();
+    expect(error).toBeNull();
+    expect(data?.make).toBe("Toyota");
+    expect(data?.model).toBe("Corolla");
+    expect(data?.fuel_type).toBe("hybrid");
+    expect(data?.year).toBe(2020);
+  });
+
+  it("B cannot read A's Part 1 config columns — RLS hides the whole row", async () => {
+    const { data, error } = await bClient.from("inspections").select("make, model, fuel_type, year").eq("id", aRowId);
+    expect(error).toBeNull();
+    expect(data).toEqual([]);
+  });
 });
