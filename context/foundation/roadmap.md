@@ -49,7 +49,7 @@ is the _complete, reliable_ loop, not a partial demo.
 | S-01 | public-home-page                | view a public home page describing the inspection, with log in / register     | —             | FR-005, FR-024                         | implemented |
 | S-02 | inspection-dashboard-lifecycle  | see, start, resume, and delete inspections; hit the 2-inspection limit        | F-01, F-02    | FR-006, FR-007, FR-008, FR-009, US-01  | implemented |
 | S-03 | part-1-config-validation        | fill & validate Part 1 config and unlock Parts 2–5                            | S-02          | FR-011, FR-012, FR-013, US-01          | implemented |
-| S-04 | personalized-question-engine    | open the session screen and see questions personalized to their car           | S-03          | FR-010, FR-014, US-01                  | proposed    |
+| S-04 | personalized-question-engine    | open the session screen and see questions personalized to their car           | S-03          | FR-010, FR-014, US-01                  | in progress |
 | S-05 | question-card-answering         | answer Parts 2–5 as swipeable cards, with education pop-ups and notes         | S-04          | FR-015, FR-017, FR-018, US-01          | proposed    |
 | S-06 | summary-scoring-finalize        | view the Summary distribution, edit inline, and finalize to Completed         | S-05          | FR-019, FR-020, FR-021, US-01          | proposed    |
 | S-07 | config-change-smart-pruning     | change config and keep valid answers while orphans are pruned (recompute)     | S-04, S-05    | FR-016, US-02                          | proposed    |
@@ -161,7 +161,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Runtime equipment-flag input affordance (inline gating question vs. toggle) — Owner: user/team. Block: no. (The config/flag layer separation is settled per FR-014; only the affordance is a downstream detail.)
 - **Risk:** This is the product wedge made real — the additive visibility model (FR-014) is the one trait that makes Veriffica more than a generic checklist; sequenced right after Part 1 because the saved config drives visibility. Carries the only open implementation detail (flag affordance), which is non-blocking.
-- **Status:** proposed
+- **Status:** in progress (branch `feat/personalized-question-engine`)
 
 ### S-05: Answer the personalized questions
 
@@ -244,7 +244,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 | S-01       | public-home-page                | Public home page (product description + auth CTAs) | yes                   | Run `/10x-plan public-home-page`                               |
 | S-02       | inspection-dashboard-lifecycle  | Dashboard + inspection lifecycle (CRUD + limit)    | no                    | Needs F-01, F-02                                               |
 | S-03       | part-1-config-validation        | Part 1 config form, validation & Parts 2–5 unlock  | in progress           | S-02 done; branch `feat/part-1-config-validation`              |
-| S-04       | personalized-question-engine    | Session screen + personalized question generation  | no                    | Needs S-03                                                     |
+| S-04       | personalized-question-engine    | Session screen + personalized question generation  | in progress           | S-03 done; branch `feat/personalized-question-engine`          |
 | S-05       | question-card-answering         | Swipeable answer cards + education + notes         | no                    | Needs S-04                                                     |
 | S-06       | summary-scoring-finalize        | Summary distribution, inline edit & finalize       | no                    | North star; needs S-05                                         |
 | S-07       | config-change-smart-pruning     | Smart Pruning on config change                     | no                    | Needs S-04, S-05                                               |
