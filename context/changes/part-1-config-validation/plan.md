@@ -324,13 +324,13 @@ The new migration must be applied to **hosted Supabase before this slice deploys
 
 #### Automated
 
-- [x] 2.1 Validation unit tests pass (`npm test`)
-- [x] 2.2 Lint + type check pass (`npm run lint`)
-- [x] 2.3 Every field rule, normalization, CF-1, and unlock predicate have accept + reject cases
+- [x] 2.1 Validation unit tests pass (`npm test`) — 89fa2b5
+- [x] 2.2 Lint + type check pass (`npm run lint`) — 89fa2b5
+- [x] 2.3 Every field rule, normalization, CF-1, and unlock predicate have accept + reject cases — 89fa2b5
 
 #### Manual
 
-- [x] 2.4 Normalized sample output matches rules doc §8 payload shape
+- [x] 2.4 Normalized sample output matches rules doc §8 payload shape — 89fa2b5
 
 ### Phase 3: Persistence Plumbing + Form Primitives
 
