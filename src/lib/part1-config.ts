@@ -103,11 +103,12 @@ const enumField = <const T extends readonly [string, ...string[]]>(values: T, me
 
 export const part1ConfigSchema = z
   .object({
-    // Optional decimal: comma→dot, max 2 fractional digits, 0…10,000,000,000.
+    // Optional decimal: comma→dot, max 2 fractional digits, 0…99,999,999.99
+    // (upper bound matches the DB column `price numeric(10,2)` — keep them in sync).
     price: z
       .string()
       .transform((s) => s.trim().replace(",", "."))
-      .refine((s) => s === "" || (/^\d+(\.\d{1,2})?$/.test(s) && Number(s) >= 0 && Number(s) <= 10_000_000_000), {
+      .refine((s) => s === "" || (/^\d+(\.\d{1,2})?$/.test(s) && Number(s) >= 0 && Number(s) <= 99_999_999.99), {
         message: M.price,
       })
       .transform((s) => (s === "" ? null : Number(s))),

@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ServerError } from "@/components/auth/ServerError";
 import { validatePart1, isConfigUnlocked, type Part1Field } from "@/lib/part1-config";
 import { saveInspection, flushQueue, startAutoSync } from "@/lib/sync";
 
@@ -190,6 +191,7 @@ export default function Part1Form({ inspection }: Props) {
   const [name, setName] = useState<string | null>(inspection.name);
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Focus targets for UX-3. Inputs register their <input>; selects register their
   // trigger button. Keyed by field id.
@@ -263,6 +265,7 @@ export default function Part1Form({ inspection }: Props) {
 
     setSaving(true);
     setErrors({});
+    setSaveError(null);
     const config = result.config;
     // Tile title (FR-006): Make + Model, plus Year + Registration when present.
     const autoName = [config.make, config.model, config.year, config.registrationNumber]
@@ -282,6 +285,11 @@ export default function Part1Form({ inspection }: Props) {
       void flushQueue();
       setName(autoName);
       setJustSaved(true);
+    } catch {
+      // The optimistic Dexie write failed (e.g. IndexedDB quota/blocked,
+      // private browsing). Nothing was persisted — surface it so the user
+      // knows the save did not take, rather than silently resetting.
+      setSaveError("Could not save on this device. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -362,6 +370,11 @@ export default function Part1Form({ inspection }: Props) {
             </Button>
             {justSaved && <span className="text-sm text-emerald-300">Saved.</span>}
           </div>
+          {saveError && (
+            <div className="mt-4">
+              <ServerError message={saveError} />
+            </div>
+          )}
         </CardContent>
       </Card>
 
