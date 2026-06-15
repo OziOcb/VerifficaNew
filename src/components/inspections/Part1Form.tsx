@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ServerError } from "@/components/auth/ServerError";
-import { validatePart1, isConfigUnlocked, type Part1Field } from "@/lib/part1-config";
+import { validatePart1, isConfigUnlocked, normalizeFieldOnBlur, type Part1Field } from "@/lib/part1-config";
 import { saveInspection, flushQueue, startAutoSync } from "@/lib/sync";
 
 // Cosmic glass palette — matches the dashboard/home shell. The shadcn primitives
@@ -246,6 +246,15 @@ export default function Part1Form({ inspection }: Props) {
   }
 
   function handleBlur(field: Part1Field) {
+    // Text fields with a blur normalizer (make, model, registration, color,
+    // address, notes) update live so the input reflects exactly what will be saved.
+    const normalized = normalizeFieldOnBlur(field, values[field]);
+    if (normalized !== values[field]) {
+      const next = { ...values, [field]: normalized };
+      setValues(next);
+      validateField(field, next);
+      return;
+    }
     validateField(field, values);
   }
 

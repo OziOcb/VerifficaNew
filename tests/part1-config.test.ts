@@ -106,8 +106,26 @@ describe("normalization (rules §8 payload shape)", () => {
       expect(result.config.color).toBe("Silver");
       expect(result.config.doorCount).toBe(5);
       expect(result.config.address).toBe("Warsaw, Poland");
-      // internal newline preserved, leading/trailing trimmed
-      expect(result.config.notes).toBe("line1\nline2");
+      // internal newline preserved, leading/trailing trimmed, first letter capitalized
+      expect(result.config.notes).toBe("Line1\nline2");
+    }
+  });
+
+  it("capitalizes the first letter of make, model, color, address and notes", () => {
+    const result = parse({
+      make: "toyota",
+      model: "corolla cross",
+      color: "silver",
+      address: "warsaw, poland",
+      notes: "seller claims full service history.",
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.config.make).toBe("Toyota");
+      expect(result.config.model).toBe("Corolla cross");
+      expect(result.config.color).toBe("Silver");
+      expect(result.config.address).toBe("Warsaw, poland");
+      expect(result.config.notes).toBe("Seller claims full service history.");
     }
   });
 });

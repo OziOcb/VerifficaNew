@@ -58,21 +58,35 @@ const collapse = (s: string): string => s.trim().replace(/\s+/g, " ");
 // enums, cast after a membership `.refine` to sidestep `.pipe`'s input-type
 // mismatch (a plain string is not assignable to a z.enum's literal-union input).
 
-const requiredText = (message: string, opts: { min: number; max: number }) =>
+// Capitalize the first character, leave the rest untouched ("toyota" → "Toyota").
+const capitalizeFirst = (s: string): string => (s.length > 0 ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+const requiredText = (message: string, opts: { min: number; max: number; capitalize?: boolean }) =>
   z
     .string()
-    .transform(collapse)
+    .transform((s) => {
+      const v = collapse(s);
+      return opts.capitalize ? capitalizeFirst(v) : v;
+    })
     .refine((s) => s.length >= opts.min && s.length <= opts.max, { message });
 
 const optionalText = (
   message: string,
-  opts: { min: number; max: number; collapseSpaces?: boolean; uppercase?: boolean; regex?: RegExp },
+  opts: {
+    min: number;
+    max: number;
+    collapseSpaces?: boolean;
+    uppercase?: boolean;
+    capitalize?: boolean;
+    regex?: RegExp;
+  },
 ) =>
   z
     .string()
     .transform((s) => {
       let v = opts.collapseSpaces === false ? s.trim() : collapse(s);
       if (opts.uppercase) v = v.toUpperCase();
+      if (opts.capitalize) v = capitalizeFirst(v);
       return v;
     })
     .refine(
@@ -112,8 +126,8 @@ export const part1ConfigSchema = z
         message: M.price,
       })
       .transform((s) => (s === "" ? null : Number(s))),
-    make: requiredText(M.make, { min: 1, max: 50 }),
-    model: requiredText(M.model, { min: 1, max: 60 }),
+    make: requiredText(M.make, { min: 1, max: 50, capitalize: true }),
+    model: requiredText(M.model, { min: 1, max: 60, capitalize: true }),
     // Year + Registration are OPTIONAL (PRD FR-013 lists only six required fields;
     // FR-006 uses them for the tile title only, not the question logic). They still
     // validate strictly when present. This diverges from the rules-doc §4 table,
@@ -130,14 +144,15 @@ export const part1ConfigSchema = z
     fuelType: enumField(FUEL_TYPES, M.fuelType),
     transmission: enumField(TRANSMISSIONS, M.transmission),
     drive: enumField(DRIVES, M.drive),
-    color: optionalText(M.color, { min: 1, max: 40 }),
+    color: optionalText(M.color, { min: 1, max: 40, capitalize: true }),
     bodyType: enumField(BODY_TYPES, M.bodyType),
     doorCount: optionalInt(M.doorCount, { min: 0, max: 7 }),
-    address: optionalText(M.address, { min: 5, max: 150 }),
-    // Notes preserve internal line breaks; only leading/trailing whitespace is trimmed.
+    address: optionalText(M.address, { min: 5, max: 150, capitalize: true }),
+    // Notes preserve internal line breaks; only leading/trailing whitespace is
+    // trimmed, then the first letter is capitalized.
     notes: z
       .string()
-      .transform((s) => s.trim())
+      .transform((s) => capitalizeFirst(s.trim()))
       .refine((s) => s.length <= 1000, { message: M.notes })
       .transform((s) => (s === "" ? null : s)),
   })
@@ -158,6 +173,31 @@ export type Part1Field = keyof Part1Config;
 export type Part1ValidationResult =
   | { ok: true; config: Part1Config }
   | { ok: false; errors: Partial<Record<Part1Field, string>> };
+
+// Per-field display normalizers applied on blur so the input reflects exactly what
+// will be persisted, without a full-form parse. Each mirrors the STRING part of its
+// schema transform (they keep the value a string — no empty→null/number coercion,
+// since the field stays text in the form). Fields not listed are left untouched on
+// blur (e.g. enums, numeric inputs, VIN — normalized on Save only).
+const BLUR_NORMALIZERS: Partial<Record<Part1Field, (s: string) => string>> = {
+  make: (s) => capitalizeFirst(collapse(s)),
+  model: (s) => capitalizeFirst(collapse(s)),
+  registrationNumber: (s) => collapse(s).toUpperCase(),
+  color: (s) => capitalizeFirst(collapse(s)),
+  address: (s) => capitalizeFirst(collapse(s)),
+  notes: (s) => capitalizeFirst(s.trim()),
+};
+
+/**
+ * Normalize a single field's display value on blur, mirroring its schema transform
+ * (e.g. Make/Model → collapse + capitalize; Registration → collapse + uppercase;
+ * Color/Address → collapse; Notes → trim). Returns the value unchanged for fields
+ * without a blur normalizer.
+ */
+export function normalizeFieldOnBlur(field: Part1Field, value: string): string {
+  const fn = BLUR_NORMALIZERS[field];
+  return fn ? fn(value) : value;
+}
 
 /**
  * Validate + normalize raw form values. On success, `config` is the rules §8
