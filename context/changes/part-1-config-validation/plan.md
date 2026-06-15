@@ -348,15 +348,15 @@ The new migration must be applied to **hosted Supabase before this slice deploys
 
 #### Automated
 
-- [x] 4.1 Lint + type check pass (`npm run lint`)
-- [x] 4.2 `astro sync` + build succeed (`npx astro sync && npm run build`)
-- [x] 4.3 Full test suite green (`npm test`)
+- [x] 4.1 Lint + type check pass (`npm run lint`) — b795f8b
+- [x] 4.2 `astro sync` + build succeed (`npx astro sync && npm run build`) — b795f8b
+- [x] 4.3 Full test suite green (`npm test`) — b795f8b
 
 #### Manual
 
-- [x] 4.4 Save with missing required fields scrolls to + focuses first invalid; inline errors; Parts 2–5 disabled
-- [x] 4.5 Electric + Manual save shows CF-1 message and stays locked
-- [x] 4.6 All six required valid → save unlocks Parts 2–5 and sets name to `Make Model`
-- [x] 4.7 Reload shows saved normalized config (uppercased VIN/registration, enums pre-selected)
-- [x] 4.8 Empty optional persists null; invalid optional blocks save with its message
-- [x] 4.9 Dashboard tile reflects the new auto-name
+- [x] 4.4 Save with missing required fields scrolls to + focuses first invalid; inline errors; Parts 2–5 disabled — b795f8b
+- [x] 4.5 Electric + Manual save shows CF-1 message and stays locked — b795f8b
+- [x] 4.6 All six required valid → save unlocks Parts 2–5 and sets name to `Make Model` — b795f8b
+- [x] 4.7 Reload shows saved normalized config (uppercased VIN/registration, enums pre-selected) — b795f8b
+- [x] 4.8 Empty optional persists null; invalid optional blocks save with its message — b795f8b
+- [x] 4.9 Dashboard tile reflects the new auto-name — b795f8b
