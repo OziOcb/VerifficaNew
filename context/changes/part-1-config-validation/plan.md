@@ -126,8 +126,8 @@ Encode `idea/veriffica-part-1-validation-rules.md` as a single Zod schema that v
 // VIN: optional, but exactly 17 chars from a restricted alphabet WHEN present.
 // Excludes I, O, Q. Normalize (trim+uppercase) BEFORE the regex test.
 vin: /^[A-HJ-NPR-Z0-9]{17}$/;
-// year upper bound is dynamic: <= current year + 1
-const maxYear = new Date().getFullYear() + 1; // lower bound 1886
+// year upper bound is dynamic: <= current year
+const maxYear = new Date().getFullYear(); // lower bound 1886
 ```
 
 #### 3. Validation unit tests
@@ -348,15 +348,15 @@ The new migration must be applied to **hosted Supabase before this slice deploys
 
 #### Automated
 
-- [ ] 4.1 Lint + type check pass (`npm run lint`)
-- [ ] 4.2 `astro sync` + build succeed (`npx astro sync && npm run build`)
-- [ ] 4.3 Full test suite green (`npm test`)
+- [x] 4.1 Lint + type check pass (`npm run lint`)
+- [x] 4.2 `astro sync` + build succeed (`npx astro sync && npm run build`)
+- [x] 4.3 Full test suite green (`npm test`)
 
 #### Manual
 
-- [ ] 4.4 Save with missing required fields scrolls to + focuses first invalid; inline errors; Parts 2–5 disabled
-- [ ] 4.5 Electric + Manual save shows CF-1 message and stays locked
-- [ ] 4.6 All six required valid → save unlocks Parts 2–5 and sets name to `Make Model`
-- [ ] 4.7 Reload shows saved normalized config (uppercased VIN/registration, enums pre-selected)
-- [ ] 4.8 Empty optional persists null; invalid optional blocks save with its message
-- [ ] 4.9 Dashboard tile reflects the new auto-name
+- [x] 4.4 Save with missing required fields scrolls to + focuses first invalid; inline errors; Parts 2–5 disabled
+- [x] 4.5 Electric + Manual save shows CF-1 message and stays locked
+- [x] 4.6 All six required valid → save unlocks Parts 2–5 and sets name to `Make Model`
+- [x] 4.7 Reload shows saved normalized config (uppercased VIN/registration, enums pre-selected)
+- [x] 4.8 Empty optional persists null; invalid optional blocks save with its message
+- [x] 4.9 Dashboard tile reflects the new auto-name

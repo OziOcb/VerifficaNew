@@ -44,9 +44,9 @@ const BODY_TYPES = ["sedan", "hatchback", "suv", "coupe", "convertible", "van", 
 const VIN_RE = /^[A-HJ-NPR-Z0-9]{17}$/;
 // Registration: letters, digits, spaces, hyphen; 2-15 chars (after uppercasing).
 const REGISTRATION_RE = /^[A-Z0-9 -]{2,15}$/;
-// Year upper bound is dynamic — next model year is plausible; lower bound 1886.
+// Year upper bound is dynamic — the current year (no future years); lower bound 1886.
 const MIN_YEAR = 1886;
-const MAX_YEAR = new Date().getFullYear() + 1;
+const MAX_YEAR = new Date().getFullYear();
 
 // Trim + collapse runs of whitespace to a single space (rules "collapse repeated spaces").
 const collapse = (s: string): string => s.trim().replace(/\s+/g, " ");
@@ -83,13 +83,6 @@ const optionalText = (
     )
     .transform((s) => (s === "" ? null : s));
 
-const requiredInt = (message: string, opts: { min: number; max: number }) =>
-  z
-    .string()
-    .transform((s) => s.trim())
-    .refine((s) => /^\d+$/.test(s) && Number(s) >= opts.min && Number(s) <= opts.max, { message })
-    .transform((s) => Number(s));
-
 const optionalInt = (message: string, opts: { min: number; max: number; stripSpaces?: boolean }) =>
   z
     .string()
@@ -110,21 +103,27 @@ const enumField = <const T extends readonly [string, ...string[]]>(values: T, me
 
 export const part1ConfigSchema = z
   .object({
-    // Optional decimal: comma→dot, max 2 fractional digits, 0…10,000,000.
+    // Optional decimal: comma→dot, max 2 fractional digits, 0…10,000,000,000.
     price: z
       .string()
       .transform((s) => s.trim().replace(",", "."))
-      .refine((s) => s === "" || (/^\d+(\.\d{1,2})?$/.test(s) && Number(s) >= 0 && Number(s) <= 10_000_000), {
+      .refine((s) => s === "" || (/^\d+(\.\d{1,2})?$/.test(s) && Number(s) >= 0 && Number(s) <= 10_000_000_000), {
         message: M.price,
       })
       .transform((s) => (s === "" ? null : Number(s))),
     make: requiredText(M.make, { min: 1, max: 50 }),
     model: requiredText(M.model, { min: 1, max: 60 }),
-    year: requiredInt(M.year, { min: MIN_YEAR, max: MAX_YEAR }),
-    registrationNumber: z
-      .string()
-      .transform((s) => collapse(s).toUpperCase())
-      .refine((s) => REGISTRATION_RE.test(s), { message: M.registrationNumber }),
+    // Year + Registration are OPTIONAL (PRD FR-013 lists only six required fields;
+    // FR-006 uses them for the tile title only, not the question logic). They still
+    // validate strictly when present. This diverges from the rules-doc §4 table,
+    // which marked them Required — the PRD is authoritative.
+    year: optionalInt(M.year, { min: MIN_YEAR, max: MAX_YEAR }),
+    registrationNumber: optionalText(M.registrationNumber, {
+      min: 2,
+      max: 15,
+      uppercase: true,
+      regex: REGISTRATION_RE,
+    }),
     vin: optionalText(M.vin, { min: 17, max: 17, collapseSpaces: false, uppercase: true, regex: VIN_RE }),
     mileage: optionalInt(M.mileage, { min: 0, max: 9_999_999, stripSpaces: true }),
     fuelType: enumField(FUEL_TYPES, M.fuelType),
@@ -132,7 +131,7 @@ export const part1ConfigSchema = z
     drive: enumField(DRIVES, M.drive),
     color: optionalText(M.color, { min: 1, max: 40 }),
     bodyType: enumField(BODY_TYPES, M.bodyType),
-    doorCount: optionalInt(M.doorCount, { min: 1, max: 9 }),
+    doorCount: optionalInt(M.doorCount, { min: 0, max: 7 }),
     address: optionalText(M.address, { min: 5, max: 150 }),
     // Notes preserve internal line breaks; only leading/trailing whitespace is trimmed.
     notes: z
