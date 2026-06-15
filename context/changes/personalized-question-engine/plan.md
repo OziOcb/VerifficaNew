@@ -27,10 +27,12 @@ per-Part visible **counts**, the Total Score denominator, and the completion ind
   nullable, snake_case columns; the four visibility-driving columns
   (`fuel_type`/`transmission`/`drive`/`body_type`) carry CHECK constraints whose lowercase
   values are identical to the catalogue's `visibleWhen` enum values — **no mapping layer
-  needed**. `src/lib/part1-config.ts:37-41` exports `FUEL_TYPES`/`TRANSMISSIONS`/`DRIVES`/
-  `BODY_TYPES` as `as const` tuples — these are the join key. `isConfigUnlocked(input)`
-  (`part1-config.ts:226-229`) is the full-schema gate the session screen must reuse to
-  decide whether Parts 2–5 are reachable.
+  needed**. (`src/lib/part1-config.ts:38-41` keeps `FUEL_TYPES`/`TRANSMISSIONS`/`DRIVES`/
+  `BODY_TYPES` as module-private `as const` tuples — **not exported**; the engine reads its
+  own enums from the catalogue JSON, and the CHECK-enum ↔ `visibleWhen` value match is the
+  join, not a shared import. Export the tuples from `part1-config.ts` first if a shared
+  source is wanted later.) `isConfigUnlocked(input)` (`part1-config.ts:227`) is the
+  full-schema gate the session screen must reuse to decide whether Parts 2–5 are reachable.
 - **Route + sync template is proven.** `src/pages/inspections/[id].astro:18-44` SSR-loads
   the row, runs it through `camelcaseKeys`, and hands a camelCase prop to a `client:only`
   React island. The Dexie store (`src/lib/db.ts`) is camelCase-typed off the generated DB
@@ -163,10 +165,28 @@ explanation resolver. Must stay server-safe (no `@/lib/db` import) so it is impo
   question counts for the nav.
 - `resolveExplanation(ref): string | null` — `explanationRef` → `explanations[ref].text`
   (for S-05; S-04 only wires it).
+- `activeFlagsFromInspection(row): Set<RuntimeFlag>` — builds the active-flag set the
+  predicate consumes from the camelCased inspection row, via an **explicit column↔flag
+  map** (not incidental casing agreement). This is the one place that bridges DB column
+  names and catalogue flag names; see the casing note below.
+- `relevantFlags(config): Set<RuntimeFlag>` — which equipment flags the config makes
+  relevant, **derived from the catalogue** (Phase 4 toggle filter): a flag X is relevant iff
+  some group with `requiresEquipmentFlag === X` becomes visible when X is forced active. Reuses
+  `isGroupVisible`, so the toggle UI carries no hand-coded fuel rules to drift.
 - Types `QuestionGroup`, `Question`, `RuntimeFlag`, and a `RuntimeFlags` set/record type.
   `config` is typed as `Pick<Part1Config, "fuelType"|"transmission"|"drive"|"bodyType">`
   (nullable-tolerant — a missing axis fails its predicate, never throws).
   The 5 flag names come from `visibilityModel.runtimeFlags`; reuse them, don't redeclare.
+
+**Casing gotcha (the reason `activeFlagsFromInspection` uses an explicit map):** the catalogue
+
+- PRD (FR-014) canonically spell one flag `importedFromEU` (all-caps EU), but its DB column
+  `imported_from_eu` camelCases to `importedFromEu` — they do **not** match. The other 4 flags
+  round-trip only by luck of having no acronym. So the active-flag set must be built through an
+  explicit `{ chargingPortEquipped, evBatteryDocsAvailable, turboEquipped,
+mechanicalCompressorEquipped, importedFromEu→"importedFromEU" }` column→flag map, NOT by
+  reading `row[flagName]`. `importedFromEU` stays the single canonical spelling in the
+  catalogue/schema/PRD; only this binding layer knows about the column-side `importedFromEu`.
 
 Predicate core (the one non-obvious contract other phases + S-07 depend on):
 
@@ -194,7 +214,11 @@ includes/excludes the right groups; empty buckets (`2wd`, `sedan`/`hatchback`/`c
 `other`) yield no extra groups; a `requiresEquipmentFlag` group is hidden until its flag is
 active; the EV cross-case (electric ⇒ no turbo/compressor groups even if those flags were
 somehow set, because the fuel axis already excludes them). Assert the frozen catalogue
-parses and the counts/IDs are stable.
+parses and the counts/IDs are stable. **Flag-binding symmetry**: assert every
+`visibilityModel.runtimeFlags` name has a backing column entry in the
+`activeFlagsFromInspection` map and vice-versa (this is the guard that catches the
+`importedFromEU`↔`importedFromEu` mismatch and any future flag drift), and that an
+inspection row with `importedFromEu: true` activates the `importedFromEU` catalogue flag.
 
 ### Success Criteria:
 
@@ -235,7 +259,10 @@ additive). No RLS change — the existing owner-scoped policies cover new column
 **Contract**: Adds `global_notes text` and `charging_port_equipped`,
 `ev_battery_docs_available`, `turbo_equipped`, `mechanical_compressor_equipped`,
 `imported_from_eu` as `boolean` (nullable, no default — "unset" is meaningful vs explicit
-false). The 10,000-char limit on `global_notes` is enforced app-side (mirroring how Part 1
+false). Note `imported_from_eu` camelCases to `importedFromEu`, which the
+`activeFlagsFromInspection` map (Phase 1 §2) binds to the catalogue's `importedFromEU` flag —
+do not expect the column to match the catalogue name directly. The 10,000-char limit on
+`global_notes` is enforced app-side (mirroring how Part 1
 `notes` length is Zod-enforced, not a DB CHECK).
 
 #### 2. Regenerated DB types
@@ -253,12 +280,22 @@ camelCase fields with no hand-written interface.
 **File**: `src/lib/sync.ts`
 
 **Intent**: Let `saveInspection` carry the new fields so the session screen can persist
-global notes and flag toggles through the existing outbox.
+global notes and flag toggles through the existing outbox — **without clobbering** the
+Part 1 config the session screen does not re-send.
 
-**Contract**: Add the 5 flag keys + `globalNotes` to the `CONFIG_FIELDS` projection (or an
-analogous list) so they default to `null` when omitted and round-trip through the sync
-endpoint unchanged. The sync endpoint needs **no change** — its top-level snake⇄camel
-transform already handles any scalar column.
+**Contract**: Today `saveInspection` rebuilds a full row, defaulting every omitted
+`CONFIG_FIELD` to `null`, then upserts the whole row (`sync.ts:78`) — so a sparse
+`saveInspection({ id, globalNotes })` from the session screen would null `fuelType`/
+`transmission`/`make`/… and destroy the config the engine reads (No-data-loss guardrail
+violation). **Change `saveInspection` to read-merge**: inside the existing `rw`
+transaction, read the current Dexie row (if any) and overlay only the caller-supplied
+keys, so omitted fields keep their stored value instead of becoming `null`. First-write
+(no existing row) keeps today's null-default behavior. The merged row is the outbox
+payload, so the upsert still carries a complete row. Extend the recognized field set with
+the 5 flag keys + `globalNotes`. Part1Form's full-config call is unaffected (a no-op under
+merge). The sync endpoint needs **no change** — its top-level snake⇄camel transform
+already handles any scalar column. Add a unit test asserting a notes-only save preserves a
+pre-existing config.
 
 ### Success Criteria:
 
@@ -267,6 +304,7 @@ transform already handles any scalar column.
 - [ ] Migration applies cleanly against the local DB (`npx supabase db reset` or `migration up`)
 - [ ] `src/db/database.types.ts` regenerated and includes the new columns
 - [ ] Existing sync/RLS tests still pass: `npm test`
+- [ ] A notes-only `saveInspection` preserves a pre-existing config (read-merge), asserted in a test
 - [ ] Lint + build pass: `npm run lint && npm run build`
 
 #### Manual Verification:
@@ -311,12 +349,18 @@ totalVisible }`. The 80 KB bank never reaches the client.
 links back to the config form, Parts 2–5 to their routes with per-Part visible counts);
 Total Score as a Yes/No/Don't-know distribution (empty/0% with no answers); a completion
 indicator (0 of `totalVisible`); and the 10,000-char global notes textarea. Mount
-`startAutoSync` on mount; persist notes via `saveInspection({ id, globalNotes })` (debounced).
+`startAutoSync` on mount; persist notes via `saveInspection({ id, globalNotes })` (debounced) —
+a safe sparse update now that `saveInspection` read-merges (Phase 2 §3), so it never
+clobbers the config.
 
 **Contract**: `client:only="react"` island (touches Dexie via `saveInspection`). Notes
 input enforces the 10,000-char limit client-side with the same family of inline error copy
 as Part 1. Total Score + completion read `totalVisible` as the denominator so they never
 drift from what the nav shows. Uses `useLiveQuery` to reflect the locally-saved row.
+**0-answer render (US-01, `prd.md:95` — score/completion reflect only answered questions):**
+with no answer store yet, answered = 0, so completion renders `0 of {totalVisible}` and the
+Total Score renders an empty Yes/No/Don't-know distribution (all three counts 0, denominator
+`totalVisible`) — not a blank or a single "0%". S-05 fills the numerators; the layout stays.
 
 #### 3. Placeholder Part 2–5 routes
 
@@ -380,12 +424,18 @@ turbo/compressor for an EV, hide charging-port/EV-docs for a combustion car; `im
 always shown). Each toggle persists via `saveInspection` and updates the active-flag set the
 predicate consumes.
 
-**Contract**: Flag relevance derived from the config (the same fuel/axis logic the
-catalogue encodes), so an EV never sees a turbo toggle. Toggling writes the boolean column
-(Phase 2) and recomputes visibility **client-side** from the catalogue's group rules for the
-already-rendered set — counts + denominator update without a server round-trip. (Because the
-island received the full per-Part group set filtered only by config, flag re-filtering is a
-local set operation; alternatively re-fetch — pick the local recompute to keep it instant.)
+**Contract**: Flag relevance is **derived from the catalogue, not hand-coded.** Add a pure
+engine helper `relevantFlags(config): Set<RuntimeFlag>` (Phase 1 §2) — a flag X is relevant
+iff some group with `requiresEquipmentFlag === X` becomes visible when X is forced active
+(its `visibleWhen` axes still evaluated against `config`). This reuses the existing
+`isGroupVisible` logic, so there is **no second copy of the fuel-axis rules to drift** (the
+duplication the plan's Open Risks flagged). An EV never sees a turbo toggle because the
+turbo-gated groups' fuel axis already excludes electric — the same fact the visibility engine
+already encodes. Toggling writes the boolean column (Phase 2) and recomputes visibility
+**client-side** from the catalogue's group rules for the already-rendered set — counts +
+denominator update without a server round-trip. (Because the island received the full per-Part
+group set filtered only by config, flag re-filtering is a local set operation; alternatively
+re-fetch — pick the local recompute to keep it instant.)
 
 #### 2. Recompute wiring
 
@@ -493,12 +543,13 @@ migrations are not in the Cloudflare deploy pipeline (see S-02 deploy note).
 - [ ] 2.1 Migration applies cleanly against the local DB
 - [ ] 2.2 `src/db/database.types.ts` regenerated, includes the new columns
 - [ ] 2.3 Existing sync/RLS tests still pass: `npm test`
-- [ ] 2.4 Lint + build pass: `npm run lint && npm run build`
+- [ ] 2.4 A notes-only `saveInspection` preserves a pre-existing config (read-merge), asserted in a test
+- [ ] 2.5 Lint + build pass: `npm run lint && npm run build`
 
 #### Manual
 
-- [ ] 2.5 `saveInspection` round-trips `globalNotes` + a flag through `/api/inspections/sync`
-- [ ] 2.6 RLS still isolates the new columns from a second account
+- [ ] 2.6 `saveInspection` round-trips `globalNotes` + a flag through `/api/inspections/sync`
+- [ ] 2.7 RLS still isolates the new columns from a second account
 
 ### Phase 3: Session screen hub (FR-010)
 
