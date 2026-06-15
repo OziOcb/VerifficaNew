@@ -80,6 +80,13 @@ secret list`. Use real Worker secrets — not `wrangler.jsonc` `vars`/build vari
 update`, not a bare count.
 - **Applies to**: plan, plan-review, implement, impl-review
 
+## Use `implemented` (not `done`) when closing a roadmap item
+
+- **Context**: /10x-archive edits to `context/foundation/roadmap.md` — specifically the `## At a glance` table Status cell and the `### <ID>:` body `- **Status:**` line.
+- **Problem**: /10x-archive used `done` (borrowed from the `## Done` section's prose convention) instead of `implemented`, mismatching all other completed items (F-01, F-02, S-01, S-02) and breaking the table as a reliable status index.
+- **Rule**: When closing a roadmap item, set Status to `implemented` in both the `## At a glance` table cell and the `### <ID>:` body line. The `## Done` section bullet uses prose ("Archived …") and is separate — do not conflate the two conventions.
+- **Applies to**: archive
+
 ## Type-checked ESLint rules can crash on `.astro` frontmatter — scope them off for `.astro`, don't fight the parser
 
 - **Context**: A top-level `return Astro.redirect(...)` (data-dependent SSR
