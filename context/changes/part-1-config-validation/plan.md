@@ -336,13 +336,13 @@ The new migration must be applied to **hosted Supabase before this slice deploys
 
 #### Automated
 
-- [ ] 3.1 Type check + lint pass with widened `SaveInput` + new components (`npm run lint`)
-- [ ] 3.2 Existing sync/db unit tests still pass (`npm test`)
-- [ ] 3.3 `astro sync` passes
+- [x] 3.1 Type check + lint pass with widened `SaveInput` + new components (`npm run lint`)
+- [x] 3.2 Existing sync/db unit tests still pass (`npm test`)
+- [x] 3.3 `astro sync` passes
 
 #### Manual
 
-- [ ] 3.4 `saveInspection` with config + `flushQueue` writes config columns to Supabase
+- [x] 3.4 `saveInspection` with config + `flushQueue` writes config columns to Supabase
 
 ### Phase 4: Part 1 Form Island + Unlock
 
