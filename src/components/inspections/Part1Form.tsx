@@ -474,7 +474,7 @@ function EnumFieldRow({ field, value, error, required, options, onChange, regist
         {LABELS[field]}
         {required && <span className="text-red-300"> *</span>}
       </Label>
-      <Select value={value || undefined} onValueChange={onChange}>
+      <Select value={value} onValueChange={onChange}>
         <SelectTrigger
           id={field}
           ref={(el) => {
