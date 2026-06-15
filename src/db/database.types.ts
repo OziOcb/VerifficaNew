@@ -36,28 +36,73 @@ export type Database = {
     Tables: {
       inspections: {
         Row: {
+          address: string | null
+          body_type: string | null
+          color: string | null
           created_at: string
+          door_count: number | null
+          drive: string | null
+          fuel_type: string | null
           id: string
+          make: string | null
+          mileage: number | null
+          model: string | null
           name: string | null
+          notes: string | null
           owner_id: string
+          price: number | null
+          registration_number: string | null
           status: string
+          transmission: string | null
           updated_at: string
+          vin: string | null
+          year: number | null
         }
         Insert: {
+          address?: string | null
+          body_type?: string | null
+          color?: string | null
           created_at?: string
+          door_count?: number | null
+          drive?: string | null
+          fuel_type?: string | null
           id?: string
+          make?: string | null
+          mileage?: number | null
+          model?: string | null
           name?: string | null
+          notes?: string | null
           owner_id: string
+          price?: number | null
+          registration_number?: string | null
           status?: string
+          transmission?: string | null
           updated_at?: string
+          vin?: string | null
+          year?: number | null
         }
         Update: {
+          address?: string | null
+          body_type?: string | null
+          color?: string | null
           created_at?: string
+          door_count?: number | null
+          drive?: string | null
+          fuel_type?: string | null
           id?: string
+          make?: string | null
+          mileage?: number | null
+          model?: string | null
           name?: string | null
+          notes?: string | null
           owner_id?: string
+          price?: number | null
+          registration_number?: string | null
           status?: string
+          transmission?: string | null
           updated_at?: string
+          vin?: string | null
+          year?: number | null
         }
         Relationships: []
       }

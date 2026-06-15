@@ -310,15 +310,15 @@ The new migration must be applied to **hosted Supabase before this slice deploys
 
 #### Automated
 
-- [ ] 1.1 Migration applies cleanly (`supabase db reset`/push to local)
-- [ ] 1.2 `astro sync` passes after types regen
-- [ ] 1.3 Type checking + lint pass (`npm run lint`)
-- [ ] 1.4 RLS tests pass incl. new config-column assertions (`npm test`)
+- [x] 1.1 Migration applies cleanly (`supabase db reset`/push to local)
+- [x] 1.2 `astro sync` passes after types regen
+- [x] 1.3 Type checking + lint pass (`npm run lint`)
+- [x] 1.4 RLS tests pass incl. new config-column assertions (`npm test`)
 
 #### Manual
 
-- [ ] 1.5 `database.types.ts` diff shows 15 new columns and is committed
-- [ ] 1.6 Enum CHECK constraints reject out-of-range values
+- [x] 1.5 `database.types.ts` diff shows 15 new columns and is committed
+- [x] 1.6 Enum CHECK constraints reject out-of-range values
 
 ### Phase 2: Validation Module (Zod) + Unit Tests
 
