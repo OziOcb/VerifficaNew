@@ -42,8 +42,9 @@ Bottom-up: land the schema + regenerated types first so every later layer (Dexie
 
 ## Critical Implementation Details
 
+- **Hydration source — SSR props, not Dexie (deliberate)**: the island is seeded from the SSR Supabase read (camelized per Phase 4 §1), not from the Dexie store. This gives an immediate first paint without waiting on IndexedDB. Caveat: F-02 makes Dexie the on-device source of truth, so if a prior Save is still **unsynced** (saved offline, outbox not yet drained), the SSR reload returns the older server row and the local edit won't show until the flush completes — a small coherence gap that is low-risk for this single-device, immediate-flush slice. Accepted for S-03; revisit if multi-device or longer offline windows arrive (a Dexie-first hydration with SSR props as first-paint fallback would close it, and would also make the F1 casing conversion unnecessary since Dexie rows are already camelCase).
 - **Form island must be `client:only="react"`** — it imports `@/lib/sync` → `@/lib/db` (Dexie), which has no global on the workerd SSR runtime; a `client:load`/SSR mount throws at build/render (`src/lib/db.ts:1`). The SSR `[id].astro` frontmatter passes the loaded inspection (id, existing config, name) as props to the island.
-- **Save → unlock ordering**: validate → on success write config to Dexie + enqueue (`saveInspection`) → trigger a flush → only then compute and render `configValid = true`. The unlock predicate is derived purely from the six required fields being present-and-valid, never from "a save happened," so a re-edit that invalidates a required field re-locks (CF-3).
+- **Save → unlock ordering**: validate → on success write config to Dexie + enqueue (`saveInspection`) → trigger a flush → only then compute and render `configValid = true`. The unlock predicate is derived purely from the current config (full validation success), never from "a save happened," so a re-edit that invalidates a required field re-locks (CF-3). **Unlock must reflect _full_ validation, including the CF-1 cross-field rule** — not just the six required fields' individual validity: electric + manual passes per-field but is blocked at save, so a six-field-only predicate would wrongly show "unlocked" while editing. Define unlock as a successful full-schema parse (see Phase 2 §2).
 
 ## Phase 1: Schema + Types
 
@@ -117,7 +118,7 @@ Encode `idea/veriffica-part-1-validation-rules.md` as a single Zod schema that v
 
 **Intent**: One module owning the config contract: per-field Zod rules with normalization (`trim`, collapse spaces, comma→dot for price, uppercase for VIN/registration, integer/decimal parsing, lowercase enum keys), the CF-1 cross-field refine (Electric ⇒ Automatic), the exact English error copy from rules doc §9, and a predicate that reports whether the six required fields (`make, model, fuelType, transmission, drive, bodyType`) are present and valid (drives unlock, CF-3). Export the inferred camelCase config type and a normalize-on-success path producing the persisted payload (rules doc §8 shape).
 
-**Contract**: Exports (names illustrative): `part1ConfigSchema` (full Zod object incl. CF-1 `.superRefine`), `Part1Config` (inferred type, camelCase, matching the Dexie config fields), `validatePart1(input): { ok: true; config } | { ok: false; errors: Record<field,string> }`, and `isConfigUnlocked(config): boolean` (the required-six predicate). Optional fields validate only when non-empty and persist as `null` when empty (rules doc §7). Field-level messages must be the exact strings in rules doc §9; CF-1 message: `Electric cars must use Automatic transmission.`
+**Contract**: Exports (names illustrative): `part1ConfigSchema` (full Zod object incl. CF-1 `.superRefine`), `Part1Config` (inferred type, camelCase, matching the Dexie config fields), `validatePart1(input): { ok: true; config } | { ok: false; errors: Record<field,string> }`, and `isConfigUnlocked(config): boolean`. **`isConfigUnlocked` must run the _full_ schema** (`part1ConfigSchema.safeParse(...).success`), which includes the CF-1 `.superRefine` — not a separate six-field presence check. This makes unlock state exactly mirror "would a Save succeed," so an electric + manual edit (all six fields individually valid, but CF-1-blocked) correctly stays locked. Optional fields validate only when non-empty and persist as `null` when empty (rules doc §7). Field-level messages must be the exact strings in rules doc §9; CF-1 message: `Electric cars must use Automatic transmission.`
 
 **Contract** (the two non-obvious patterns worth pinning down):
 
@@ -135,7 +136,7 @@ const maxYear = new Date().getFullYear() + 1; // lower bound 1886
 
 **Intent**: Exhaustively cover the rules doc — each field's accept/reject boundaries, every normalization, the CF-1 cross-field block, optional-empty→null behavior, and the `isConfigUnlocked` predicate (all six present/valid → true; any missing/invalid → false).
 
-**Contract**: Vitest table-driven cases per field (valid boundary, invalid boundary, normalization assertion); explicit CF-1 case (electric+manual → blocked with the exact message); unlock predicate truth table.
+**Contract**: Vitest table-driven cases per field (valid boundary, invalid boundary, normalization assertion); explicit CF-1 case (electric+manual → blocked with the exact message); unlock predicate truth table (incl. an electric+manual case asserting `isConfigUnlocked === false` even though all six fields are individually present — the CF-1 guard).
 
 ### Success Criteria:
 
@@ -185,6 +186,14 @@ Extend the F-02 local-first path to carry config and add the shadcn form primiti
 
 **Contract**: Standard shadcn components in `@/components/ui`; adds `@radix-ui/react-select` (+ its peers) to `dependencies`.
 
+#### 4. Update `Inspection`-literal test fixtures for the widened type
+
+**File**: `tests/db.test.ts` (and any other full-`Inspection` literal)
+
+**Intent**: Once the regenerated types widen `Inspection` with the 15 config keys (nullable but still **required properties**), every full-`Inspection` literal must include them or the type-checked `npm run lint`/`npm test` fails. The `makeInspection` helper at `tests/db.test.ts:11` currently lists 7 fields.
+
+**Contract**: Extend `makeInspection` (the single fixture builder; tests use `Partial` overrides on top of it) with the 15 config fields defaulted to `null`. `tests/inspections.sync.test.ts` payloads are plain objects (not typed `Inspection`), so they need no change — but grep for any other `Inspection` literal before assuming. This is the one place "reuse existing tests unchanged" does **not** hold.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -217,13 +226,15 @@ Build the React form on `[id].astro` that composes the schema, persistence, and 
 
 **Contract**: `.select(...)` widened to the config columns; render `<Part1Form client:only="react" inspection={...} />` inside the existing `Layout`. Frontmatter stays Dexie-free (island is `client:only`).
 
+**Casing — second read boundary (do not skip)**: supabase-js returns the row in **snake_case** (`fuel_type`, `body_type`, `door_count`, `registration_number`, …), but `Part1Config` / the Dexie `Inspection` type are **camelCase**. The existing stub only selected `id,name` (identical in both cases), so there is no camelize call to copy and the lessons.md "single boundary" rule does not yet cover this path. The SSR page load is a **second read boundary out of supabase-js** and must convert: run the loaded row through the generic `camelcaseKeys(row, { deep: true })` in the frontmatter before passing it as props (same generic, table-agnostic helper the sync endpoint already uses at `sync.ts:59` — not a per-table mapper, so it stays lesson-compliant). Without this, the camelCase form fields bind to undefined and the saved config renders blank on reload (would fail Manual Verification 4.7).
+
 #### 2. Part 1 form island
 
 **File**: `src/components/inspections/Part1Form.tsx` (new)
 
 **Intent**: Controlled React form for all 15 fields using the shadcn primitives (selects for the enums). Blur validation per field (inline error under the field, UX-1); explicit Save runs `validatePart1`; on failure, scroll to + focus the first invalid field (UX-2/UX-3) and keep Parts 2–5 locked; on success, call `saveInspection` with the normalized config + auto-name, trigger a flush, and reflect the unlocked state. Soft on-input formatting hints only (no blocking on input, rules doc §2). All copy English (FR-024).
 
-**Contract**: Props: the loaded inspection (id, existing config, name). Uses `validatePart1`/`isConfigUnlocked` from `@/lib/part1-config` and `saveInspection`/`flushQueue` from `@/lib/sync`. Auto-name: `name = \`${make} ${model}\``. First-invalid focus uses a ref map keyed by field id; scroll via `scrollIntoView`. On mount, run `resetLocalStoreOnUserChange` is NOT this island's job (dashboard owns it) — assume the store is already scoped.
+**Contract**: Props: the loaded inspection (id, existing config, name, **`createdAt`, `status`**). Uses `validatePart1`/`isConfigUnlocked` from `@/lib/part1-config` and `saveInspection`/`flushQueue` from `@/lib/sync`. **Preserve `created_at`/`status` on save**: `saveInspection` builds a full row and the endpoint upserts `created_at` explicitly (`sync.ts:54`, `sync.ts:49`) with no protective trigger — so the Save MUST pass the loaded `createdAt` and `status` through to `saveInspection` (both already accepted by `SaveInput`, `sync.ts:39`). Omitting them defaults `createdAt` to `now` (clobbering the original creation timestamp) and `status` to `"draft"`. `updated_at` is safe — the `set_updated_at` trigger overrides it. Auto-name: `name = \`${make} ${model}\``. First-invalid focus uses a ref map keyed by field id; scroll via `scrollIntoView`. On mount, run `resetLocalStoreOnUserChange` is NOT this island's job (dashboard owns it) — assume the store is already scoped.
 
 #### 3. Disabled Parts 2–5 placeholder + unlock affordance
 
@@ -259,7 +270,7 @@ Build the React form on `[id].astro` that composes the schema, persistence, and 
 ### Unit Tests:
 
 - `tests/part1-config.test.ts` — every field's accept/reject boundary, all normalizations, CF-1 cross-field block, optional-empty→null, and the `isConfigUnlocked` required-six predicate.
-- Reuse the existing sync/db tests unchanged to guard the persistence path.
+- Reuse the existing sync/db tests to guard the persistence path. **One exception**: the `makeInspection` fixture in `tests/db.test.ts` must gain the 15 config fields (defaulted to `null`) because the widened `Inspection` type makes them required keys (Phase 3 §4) — the rest of the sync/db tests are unchanged.
 
 ### Integration Tests:
 
