@@ -1,10 +1,10 @@
 ---
 change_id: part-1-config-validation
 title: Part 1 config form, validation & Parts 2–5 unlock
-status: impl_reviewed
+status: archived
 created: 2026-06-14
 updated: 2026-06-15
-archived_at: null
+archived_at: 2026-06-15T15:28:24Z
 ---
 
 ## Notes
