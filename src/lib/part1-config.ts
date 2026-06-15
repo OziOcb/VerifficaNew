@@ -1,0 +1,189 @@
+// Single source of truth for the Part 1 vehicle-configuration contract (S-03).
+//
+// Encodes `idea/veriffica-part-1-validation-rules.md` once as a Zod schema that
+// validates, NORMALIZES, and yields the typed config — plus the unlock predicate
+// that gates Parts 2-5. Shared by the form island (blur + Save validation) and
+// usable server-side. The schema's INPUT is the raw form values (every field a
+// string, "" when empty); its OUTPUT is the normalized, persisted payload
+// (numbers parsed, enums lowercased, empty optionals → null) matching rules §8.
+//
+// Casing: OUTPUT keys are camelCase and line up 1:1 with the camelCase Dexie
+// `Inspection` config fields, so a successful parse is ready to hand to
+// `saveInspection` (lessons.md "Field casing" — the snake↔camel conversion stays
+// at the sync boundary; this module is camelCase throughout).
+import { z } from "zod";
+
+// Field-level error copy — the EXACT strings from rules doc §9. Do not reword:
+// they are user-facing and asserted verbatim in tests.
+const M = {
+  price: "Enter a valid price greater than or equal to 0.",
+  make: "Enter the car make.",
+  model: "Enter the car model.",
+  year: "Enter a valid production year.",
+  registrationNumber: "Enter a valid registration number.",
+  vin: "VIN must contain exactly 17 letters and digits without I, O or Q.",
+  mileage: "Enter a valid mileage.",
+  fuelType: "Select the fuel type.",
+  transmission: "Select the transmission type.",
+  drive: "Select the drive type.",
+  color: "Enter a valid color.",
+  bodyType: "Select the body type.",
+  doorCount: "Enter a valid number of doors.",
+  address: "Enter a valid address.",
+  notes: "Notes cannot be longer than 1000 characters.",
+  crossFieldElectricTransmission: "Electric cars must use Automatic transmission.",
+} as const;
+
+// Enum keys are stored lowercase (rules §8); these mirror the DB CHECK constraints.
+const FUEL_TYPES = ["petrol", "diesel", "hybrid", "electric"] as const;
+const TRANSMISSIONS = ["manual", "automatic"] as const;
+const DRIVES = ["2wd", "4wd"] as const;
+const BODY_TYPES = ["sedan", "hatchback", "suv", "coupe", "convertible", "van", "pickup", "other"] as const;
+
+// VIN: exactly 17 chars from a restricted alphabet that EXCLUDES I, O, Q.
+const VIN_RE = /^[A-HJ-NPR-Z0-9]{17}$/;
+// Registration: letters, digits, spaces, hyphen; 2-15 chars (after uppercasing).
+const REGISTRATION_RE = /^[A-Z0-9 -]{2,15}$/;
+// Year upper bound is dynamic — next model year is plausible; lower bound 1886.
+const MIN_YEAR = 1886;
+const MAX_YEAR = new Date().getFullYear() + 1;
+
+// Trim + collapse runs of whitespace to a single space (rules "collapse repeated spaces").
+const collapse = (s: string): string => s.trim().replace(/\s+/g, " ");
+
+// --- Field builders -------------------------------------------------------
+// Each builder produces a string→normalized pipeline carrying ONE message, so a
+// failing field surfaces exactly the rules-doc copy regardless of which sub-rule
+// tripped. We validate via `.refine` (not the deprecated `.superRefine`) and, for
+// enums, cast after a membership `.refine` to sidestep `.pipe`'s input-type
+// mismatch (a plain string is not assignable to a z.enum's literal-union input).
+
+const requiredText = (message: string, opts: { min: number; max: number }) =>
+  z
+    .string()
+    .transform(collapse)
+    .refine((s) => s.length >= opts.min && s.length <= opts.max, { message });
+
+const optionalText = (
+  message: string,
+  opts: { min: number; max: number; collapseSpaces?: boolean; uppercase?: boolean; regex?: RegExp },
+) =>
+  z
+    .string()
+    .transform((s) => {
+      let v = opts.collapseSpaces === false ? s.trim() : collapse(s);
+      if (opts.uppercase) v = v.toUpperCase();
+      return v;
+    })
+    .refine(
+      (s) => s === "" || ((opts.regex ? opts.regex.test(s) : true) && s.length >= opts.min && s.length <= opts.max),
+      {
+        message,
+      },
+    )
+    .transform((s) => (s === "" ? null : s));
+
+const requiredInt = (message: string, opts: { min: number; max: number }) =>
+  z
+    .string()
+    .transform((s) => s.trim())
+    .refine((s) => /^\d+$/.test(s) && Number(s) >= opts.min && Number(s) <= opts.max, { message })
+    .transform((s) => Number(s));
+
+const optionalInt = (message: string, opts: { min: number; max: number; stripSpaces?: boolean }) =>
+  z
+    .string()
+    .transform((s) => (opts.stripSpaces ? s.replace(/\s+/g, "") : s.trim()))
+    .refine((s) => s === "" || (/^\d+$/.test(s) && Number(s) >= opts.min && Number(s) <= opts.max), { message })
+    .transform((s) => (s === "" ? null : Number(s)));
+
+const enumField = <const T extends readonly [string, ...string[]]>(values: T, message: string) => {
+  const allowed = new Set<string>(values);
+  return z
+    .string()
+    .transform((s) => s.trim().toLowerCase())
+    .refine((s) => allowed.has(s), { message })
+    .transform((s) => s as T[number]);
+};
+
+// --- The schema -----------------------------------------------------------
+
+export const part1ConfigSchema = z
+  .object({
+    // Optional decimal: comma→dot, max 2 fractional digits, 0…10,000,000.
+    price: z
+      .string()
+      .transform((s) => s.trim().replace(",", "."))
+      .refine((s) => s === "" || (/^\d+(\.\d{1,2})?$/.test(s) && Number(s) >= 0 && Number(s) <= 10_000_000), {
+        message: M.price,
+      })
+      .transform((s) => (s === "" ? null : Number(s))),
+    make: requiredText(M.make, { min: 1, max: 50 }),
+    model: requiredText(M.model, { min: 1, max: 60 }),
+    year: requiredInt(M.year, { min: MIN_YEAR, max: MAX_YEAR }),
+    registrationNumber: z
+      .string()
+      .transform((s) => collapse(s).toUpperCase())
+      .refine((s) => REGISTRATION_RE.test(s), { message: M.registrationNumber }),
+    vin: optionalText(M.vin, { min: 17, max: 17, collapseSpaces: false, uppercase: true, regex: VIN_RE }),
+    mileage: optionalInt(M.mileage, { min: 0, max: 9_999_999, stripSpaces: true }),
+    fuelType: enumField(FUEL_TYPES, M.fuelType),
+    transmission: enumField(TRANSMISSIONS, M.transmission),
+    drive: enumField(DRIVES, M.drive),
+    color: optionalText(M.color, { min: 1, max: 40 }),
+    bodyType: enumField(BODY_TYPES, M.bodyType),
+    doorCount: optionalInt(M.doorCount, { min: 1, max: 9 }),
+    address: optionalText(M.address, { min: 5, max: 150 }),
+    // Notes preserve internal line breaks; only leading/trailing whitespace is trimmed.
+    notes: z
+      .string()
+      .transform((s) => s.trim())
+      .refine((s) => s.length <= 1000, { message: M.notes })
+      .transform((s) => (s === "" ? null : s)),
+  })
+  // CF-1: Electric requires Automatic. Surfaced on the transmission field so the
+  // first-invalid focus/scroll lands somewhere meaningful. Object-level refines
+  // run only once all fields parse — which is exactly the case we must catch
+  // (electric + manual are each individually valid), so this also drives unlock.
+  .refine((d) => !(d.fuelType === "electric" && d.transmission !== "automatic"), {
+    message: M.crossFieldElectricTransmission,
+    path: ["transmission"],
+  });
+
+// Raw form input (every field a string) and the normalized, persisted output.
+export type Part1Input = z.input<typeof part1ConfigSchema>;
+export type Part1Config = z.infer<typeof part1ConfigSchema>;
+export type Part1Field = keyof Part1Config;
+
+export type Part1ValidationResult =
+  | { ok: true; config: Part1Config }
+  | { ok: false; errors: Partial<Record<Part1Field, string>> };
+
+/**
+ * Validate + normalize raw form values. On success, `config` is the rules §8
+ * payload ready for `saveInspection`. On failure, `errors` maps each invalid
+ * field to its (first) message — UX-1 renders these inline.
+ */
+export function validatePart1(input: Part1Input): Part1ValidationResult {
+  const result = part1ConfigSchema.safeParse(input);
+  if (result.success) return { ok: true, config: result.data };
+  const errors: Partial<Record<Part1Field, string>> = {};
+  for (const issue of result.error.issues) {
+    const key = issue.path[0];
+    if (typeof key === "string" && !(key in errors)) {
+      errors[key as Part1Field] = issue.message;
+    }
+  }
+  return { ok: false, errors };
+}
+
+/**
+ * Whether Parts 2-5 should be unlocked: TRUE iff a Save would succeed — i.e. the
+ * FULL schema parses, including the CF-1 cross-field rule. Deliberately not a
+ * six-field presence check: electric + manual passes every field individually but
+ * fails CF-1, so a presence-only predicate would wrongly unlock. Derived purely
+ * from current values, so re-editing an invalid required field re-locks (CF-3).
+ */
+export function isConfigUnlocked(input: Part1Input): boolean {
+  return part1ConfigSchema.safeParse(input).success;
+}

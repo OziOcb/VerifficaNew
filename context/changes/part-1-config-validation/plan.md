@@ -310,27 +310,27 @@ The new migration must be applied to **hosted Supabase before this slice deploys
 
 #### Automated
 
-- [x] 1.1 Migration applies cleanly (`supabase db reset`/push to local)
-- [x] 1.2 `astro sync` passes after types regen
-- [x] 1.3 Type checking + lint pass (`npm run lint`)
-- [x] 1.4 RLS tests pass incl. new config-column assertions (`npm test`)
+- [x] 1.1 Migration applies cleanly (`supabase db reset`/push to local) — f3b05eb
+- [x] 1.2 `astro sync` passes after types regen — f3b05eb
+- [x] 1.3 Type checking + lint pass (`npm run lint`) — f3b05eb
+- [x] 1.4 RLS tests pass incl. new config-column assertions (`npm test`) — f3b05eb
 
 #### Manual
 
-- [x] 1.5 `database.types.ts` diff shows 15 new columns and is committed
-- [x] 1.6 Enum CHECK constraints reject out-of-range values
+- [x] 1.5 `database.types.ts` diff shows 15 new columns and is committed — f3b05eb
+- [x] 1.6 Enum CHECK constraints reject out-of-range values — f3b05eb
 
 ### Phase 2: Validation Module (Zod) + Unit Tests
 
 #### Automated
 
-- [ ] 2.1 Validation unit tests pass (`npm test`)
-- [ ] 2.2 Lint + type check pass (`npm run lint`)
-- [ ] 2.3 Every field rule, normalization, CF-1, and unlock predicate have accept + reject cases
+- [x] 2.1 Validation unit tests pass (`npm test`)
+- [x] 2.2 Lint + type check pass (`npm run lint`)
+- [x] 2.3 Every field rule, normalization, CF-1, and unlock predicate have accept + reject cases
 
 #### Manual
 
-- [ ] 2.4 Normalized sample output matches rules doc §8 payload shape
+- [x] 2.4 Normalized sample output matches rules doc §8 payload shape
 
 ### Phase 3: Persistence Plumbing + Form Primitives
 
