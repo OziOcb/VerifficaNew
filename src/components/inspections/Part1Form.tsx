@@ -511,11 +511,12 @@ function FieldError({ message }: { message: string }) {
 // once unlocked each card opens the S-04 session hub, where the per-Part personalized
 // counts and the rest of the parts live.
 function PartsNav({ unlocked, inspectionId }: { unlocked: boolean; inspectionId: string }) {
+  // PRD's five parts (prd.md:56), in physical-inspection order.
   const parts = [
-    { n: 2, title: "Condition" },
-    { n: 3, title: "Documents" },
-    { n: 4, title: "Test drive" },
-    { n: 5, title: "Summary" },
+    { n: 2, title: "Standstill" },
+    { n: 3, title: "Engine" },
+    { n: 4, title: "Drive" },
+    { n: 5, title: "Documents" },
   ];
   return (
     <section className={`rounded-xl border p-5 ${PANEL}`}>

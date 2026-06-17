@@ -12,12 +12,13 @@ import { configFromInspection, visibleCountsByPart, type RuntimeFlag, type PartI
 const { id, part } = Astro.params;
 
 // Valid parts are 1–5; anything else is not a real screen → back to the dashboard.
+// Names + order are the PRD's five parts (prd.md:56), in physical-inspection order.
 const PART_TITLES: Record<string, string> = {
-  "1": "Vehicle configuration",
-  "2": "Condition",
-  "3": "Documents",
-  "4": "Test drive",
-  "5": "Summary",
+  "1": "Info",
+  "2": "Standstill",
+  "3": "Engine",
+  "4": "Drive",
+  "5": "Documents",
 };
 if (!part || !(part in PART_TITLES)) {
   return Astro.redirect("/dashboard");

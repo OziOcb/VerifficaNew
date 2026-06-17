@@ -96,12 +96,14 @@ export default function SessionScreen({ inspection, visibleCounts, totalVisible 
     setDraft(value);
   }
 
+  // Part names + order are the PRD's five parts (prd.md:56) — the real-world physical
+  // inspection order (Info → Standstill → Engine → Drive → Documents; prd.md:194).
   const parts = [
-    { n: 1, title: "Vehicle configuration", count: null as number | null },
-    { n: 2, title: "Condition", count: visibleCounts.part2 },
-    { n: 3, title: "Documents", count: visibleCounts.part3 },
-    { n: 4, title: "Test drive", count: visibleCounts.part4 },
-    { n: 5, title: "Summary", count: visibleCounts.part5 },
+    { n: 1, title: "Info", count: null as number | null },
+    { n: 2, title: "Standstill", count: visibleCounts.part2 },
+    { n: 3, title: "Engine", count: visibleCounts.part3 },
+    { n: 4, title: "Drive", count: visibleCounts.part4 },
+    { n: 5, title: "Documents", count: visibleCounts.part5 },
   ];
 
   return (
