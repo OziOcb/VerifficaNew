@@ -34,11 +34,12 @@ if (!row) {
 // Single snake→camel boundary (lessons.md "Field casing"), as in `[id].astro`.
 const inspection = camelcaseKeys(row, { deep: true });
 
-// Gate: the session hub requires a valid Part 1 config. An incomplete/invalid config
-// sends the user to the Part 1 form (part/1), where they make it valid.
-if (!isConfigUnlocked(rowToInput(inspection))) {
-  return Astro.redirect(`/inspections/${id ?? ""}/session/part/1`);
-}
+// The hub is the LANDING page for an inspection (the dashboard's Resume / Start new
+// inspection both route here via `[id].astro`). It renders regardless of config
+// validity — a brand-new inspection lands here, not on the form. Parts 2–5 stay locked
+// in the nav until the Part 1 config is valid; the user opens Part 1 (Info) from the hub
+// to configure. The per-Part routes still guard server-side (part 2–5 → form when locked).
+const unlocked = isConfigUnlocked(rowToInput(inspection));
 
 const NO_FLAGS = new Set<RuntimeFlag>(); // Phase 3: flags off; Phase 4 wires the toggles.
 const visibleCounts = visibleCountsByPart(configFromInspection(inspection), NO_FLAGS);
@@ -61,6 +62,7 @@ const totalVisible = visibleCounts.part2 + visibleCounts.part3 + visibleCounts.p
           mechanicalCompressorEquipped: inspection.mechanicalCompressorEquipped,
           importedFromEu: inspection.importedFromEu,
         }}
+        unlocked={unlocked}
         visibleCounts={visibleCounts}
         totalVisible={totalVisible}
       />

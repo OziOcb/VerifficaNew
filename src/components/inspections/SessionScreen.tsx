@@ -13,7 +13,7 @@
 // score/completion never drift from what the nav shows. S-05 fills the numerators; S-04
 // equipment toggles (Phase 4) move the denominator.
 import { useEffect, useState } from "react";
-import { CircleAlert } from "lucide-react";
+import { CircleAlert, Lock } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
@@ -46,13 +46,15 @@ interface SessionInspection {
 
 interface Props {
   inspection: SessionInspection;
+  // Whether the Part 1 config is valid. Parts 2–5 stay locked in the nav until it is.
+  unlocked: boolean;
   visibleCounts: { part2: number; part3: number; part4: number; part5: number };
   totalVisible: number;
 }
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
-export default function SessionScreen({ inspection, visibleCounts, totalVisible }: Props) {
+export default function SessionScreen({ inspection, unlocked, visibleCounts, totalVisible }: Props) {
   // `draft` is the user's in-progress edit (null until they type). The displayed value
   // falls back to the locally-saved Dexie row, then the SSR prop — so an offline edit
   // not yet synced to the server is reflected (via `useLiveQuery`) without an effect
@@ -122,23 +124,44 @@ export default function SessionScreen({ inspection, visibleCounts, totalVisible 
       </header>
 
       <section className={`rounded-xl border p-5 ${PANEL}`}>
-        <h2 className="mb-3 text-lg font-semibold text-white">Parts</h2>
+        <div className="mb-3 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-white">Parts</h2>
+          {!unlocked && <Lock className="size-4 text-blue-100/50" />}
+        </div>
+        {!unlocked && (
+          <p className="mb-4 text-sm text-blue-100/60">Complete Part 1 (Info) to unlock the personalized Parts 2–5.</p>
+        )}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {parts.map((p) => (
-            <a
-              key={p.n}
-              href={`/inspections/${inspection.id}/session/part/${String(p.n)}`}
-              className="rounded-lg border border-white/15 bg-white/10 p-4 transition-colors hover:border-white/30 hover:bg-white/15"
-            >
-              <p className="text-xs tracking-wider text-blue-100/40 uppercase">Part {p.n}</p>
-              <p className="mt-1 font-medium text-white">{p.title}</p>
-              <p className="mt-2 text-sm text-blue-100/60">
-                {p.count === null
-                  ? "Edit configuration"
-                  : `${String(p.count)} ${p.count === 1 ? "question" : "questions"}`}
-              </p>
-            </a>
-          ))}
+          {parts.map((p) => {
+            // Part 1 (Info) is always reachable — it's where the config is made valid.
+            // Parts 2–5 are locked (non-navigable) until the config is unlocked.
+            const locked = p.n !== 1 && !unlocked;
+            const subtitle =
+              p.count === null
+                ? "Edit configuration"
+                : `${String(p.count)} ${p.count === 1 ? "question" : "questions"}`;
+
+            if (locked) {
+              return (
+                <div key={p.n} aria-disabled className="rounded-lg border border-white/10 bg-white/5 p-4 opacity-50">
+                  <p className="text-xs tracking-wider text-blue-100/40 uppercase">Part {p.n}</p>
+                  <p className="mt-1 font-medium text-white">{p.title}</p>
+                  <p className="mt-2 text-sm text-blue-100/60">Locked</p>
+                </div>
+              );
+            }
+            return (
+              <a
+                key={p.n}
+                href={`/inspections/${inspection.id}/session/part/${String(p.n)}`}
+                className="rounded-lg border border-white/15 bg-white/10 p-4 transition-colors hover:border-white/30 hover:bg-white/15"
+              >
+                <p className="text-xs tracking-wider text-blue-100/40 uppercase">Part {p.n}</p>
+                <p className="mt-1 font-medium text-white">{p.title}</p>
+                <p className="mt-2 text-sm text-blue-100/60">{subtitle}</p>
+              </a>
+            );
+          })}
         </div>
       </section>
 
