@@ -56,4 +56,31 @@ describe("inspections 2-per-owner limit", () => {
     const fourth = await client.from("inspections").insert({ owner_id: userId, name: "fourth" }).select("id").single();
     expect(fourth.error).toBeNull();
   });
+
+  it("lets an owner at the limit keep editing existing inspections (upsert UPDATE path)", async () => {
+    // Regression for the BEFORE INSERT trigger firing on `INSERT ... ON CONFLICT
+    // DO UPDATE`: the sync endpoint persists every edit via `.upsert()`, so a
+    // BEFORE INSERT trigger that counted the row being upserted blocked ALL saves
+    // once the owner was at the 2-row cap (not just genuine 3rd inserts). The fix
+    // (`id <> new.id`) excludes the row itself, so an update is never rejected.
+    // Reset first — test 1 leaves this owner holding its 2 allowed rows.
+    await client.from("inspections").delete().eq("owner_id", userId);
+
+    const a = await client.from("inspections").insert({ owner_id: userId, name: "a" }).select("id").single();
+    expect(a.error).toBeNull();
+    const b = await client.from("inspections").insert({ owner_id: userId, name: "b" }).select("id").single();
+    expect(b.error).toBeNull();
+    const bId = b.data?.id;
+    expect(bId).toBeDefined();
+
+    // Owner now holds the 2 allowed rows. Re-save B via upsert (same shape the
+    // sync endpoint sends) — this is an UPDATE, and must NOT trip the limit.
+    const edit = await client
+      .from("inspections")
+      .upsert({ id: bId, owner_id: userId, name: "b — edited" })
+      .select("name")
+      .single();
+    expect(edit.error).toBeNull();
+    expect(edit.data?.name).toBe("b — edited");
+  });
 });

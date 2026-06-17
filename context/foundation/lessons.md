@@ -109,3 +109,25 @@ update`, not a bare count.
 - **Problem**: Treating a check as "manual" by default and handing it to the user wastes their time and stalls the loop, when the agent could have run it directly. Example: reconciling the visibility engine's per-group/per-part output against the authored `list-of-questions.md` source of truth was listed as a manual spot-check, but the agent can read both files and reconcile them line-by-line itself.
 - **Rule**: If a verification step can be performed by the agent — reconciling output against a source-of-truth file, running a script, comparing data, parsing a catalogue — do it directly instead of delegating it as a "manual test". Only ask the user to manually verify things that genuinely require human judgment, a live UI, a physical device, or external access the agent lacks.
 - **Applies to**: implement, impl-review
+
+## A BEFORE INSERT trigger also fires on upsert's UPDATE path — exclude the row being written
+
+- **Context**: Any Postgres BEFORE INSERT row trigger that enforces a count/uniqueness
+  rule on a table written via `.upsert()` — i.e. every domain table on this stack, since
+  the sync endpoint (`src/pages/api/inspections/sync.ts`) persists EVERY edit through
+  `INSERT ... ON CONFLICT (id) DO UPDATE`. First bit the 2-per-owner limit
+  (`enforce_inspection_limit`).
+- **Problem**: A BEFORE INSERT row trigger fires for every row proposed by `INSERT ...
+ON CONFLICT DO UPDATE`, BEFORE Postgres detects the conflict and routes it to the
+  UPDATE path — so it runs on updates too, and the proposed NEW row already carries the
+  existing PK. A `select count(*) where owner_id = new.owner_id >= 2` cap therefore
+  counted the very row being re-saved and raised `inspection_limit_reached` on EVERY
+  edit once an owner hit the cap — silently dropping the update. The original migration's
+  comment even asserted the opposite ("upsert-on-existing never trip it"), so the wrong
+  mental model was baked into the codebase.
+- **Rule**: Never assume a BEFORE INSERT trigger is skipped on upsert — it fires on the
+  UPDATE path too. When such a trigger enforces a per-owner/per-scope count or uniqueness
+  limit, always exclude the row being written (`and id <> new.id`) so it gates genuine
+  new rows without blocking edits. Treat `.upsert()` as "fires INSERT triggers" when
+  reasoning about any trigger on a synced table.
+- **Applies to**: plan, plan-review, implement, impl-review
