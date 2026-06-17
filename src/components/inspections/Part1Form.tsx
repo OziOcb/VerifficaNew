@@ -4,23 +4,22 @@
 //
 // MUST be mounted `client:only="react"` — it imports @/lib/sync → @/lib/db
 // (Dexie), which has no global on the workerd SSR runtime; a server mount throws
-// (see src/lib/db.ts). The SSR page (`[id].astro`) loads the inspection under RLS,
-// camelizes the row at that boundary, and passes it in as the `inspection` prop.
+// (see src/lib/db.ts). The SSR page (`session/part/[part].astro`, part 1) loads the
+// inspection under RLS, camelizes the row at that boundary, and passes it in as the
+// `inspection` prop. This form is the Part 1 (Info) screen under the S-04 session hub;
+// a successful Save syncs and navigates back to `/inspections/[id]/session`.
 //
 // Validation timing mirrors the rules doc §2: soft on input (no blocking), inline
-// on blur (UX-1), full blocking validation on Save (UX-2/UX-3 scroll+focus). The
-// Parts 2-5 unlock is derived purely from `isConfigUnlocked(values)` — the full
-// schema parse incl. CF-1 — so it tracks the current values, never a "saved" flag
-// (CF-3: re-editing an invalid required field re-locks).
+// on blur (UX-1), full blocking validation on Save (UX-2/UX-3 scroll+focus).
 import { useEffect, useRef, useState } from "react";
-import { CircleAlert, Lock } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ServerError } from "@/components/auth/ServerError";
-import { validatePart1, isConfigUnlocked, normalizeFieldOnBlur, type Part1Field } from "@/lib/part1-config";
+import { validatePart1, normalizeFieldOnBlur, type Part1Field } from "@/lib/part1-config";
 import { saveInspection, flushQueue, startAutoSync } from "@/lib/sync";
 
 // Cosmic glass palette — matches the dashboard/home shell. The shadcn primitives
@@ -201,10 +200,6 @@ export default function Part1Form({ inspection }: Props) {
   // triggers (online/visibility/timer/initial) guarantee it reaches the server.
   useEffect(() => startAutoSync(), []);
 
-  // Unlock is derived from the current values every render — exactly "would a Save
-  // succeed" (full schema incl. CF-1). No "saved" flag (CF-3).
-  const unlocked = isConfigUnlocked(values);
-
   // Re-run full validation but only (un)set the one field's error, so blurring a
   // field never lights up untouched fields.
   function validateField(field: Part1Field, vals: Record<Part1Field, string>) {
@@ -291,9 +286,13 @@ export default function Part1Form({ inspection }: Props) {
         name: autoName,
         ...config,
       });
-      void flushQueue();
       setName(autoName);
-      setJustSaved(true);
+      // Push the save to the server before navigating, so the session page's SSR load
+      // sees the saved config and unlocks. `flushQueue` is best-effort (a no-op when
+      // offline) and never throws, so we always continue to the hub afterwards.
+      await flushQueue();
+      window.location.assign(`/inspections/${inspection.id}/session`);
+      return; // navigating away — keep the button disabled (no `finally` reset needed)
     } catch {
       // The optimistic Dexie write failed (e.g. IndexedDB quota/blocked,
       // private browsing). Nothing was persisted — surface it so the user
@@ -308,10 +307,10 @@ export default function Part1Form({ inspection }: Props) {
     <div className="space-y-8">
       <header>
         <a
-          href="/dashboard"
+          href={`/inspections/${inspection.id}/session`}
           className="text-sm text-purple-300 transition-colors hover:text-purple-100 hover:underline"
         >
-          &larr; Back to dashboard
+          &larr; Back to session
         </a>
         <h1 className="mt-4 text-2xl font-bold text-white">{name ?? "Inspection"}</h1>
         <p className="mt-1 text-blue-100/60">
@@ -386,8 +385,6 @@ export default function Part1Form({ inspection }: Props) {
           )}
         </CardContent>
       </Card>
-
-      <PartsNav unlocked={unlocked} inspectionId={inspection.id} />
     </div>
   );
 }
@@ -504,55 +501,5 @@ function FieldError({ message }: { message: string }) {
       <CircleAlert className="size-3 shrink-0" />
       {message}
     </p>
-  );
-}
-
-// Parts 2-5 nav. Disabled (with an explanatory line) until the config is fully valid;
-// once unlocked each card opens the S-04 session hub, where the per-Part personalized
-// counts and the rest of the parts live.
-function PartsNav({ unlocked, inspectionId }: { unlocked: boolean; inspectionId: string }) {
-  // PRD's five parts (prd.md:56), in physical-inspection order.
-  const parts = [
-    { n: 2, title: "Standstill" },
-    { n: 3, title: "Engine" },
-    { n: 4, title: "Drive" },
-    { n: 5, title: "Documents" },
-  ];
-  return (
-    <section className={`rounded-xl border p-5 ${PANEL}`}>
-      <div className="mb-3 flex items-center gap-2">
-        <h2 className="text-lg font-semibold text-white">Parts 2–5</h2>
-        {!unlocked && <Lock className="size-4 text-blue-100/50" />}
-      </div>
-      {!unlocked && (
-        <p className="mb-4 text-sm text-blue-100/60">Save the required Part 1 fields to unlock Parts 2–5.</p>
-      )}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {parts.map((p) => (
-          <div
-            key={p.n}
-            aria-disabled={!unlocked}
-            className={`rounded-lg border p-4 transition-opacity ${
-              unlocked ? "border-white/15 bg-white/10" : "border-white/10 bg-white/5 opacity-50"
-            }`}
-          >
-            <p className="text-xs tracking-wider text-blue-100/40 uppercase">Part {p.n}</p>
-            <p className="mt-1 font-medium text-white">{p.title}</p>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={!unlocked}
-              onClick={() => {
-                window.location.assign(`/inspections/${inspectionId}/session`);
-              }}
-              className="mt-3 border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
-            >
-              Open session
-            </Button>
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }
