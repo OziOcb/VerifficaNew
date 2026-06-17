@@ -526,15 +526,15 @@ migrations are not in the Cloudflare deploy pipeline (see S-02 deploy note).
 
 #### Automated
 
-- [x] 1.1 Unit tests pass: `npm test`
-- [x] 1.2 Type checking + lint pass: `npm run lint`
-- [x] 1.3 Production build passes (module is server-safe): `npm run build`
-- [x] 1.4 Malformed catalogue makes the Zod parse throw at module load (asserted)
+- [x] 1.1 Unit tests pass: `npm test` — 18ba8dd
+- [x] 1.2 Type checking + lint pass: `npm run lint` — 18ba8dd
+- [x] 1.3 Production build passes (module is server-safe): `npm run build` — 18ba8dd
+- [x] 1.4 Malformed catalogue makes the Zod parse throw at module load (asserted) — 18ba8dd
 
 #### Manual
 
-- [x] 1.5 Spot-check `selectVisibleGroups` for a known config against the markdown source
-- [x] 1.6 EV vs petrol visible counts differ in the expected direction
+- [x] 1.5 Spot-check `selectVisibleGroups` for a known config against the markdown source — 18ba8dd
+- [x] 1.6 EV vs petrol visible counts differ in the expected direction — 18ba8dd
 
 ### Phase 2: Persistence — global_notes + equipment-flag columns
 
