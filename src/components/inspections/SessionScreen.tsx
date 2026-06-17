@@ -123,6 +123,49 @@ export default function SessionScreen({ inspection, unlocked, visibleCounts, tot
         </p>
       </header>
 
+      <div className="relative">
+        {/* Total Score + Completion are meaningless before there is a config: blur them
+            until Part 1 is valid, with an overlay explaining how to reveal them. */}
+        <div
+          className={`grid gap-4 sm:grid-cols-2 ${unlocked ? "" : "pointer-events-none blur-sm select-none"}`}
+          aria-hidden={unlocked ? undefined : true}
+        >
+          <Card className={PANEL}>
+            <CardHeader>
+              <CardTitle className="text-white">Total Score</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-white">0%</p>
+              <div className="mt-3 flex gap-4 text-sm">
+                <span className="text-emerald-300">Yes 0</span>
+                <span className="text-red-300">No 0</span>
+                <span className="text-blue-100/60">Don&apos;t know 0</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className={PANEL}>
+            <CardHeader>
+              <CardTitle className="text-white">Completion</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-white">
+                0 <span className="text-base font-normal text-blue-100/50">of {totalVisible}</span>
+              </p>
+              <p className="mt-3 text-sm text-blue-100/60">questions answered for this car</p>
+            </CardContent>
+          </Card>
+        </div>
+        {!unlocked && (
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div className="flex items-center gap-2 rounded-lg border border-white/15 bg-black/40 px-4 py-3 text-center text-sm text-blue-100/80 backdrop-blur-sm">
+              <Lock className="size-4 shrink-0 text-blue-100/60" />
+              Complete Part 1 (Info) to reveal the Total Score and Completion.
+            </div>
+          </div>
+        )}
+      </div>
+
       <section className={`rounded-xl border p-5 ${PANEL}`}>
         <div className="mb-3 flex items-center gap-2">
           <h2 className="text-lg font-semibold text-white">Parts</h2>
@@ -164,34 +207,6 @@ export default function SessionScreen({ inspection, unlocked, visibleCounts, tot
           })}
         </div>
       </section>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card className={PANEL}>
-          <CardHeader>
-            <CardTitle className="text-white">Total Score</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-white">0%</p>
-            <div className="mt-3 flex gap-4 text-sm">
-              <span className="text-emerald-300">Yes 0</span>
-              <span className="text-red-300">No 0</span>
-              <span className="text-blue-100/60">Don&apos;t know 0</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className={PANEL}>
-          <CardHeader>
-            <CardTitle className="text-white">Completion</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-white">
-              0 <span className="text-base font-normal text-blue-100/50">of {totalVisible}</span>
-            </p>
-            <p className="mt-3 text-sm text-blue-100/60">questions answered for this car</p>
-          </CardContent>
-        </Card>
-      </div>
 
       <Card className={PANEL}>
         <CardHeader>
