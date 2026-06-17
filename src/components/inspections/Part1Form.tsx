@@ -387,7 +387,7 @@ export default function Part1Form({ inspection }: Props) {
         </CardContent>
       </Card>
 
-      <PartsNav unlocked={unlocked} />
+      <PartsNav unlocked={unlocked} inspectionId={inspection.id} />
     </div>
   );
 }
@@ -507,9 +507,10 @@ function FieldError({ message }: { message: string }) {
   );
 }
 
-// Parts 2-5 placeholder. Disabled (with an explanatory line) until the config is
-// fully valid; once unlocked the cards are enabled-but-inert (no S-04 target yet).
-function PartsNav({ unlocked }: { unlocked: boolean }) {
+// Parts 2-5 nav. Disabled (with an explanatory line) until the config is fully valid;
+// once unlocked each card opens the S-04 session hub, where the per-Part personalized
+// counts and the rest of the parts live.
+function PartsNav({ unlocked, inspectionId }: { unlocked: boolean; inspectionId: string }) {
   const parts = [
     { n: 2, title: "Condition" },
     { n: 3, title: "Documents" },
@@ -541,9 +542,12 @@ function PartsNav({ unlocked }: { unlocked: boolean }) {
               size="sm"
               variant="outline"
               disabled={!unlocked}
+              onClick={() => {
+                window.location.assign(`/inspections/${inspectionId}/session`);
+              }}
               className="mt-3 border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
             >
-              Open
+              Open session
             </Button>
           </div>
         ))}

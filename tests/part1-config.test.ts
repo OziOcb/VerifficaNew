@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isConfigUnlocked, validatePart1, type Part1Input } from "@/lib/part1-config";
+import { isConfigUnlocked, rowToInput, validatePart1, type Part1Input, type Part1Row } from "@/lib/part1-config";
 
 // Exhaustive coverage of idea/veriffica-part-1-validation-rules.md: per-field
 // accept/reject boundaries, every normalization, the CF-1 cross-field block,
@@ -254,5 +254,49 @@ describe("isConfigUnlocked predicate", () => {
 
   it("false when an optional field is invalid (mirrors would-a-Save-succeed)", () => {
     expect(isConfigUnlocked(validInput({ vin: "IOQ1234567890ABCD" }))).toBe(false);
+  });
+});
+
+describe("rowToInput + isConfigUnlocked — the S-04 session-route gate", () => {
+  // The gate the `session.astro` / `session/part/[part].astro` routes run to decide
+  // whether to render the hub or redirect to the Part 1 form. The persisted, camelCased
+  // row carries numbers (year/mileage/doorCount) and nulls for empty optionals — which
+  // `isConfigUnlocked` cannot parse directly (its INPUT is all-strings), so `rowToInput`
+  // stringifies first. These cases pin the redirect decision at the unit level.
+  function validRow(overrides: Partial<Part1Row> = {}): Part1Row {
+    return {
+      price: null,
+      make: "Toyota",
+      model: "Corolla",
+      year: 2020,
+      registrationNumber: "WX 1234A",
+      vin: null,
+      mileage: 135000,
+      fuelType: "petrol",
+      transmission: "manual",
+      drive: "2wd",
+      color: null,
+      bodyType: "hatchback",
+      doorCount: 5,
+      address: null,
+      notes: null,
+      ...overrides,
+    };
+  }
+
+  it("unlocks the hub for a valid persisted config row (numbers + nulls tolerated)", () => {
+    expect(isConfigUnlocked(rowToInput(validRow()))).toBe(true);
+  });
+
+  it("redirects (locked) for an absent/blank row — every column null/missing", () => {
+    expect(isConfigUnlocked(rowToInput({}))).toBe(false);
+  });
+
+  it("redirects (locked) when a required axis is unset", () => {
+    expect(isConfigUnlocked(rowToInput(validRow({ bodyType: null })))).toBe(false);
+  });
+
+  it("redirects (locked) for an invalid stored combo (electric + manual, CF-1)", () => {
+    expect(isConfigUnlocked(rowToInput(validRow({ fuelType: "electric", transmission: "manual" })))).toBe(false);
   });
 });

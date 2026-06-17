@@ -196,6 +196,24 @@ function isGroupVisible(
   return true;
 }
 
+/** The camelCased inspection columns the visibility predicate reads as its config axes. */
+type InspectionConfigRow = Partial<Record<"fuelType" | "transmission" | "drive" | "bodyType", string | null>>;
+
+/**
+ * Build the engine's {@link VisibilityConfig} (the 4 axes) from a camelCased inspection
+ * row. The CHECK constraints on the config columns guarantee any non-null value is a valid
+ * enum member, so this is the one place that narrows the DB-side `string | null` to the
+ * predicate's enum domain (`null` → `undefined`, i.e. an unset axis that fails its predicate).
+ */
+export function configFromInspection(row: InspectionConfigRow): VisibilityConfig {
+  return {
+    fuelType: (row.fuelType ?? undefined) as VisibilityConfig["fuelType"],
+    transmission: (row.transmission ?? undefined) as VisibilityConfig["transmission"],
+    drive: (row.drive ?? undefined) as VisibilityConfig["drive"],
+    bodyType: (row.bodyType ?? undefined) as VisibilityConfig["bodyType"],
+  };
+}
+
 /** Groups visible for `(config, flags)`, sorted by `order`. */
 export function selectVisibleGroups(config: VisibilityConfig, flags: ReadonlySet<RuntimeFlag>): QuestionGroup[] {
   return CATALOGUE.groups.filter((g) => isGroupVisible(g, config, flags)).sort((a, b) => a.order - b.order);

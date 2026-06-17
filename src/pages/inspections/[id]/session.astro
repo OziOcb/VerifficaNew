@@ -1,0 +1,69 @@
+---
+import camelcaseKeys from "camelcase-keys";
+import Layout from "@/layouts/Layout.astro";
+import SessionScreen from "@/components/inspections/SessionScreen";
+import { createClient } from "@/lib/supabase";
+import { isConfigUnlocked, rowToInput } from "@/lib/part1-config";
+import { configFromInspection, visibleCountsByPart, type RuntimeFlag } from "@/lib/questions";
+
+// Session hub (S-04, FR-010). SSR-load the inspection under RLS (same template as
+// `[id].astro`): a foreign/absent id is hidden by RLS → null → redirect to the
+// dashboard. The route lives under the already-protected `/inspections` tree.
+//
+// The FR-014 visibility engine runs HERE, server-side: the 80 KB catalogue is imported
+// only in this frontmatter (via `@/lib/questions`), the personalized set is computed, and
+// ONLY the per-Part counts cross to the `client:only` island — the bank never ships to the
+// browser. Phase 3 keeps equipment flags OFF (empty active set); toggles arrive in Phase 4.
+const { id } = Astro.params;
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+
+const { data: row } = supabase
+  ? await supabase
+      .from("inspections")
+      .select(
+        "id,name,status,price,make,model,year,registration_number,vin,mileage,fuel_type,transmission,drive,color,body_type,door_count,address,notes,global_notes,charging_port_equipped,ev_battery_docs_available,turbo_equipped,mechanical_compressor_equipped,imported_from_eu",
+      )
+      .eq("id", id ?? "")
+      .maybeSingle()
+  : { data: null };
+
+if (!row) {
+  return Astro.redirect("/dashboard");
+}
+
+// Single snake→camel boundary (lessons.md "Field casing"), as in `[id].astro`.
+const inspection = camelcaseKeys(row, { deep: true });
+
+// Gate: the session hub requires a valid Part 1 config. An incomplete/invalid config
+// sends the user to the Part 1 form (part/1), where they make it valid.
+if (!isConfigUnlocked(rowToInput(inspection))) {
+  return Astro.redirect(`/inspections/${id ?? ""}/session/part/1`);
+}
+
+const NO_FLAGS = new Set<RuntimeFlag>(); // Phase 3: flags off; Phase 4 wires the toggles.
+const visibleCounts = visibleCountsByPart(configFromInspection(inspection), NO_FLAGS);
+const totalVisible = visibleCounts.part2 + visibleCounts.part3 + visibleCounts.part4 + visibleCounts.part5;
+---
+
+<Layout title="Inspection session">
+  <div class="bg-cosmic min-h-screen w-full">
+    <main class="mx-auto max-w-3xl p-4 sm:p-8">
+      <SessionScreen
+        client:only="react"
+        inspection={{
+          id: inspection.id,
+          name: inspection.name,
+          status: inspection.status,
+          globalNotes: inspection.globalNotes,
+          chargingPortEquipped: inspection.chargingPortEquipped,
+          evBatteryDocsAvailable: inspection.evBatteryDocsAvailable,
+          turboEquipped: inspection.turboEquipped,
+          mechanicalCompressorEquipped: inspection.mechanicalCompressorEquipped,
+          importedFromEu: inspection.importedFromEu,
+        }}
+        visibleCounts={visibleCounts}
+        totalVisible={totalVisible}
+      />
+    </main>
+  </div>
+</Layout>
