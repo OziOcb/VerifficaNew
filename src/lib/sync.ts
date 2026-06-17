@@ -55,39 +55,73 @@ const CONFIG_FIELDS = [
   "notes",
 ] as const;
 
-type ConfigField = (typeof CONFIG_FIELDS)[number];
+// The S-04 session-screen scalar columns (FR-010 global notes + the 5 FR-014
+// equipment flags). Same treatment as CONFIG_FIELDS: non-indexed camelCase
+// scalars the sync endpoint round-trips for free. `importedFromEu` is the
+// camelCased column name (the engine's FLAG_COLUMN_MAP binds it to the
+// catalogue's `importedFromEU`); this layer only knows the column spelling.
+const SESSION_FIELDS = [
+  "globalNotes",
+  "chargingPortEquipped",
+  "evBatteryDocsAvailable",
+  "turboEquipped",
+  "mechanicalCompressorEquipped",
+  "importedFromEu",
+] as const;
+
+// Every scalar data column the optimistic row carries (config + session). The
+// read-merge in `saveInspection` overlays only the caller-supplied subset of
+// these onto the stored row.
+const DATA_FIELDS = [...CONFIG_FIELDS, ...SESSION_FIELDS] as const;
+
+type DataField = (typeof DATA_FIELDS)[number];
 
 // The minimal shape the caller supplies; the rest of the optimistic row is filled
 // locally. `ownerId`/`createdAt` are placeholders — the server stamps the
 // authoritative values and we adopt them on the way back (research Decision #1).
-// The Part 1 config fields are optional: a save may carry some, all, or none.
+// The config + session data fields are optional: a save may carry some, all, or
+// none — omitted fields are preserved by the read-merge, not nulled.
 type SaveInput = Pick<Inspection, "id"> &
-  Partial<Pick<Inspection, "status" | "name" | "ownerId" | "createdAt" | ConfigField>>;
+  Partial<Pick<Inspection, "status" | "name" | "ownerId" | "createdAt" | DataField>>;
 
 /**
  * Optimistic local write + outbox enqueue, atomically. The `inspections.put` and
  * the `changeQueue.add` run in one `rw` transaction: if either throws, both roll
  * back — you never get a saved record with no outbox entry, or vice versa
  * (dexie-reference.md §2). The row lands `synced: 0` until the server confirms.
+ *
+ * **Read-merge** (no-data-loss guardrail): a save overlays only the data fields
+ * the caller actually supplied onto the stored row, so a sparse update — e.g. the
+ * session screen's `saveInspection({ id, globalNotes })` — keeps the Part 1 config
+ * it never re-sent instead of nulling it. The read of the current row happens
+ * inside the same `rw` transaction as the write, so the merge is atomic. A first
+ * write (no existing row) defaults every omitted column to `null` as before. The
+ * merged row is the outbox payload, so the upsert still carries a complete row.
  */
 export async function saveInspection(input: SaveInput): Promise<void> {
   const now = new Date().toISOString();
-  // Project the supplied config fields onto the row, defaulting any the caller
-  // omitted to `null` (the columns are nullable). `Inspection` makes all 15 keys
-  // required, so they must be present even when unset.
-  const config = Object.fromEntries(CONFIG_FIELDS.map((f) => [f, input[f] ?? null])) as Pick<Inspection, ConfigField>;
-  const row: Inspection = {
-    id: input.id,
-    ownerId: input.ownerId ?? "", // server stamps the authoritative owner_id
-    status: input.status ?? "draft",
-    name: input.name ?? null,
-    createdAt: input.createdAt ?? now,
-    updatedAt: now, // optimistic ordering hint; overwritten by the server's value
-    ...config,
-    synced: 0,
-  };
 
   await db.transaction("rw", db.inspections, db.changeQueue, async () => {
+    const existing = await db.inspections.get(input.id);
+
+    // Overlay only the caller-supplied data keys; omitted keys keep the stored
+    // value (or `null` on a first write). Presence — not nullishness — decides,
+    // so an explicit `null`/`false`/`""` from the caller still writes through.
+    const data = Object.fromEntries(
+      DATA_FIELDS.map((f) => [f, f in input ? (input[f] ?? null) : (existing?.[f] ?? null)]),
+    ) as Pick<Inspection, DataField>;
+
+    const row: Inspection = {
+      id: input.id,
+      ownerId: input.ownerId ?? existing?.ownerId ?? "", // server stamps the authoritative owner_id
+      status: input.status ?? existing?.status ?? "draft",
+      name: input.name ?? existing?.name ?? null,
+      createdAt: input.createdAt ?? existing?.createdAt ?? now,
+      updatedAt: now, // optimistic ordering hint; overwritten by the server's value
+      ...data,
+      synced: 0,
+    };
+
     await db.inspections.put(row);
     await db.changeQueue.add({
       entity: "inspections",

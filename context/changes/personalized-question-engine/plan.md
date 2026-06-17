@@ -540,16 +540,16 @@ migrations are not in the Cloudflare deploy pipeline (see S-02 deploy note).
 
 #### Automated
 
-- [ ] 2.1 Migration applies cleanly against the local DB
-- [ ] 2.2 `src/db/database.types.ts` regenerated, includes the new columns
-- [ ] 2.3 Existing sync/RLS tests still pass: `npm test`
-- [ ] 2.4 A notes-only `saveInspection` preserves a pre-existing config (read-merge), asserted in a test
-- [ ] 2.5 Lint + build pass: `npm run lint && npm run build`
+- [x] 2.1 Migration applies cleanly against the local DB
+- [x] 2.2 `src/db/database.types.ts` regenerated, includes the new columns
+- [x] 2.3 Existing sync/RLS tests still pass: `npm test`
+- [x] 2.4 A notes-only `saveInspection` preserves a pre-existing config (read-merge), asserted in a test
+- [x] 2.5 Lint + build pass: `npm run lint && npm run build`
 
 #### Manual
 
-- [ ] 2.6 `saveInspection` round-trips `globalNotes` + a flag through `/api/inspections/sync`
-- [ ] 2.7 RLS still isolates the new columns from a second account
+- [x] 2.6 `saveInspection` round-trips `globalNotes` + a flag through `/api/inspections/sync`
+- [x] 2.7 RLS still isolates the new columns from a second account
 
 ### Phase 3: Session screen hub (FR-010)
 

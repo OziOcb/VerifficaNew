@@ -104,6 +104,33 @@ describe("POST /api/inspections/sync", () => {
     expect(check.data?.owner_id).toBe(aId);
   });
 
+  it("round-trips the S-04 session columns (globalNotes + a flag) through the snake⇄camel boundary", async () => {
+    mockClient = aClient;
+    const id = crypto.randomUUID();
+    const res = await POST(
+      makeContext({
+        user: { id: aId },
+        body: {
+          op: "put",
+          entityId: id,
+          payload: { id, status: "draft", globalNotes: "inspection-level doc", turboEquipped: true, synced: 0 },
+        },
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    const saved = (await res.json()) as Record<string, unknown>;
+    // The endpoint's top-level transform camelCases the new scalar columns back.
+    expect(saved.globalNotes).toBe("inspection-level doc");
+    expect(saved.turboEquipped).toBe(true);
+
+    // And they persisted snake_case under A's owner_id (RLS-scoped read).
+    const check = await aClient.from("inspections").select().eq("id", id).single();
+    expect(check.error).toBeNull();
+    expect(check.data?.global_notes).toBe("inspection-level doc");
+    expect(check.data?.turbo_equipped).toBe(true);
+  });
+
   it("delete is owner-scoped — removes the owner's row, returns 204", async () => {
     mockClient = aClient;
     const id = crypto.randomUUID();

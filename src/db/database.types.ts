@@ -38,13 +38,18 @@ export type Database = {
         Row: {
           address: string | null
           body_type: string | null
+          charging_port_equipped: boolean | null
           color: string | null
           created_at: string
           door_count: number | null
           drive: string | null
+          ev_battery_docs_available: boolean | null
           fuel_type: string | null
+          global_notes: string | null
           id: string
+          imported_from_eu: boolean | null
           make: string | null
+          mechanical_compressor_equipped: boolean | null
           mileage: number | null
           model: string | null
           name: string | null
@@ -54,6 +59,7 @@ export type Database = {
           registration_number: string | null
           status: string
           transmission: string | null
+          turbo_equipped: boolean | null
           updated_at: string
           vin: string | null
           year: number | null
@@ -61,13 +67,18 @@ export type Database = {
         Insert: {
           address?: string | null
           body_type?: string | null
+          charging_port_equipped?: boolean | null
           color?: string | null
           created_at?: string
           door_count?: number | null
           drive?: string | null
+          ev_battery_docs_available?: boolean | null
           fuel_type?: string | null
+          global_notes?: string | null
           id?: string
+          imported_from_eu?: boolean | null
           make?: string | null
+          mechanical_compressor_equipped?: boolean | null
           mileage?: number | null
           model?: string | null
           name?: string | null
@@ -77,6 +88,7 @@ export type Database = {
           registration_number?: string | null
           status?: string
           transmission?: string | null
+          turbo_equipped?: boolean | null
           updated_at?: string
           vin?: string | null
           year?: number | null
@@ -84,13 +96,18 @@ export type Database = {
         Update: {
           address?: string | null
           body_type?: string | null
+          charging_port_equipped?: boolean | null
           color?: string | null
           created_at?: string
           door_count?: number | null
           drive?: string | null
+          ev_battery_docs_available?: boolean | null
           fuel_type?: string | null
+          global_notes?: string | null
           id?: string
+          imported_from_eu?: boolean | null
           make?: string | null
+          mechanical_compressor_equipped?: boolean | null
           mileage?: number | null
           model?: string | null
           name?: string | null
@@ -100,6 +117,7 @@ export type Database = {
           registration_number?: string | null
           status?: string
           transmission?: string | null
+          turbo_equipped?: boolean | null
           updated_at?: string
           vin?: string | null
           year?: number | null
