@@ -275,6 +275,7 @@ and lives in S-04, not here.
 - **In-app support / help desk** — Why parked: PRD §Non-Goals; help is the static instruction + educational pop-ups.
 - **Advanced error monitoring / observability** — Why parked: PRD §Non-Goals (non-functional) for the first MVP phase.
 - **Multi-device real-time sync guarantee** — Why parked: PRD §Non-Goals; offline-first covers a single device reconciling with the central copy.
+- **Client-side routing (Astro `ClientRouter` / SPA-style navigation)** — Why parked: deferred UX polish, not in the PRD; full-page MPA reloads are acceptable for the MVP. **Before implementing, run `/10x-research` first** — it's cross-cutting (interacts with `client:only` island re-mount, the `<ClientRouter />` swap of body scripts incl. the SW-registration `window load` listener, `transition:persist` for island state, and the `window.location.assign` redirects that would need converting to `navigate()` from `astro:transitions/client`), so research must confirm it fits the stack and won't break the offline/PWA or islands behavior before any slice is planned.
 
 ## Done
 
