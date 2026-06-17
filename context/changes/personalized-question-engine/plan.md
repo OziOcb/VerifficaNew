@@ -555,17 +555,17 @@ migrations are not in the Cloudflare deploy pipeline (see S-02 deploy note).
 
 #### Automated
 
-- [x] 3.1 Lint + build pass: `npm run lint && npm run build`
-- [x] 3.2 Island receives the filtered set (no catalogue import in the island module)
-- [x] 3.3 `/inspections/[id]/session` redirects when config is invalid/absent
+- [x] 3.1 Lint + build pass: `npm run lint && npm run build` — 1063e3e
+- [x] 3.2 Island receives the filtered set (no catalogue import in the island module) — 1063e3e
+- [x] 3.3 `/inspections/[id]/session` redirects when config is invalid/absent — 1063e3e
 
 #### Manual
 
-- [x] 3.4 Session screen shows name, Part nav, Total Score (0%), completion, editable notes
-- [x] 3.5 Per-Part counts differ between petrol and EV configs (personalization visible)
-- [x] 3.6 Global notes persist across reload and are distinct from Part 1 notes
-- [x] 3.7 Tapping a Part 2–5 button lands on the placeholder; Back returns to session
-- [x] 3.8 Notes > 10,000 chars shows the inline limit error
+- [x] 3.4 Session screen shows name, Part nav, Total Score (0%), completion, editable notes — 1063e3e
+- [x] 3.5 Per-Part counts differ between petrol and EV configs (personalization visible) — 1063e3e
+- [x] 3.6 Global notes persist across reload and are distinct from Part 1 notes — 1063e3e
+- [x] 3.7 Tapping a Part 2–5 button lands on the placeholder; Back returns to session — 1063e3e
+- [x] 3.8 Notes > 10,000 chars shows the inline limit error — 1063e3e
 
 ### Phase 4: Equipment-flag toggles + recompute
 
