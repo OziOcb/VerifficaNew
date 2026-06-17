@@ -102,3 +102,10 @@ update`, not a bare count.
   known type-info gaps. Keep the disable narrow (one rule, `.astro` only) and
   comment why.
 - **Applies to**: implement, impl-review
+
+## Self-verify anything you can; only delegate true human-judgment checks
+
+- **Context**: Any phase with a verification or "manual test" step — especially /10x-implement and /10x-impl-review success criteria, where a plan lists checks under a "Manual Verification" heading.
+- **Problem**: Treating a check as "manual" by default and handing it to the user wastes their time and stalls the loop, when the agent could have run it directly. Example: reconciling the visibility engine's per-group/per-part output against the authored `list-of-questions.md` source of truth was listed as a manual spot-check, but the agent can read both files and reconcile them line-by-line itself.
+- **Rule**: If a verification step can be performed by the agent — reconciling output against a source-of-truth file, running a script, comparing data, parsing a catalogue — do it directly instead of delegating it as a "manual test". Only ask the user to manually verify things that genuinely require human judgment, a live UI, a physical device, or external access the agent lacks.
+- **Applies to**: implement, impl-review
