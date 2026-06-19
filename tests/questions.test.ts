@@ -4,14 +4,18 @@ import {
   FLAG_COLUMN_MAP,
   parseCatalogue,
   relevantFlags,
+  relevantToggles,
+  relevantTogglesByFuel,
   resolveExplanation,
   RUNTIME_FLAGS,
   selectVisibleGroups,
   selectVisibleQuestionIds,
+  sessionCounts,
   visibleCountsByPart,
   type RuntimeFlag,
   type VisibilityConfig,
 } from "@/lib/questions";
+import { countsForFlags, totalCount } from "@/lib/session-counts";
 import bankJson from "@/data/questions/question-bank.json";
 import mappingJson from "@/data/questions/question-mapping-config.json";
 
@@ -166,6 +170,85 @@ describe("relevantFlags (catalogue-derived toggle filter)", () => {
 
   it("hybrid exposes all five", () => {
     expect(relevantFlags(HYBRID)).toEqual(new Set(RUNTIME_FLAGS));
+  });
+});
+
+describe("relevantTogglesByFuel (Part 1's catalogue-free relevance map)", () => {
+  it("every flag-gated group depends only on fuelType — the map's load-bearing assumption", () => {
+    // If a future catalogue edit gates a flag on drive/bodyType/etc., the fuelType-keyed
+    // map in Part 1 would silently go wrong; this fails loudly instead.
+    for (const g of mappingJson.questionGroups) {
+      if (!g.requiresEquipmentFlag) continue;
+      expect(Object.keys(g.visibleWhen).every((axis) => axis === "fuelType")).toBe(true);
+    }
+  });
+
+  it("keys each fuelType plus `none`, each entry matching relevantToggles for that config", () => {
+    const map = relevantTogglesByFuel();
+    expect(Object.keys(map).sort()).toEqual(["diesel", "electric", "hybrid", "none", "petrol"]);
+    expect(map.none).toEqual(relevantToggles({}));
+    expect(map.petrol).toEqual(relevantToggles({ fuelType: "petrol" }));
+    expect(map.electric).toEqual(relevantToggles({ fuelType: "electric" }));
+    // An unset fuelType still surfaces the always-relevant imported-from-EU toggle.
+    expect(map.none.map((t) => t.column)).toEqual(["importedFromEu"]);
+  });
+});
+
+describe("Phase 4: each flag toggle changes the visible set by exactly its gated group", () => {
+  // HYBRID makes all 5 flags relevant (asserted by relevantFlags above), so every
+  // flag-gated group is config-visible — the clean fixture for the per-flag delta contract.
+  const base = selectVisibleQuestionIds(HYBRID, NO_FLAGS);
+
+  // The questions a flag should reveal, derived straight from the JSON: questions whose
+  // group is gated by that flag (under HYBRID every such group passes its config axes).
+  const expectedFor = (flag: RuntimeFlag) =>
+    new Set(
+      bankJson.questions
+        .filter((q) => mappingJson.questionGroups.find((g) => g.id === q.groupId)?.requiresEquipmentFlag === flag)
+        .map((q) => q.id),
+    );
+
+  it.each(RUNTIME_FLAGS)("toggling %s adds exactly that flag's gated questions, additively", (flag) => {
+    const withFlag = selectVisibleQuestionIds(HYBRID, new Set<RuntimeFlag>([flag]));
+    const added = new Set([...withFlag].filter((id) => !base.has(id)));
+    const expected = expectedFor(flag);
+    expect(expected.size).toBeGreaterThan(0); // every flag reveals at least one question
+    expect(added).toEqual(expected); // exactly the gated group's questions, no more
+    expect([...base].every((id) => withFlag.has(id))).toBe(true); // purely additive
+    expect(withFlag.size).toBe(base.size + expected.size);
+  });
+});
+
+describe("Phase 4: sessionCounts ⇄ countsForFlags equals the engine for any flag subset", () => {
+  it.each([
+    ["petrol", PETROL],
+    ["EV", EV],
+    ["hybrid", HYBRID],
+  ])("recomputes %s counts client-side identically to visibleCountsByPart", (_name, cfg) => {
+    const payload = sessionCounts(cfg);
+    const rel = [...relevantFlags(cfg)];
+    // empty set, each singleton, and the full relevant set
+    const subsets: RuntimeFlag[][] = [[], rel, ...rel.map((f) => [f])];
+    for (const sub of subsets) {
+      const active = new Set(sub);
+      const live = countsForFlags(payload, active);
+      expect(live).toEqual(visibleCountsByPart(cfg, active));
+      // the denominator the session screen shows tracks the same recompute
+      const expectedTotal = Object.values(visibleCountsByPart(cfg, active)).reduce((a, b) => a + b, 0);
+      expect(totalCount(live)).toBe(expectedTotal);
+    }
+  });
+
+  it("an irrelevant flag has no delta entry, so it can never move the counts", () => {
+    // EV: turbo/compressor are irrelevant (fuel axis excludes them) → not in the payload.
+    const payload = sessionCounts(EV);
+    expect(payload.flagDeltas.turboEquipped).toBeUndefined();
+    expect(payload.flagDeltas.mechanicalCompressorEquipped).toBeUndefined();
+    expect(relevantToggles(EV).map((t) => t.column)).toEqual([
+      "chargingPortEquipped",
+      "evBatteryDocsAvailable",
+      "importedFromEu",
+    ]);
   });
 });
 

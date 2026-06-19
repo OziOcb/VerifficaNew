@@ -4,7 +4,7 @@ import Layout from "@/layouts/Layout.astro";
 import SessionScreen from "@/components/inspections/SessionScreen";
 import { createClient } from "@/lib/supabase";
 import { isConfigUnlocked, rowToInput } from "@/lib/part1-config";
-import { configFromInspection, visibleCountsByPart, type RuntimeFlag } from "@/lib/questions";
+import { configFromInspection, relevantToggles, sessionCounts } from "@/lib/questions";
 
 // Session hub (S-04, FR-010). SSR-load the inspection under RLS (same template as
 // `[id].astro`): a foreign/absent id is hidden by RLS → null → redirect to the
@@ -12,8 +12,8 @@ import { configFromInspection, visibleCountsByPart, type RuntimeFlag } from "@/l
 //
 // The FR-014 visibility engine runs HERE, server-side: the 80 KB catalogue is imported
 // only in this frontmatter (via `@/lib/questions`), the personalized set is computed, and
-// ONLY the per-Part counts cross to the `client:only` island — the bank never ships to the
-// browser. Phase 3 keeps equipment flags OFF (empty active set); toggles arrive in Phase 4.
+// ONLY the count payload + relevant toggles cross to the `client:only` island — the bank
+// never ships to the browser. The island recomputes live counts as equipment flags toggle.
 const { id } = Astro.params;
 const supabase = createClient(Astro.request.headers, Astro.cookies);
 
@@ -41,9 +41,13 @@ const inspection = camelcaseKeys(row, { deep: true });
 // to configure. The per-Part routes still guard server-side (part 2–5 → form when locked).
 const unlocked = isConfigUnlocked(rowToInput(inspection));
 
-const NO_FLAGS = new Set<RuntimeFlag>(); // Phase 3: flags off; Phase 4 wires the toggles.
-const visibleCounts = visibleCountsByPart(configFromInspection(inspection), NO_FLAGS);
-const totalVisible = visibleCounts.part2 + visibleCounts.part3 + visibleCounts.part4 + visibleCounts.part5;
+// The FR-014 engine runs HERE (server-side, with the catalogue): build the count payload
+// (base + per-relevant-flag deltas) and the relevant flags' column↔flag bindings for this
+// config. The island recomputes live counts from the payload for the persisted flag set
+// (toggled in the Part 1 form) — the catalogue stays here, never shipped to the browser.
+const config = configFromInspection(inspection);
+const counts = sessionCounts(config);
+const flagBindings = relevantToggles(config);
 ---
 
 <Layout title="Inspection session">
@@ -63,8 +67,8 @@ const totalVisible = visibleCounts.part2 + visibleCounts.part3 + visibleCounts.p
           importedFromEu: inspection.importedFromEu,
         }}
         unlocked={unlocked}
-        visibleCounts={visibleCounts}
-        totalVisible={totalVisible}
+        counts={counts}
+        flagBindings={flagBindings}
       />
     </main>
   </div>

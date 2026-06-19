@@ -4,7 +4,13 @@ import Layout from "@/layouts/Layout.astro";
 import Part1Form from "@/components/inspections/Part1Form";
 import { createClient } from "@/lib/supabase";
 import { isConfigUnlocked, rowToInput } from "@/lib/part1-config";
-import { configFromInspection, visibleCountsByPart, type RuntimeFlag, type PartId } from "@/lib/questions";
+import {
+  activeFlagsFromInspection,
+  configFromInspection,
+  relevantTogglesByFuel,
+  visibleCountsByPart,
+  type PartId,
+} from "@/lib/questions";
 
 // Per-Part screens under the session hub (S-04). Part 1 IS the Part 1 config form
 // (the existing island); Parts 2–5 are placeholders until S-05 builds the question
@@ -29,7 +35,7 @@ const { data: row } = supabase
   ? await supabase
       .from("inspections")
       .select(
-        "id,name,status,created_at,price,make,model,year,registration_number,vin,mileage,fuel_type,transmission,drive,color,body_type,door_count,address,notes",
+        "id,name,status,created_at,price,make,model,year,registration_number,vin,mileage,fuel_type,transmission,drive,color,body_type,door_count,address,notes,charging_port_equipped,ev_battery_docs_available,turbo_equipped,mechanical_compressor_equipped,imported_from_eu",
       )
       .eq("id", id ?? "")
       .maybeSingle()
@@ -48,12 +54,18 @@ if (part !== "1" && !unlocked) {
   return Astro.redirect(`/inspections/${id ?? ""}/session/part/1`);
 }
 
-// The per-Part visible count (Phase 3: flags off) for the 2–5 placeholders.
+// The per-Part visible count for the 2–5 placeholders — honoring the persisted equipment
+// flags (Phase 4) so it matches what the session nav shows after a toggle.
 let visibleCount = 0;
 if (part !== "1") {
-  const counts = visibleCountsByPart(configFromInspection(inspection), new Set<RuntimeFlag>());
+  const counts = visibleCountsByPart(configFromInspection(inspection), activeFlagsFromInspection(inspection));
   visibleCount = counts[`part${part}` as PartId];
 }
+
+// Part 1 hosts the equipment toggles (FR-014): the catalogue-derived relevance map, keyed
+// by fuelType, lets the form pick relevant toggles from its live selection without the
+// catalogue. Computed here (server-side); only the small map crosses to the island.
+const relevantTogglesMap = relevantTogglesByFuel();
 ---
 
 {
@@ -61,7 +73,7 @@ if (part !== "1") {
     <Layout title="Part 1 — Vehicle configuration">
       <div class="bg-cosmic min-h-screen w-full">
         <main class="mx-auto max-w-3xl p-4 sm:p-8">
-          <Part1Form client:only="react" inspection={inspection} />
+          <Part1Form client:only="react" inspection={inspection} relevantTogglesByFuel={relevantTogglesMap} />
         </main>
       </div>
     </Layout>

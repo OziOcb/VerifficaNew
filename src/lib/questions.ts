@@ -23,6 +23,7 @@
 // via an EXPLICIT column↔flag map — see FLAG_COLUMN_MAP below.
 import { z } from "zod";
 import type { Part1Config } from "@/lib/part1-config";
+import type { PartCounts, SessionCounts } from "@/lib/session-counts";
 import bankJson from "@/data/questions/question-bank.json";
 import mappingJson from "@/data/questions/question-mapping-config.json";
 
@@ -174,8 +175,18 @@ export const FLAG_COLUMN_MAP = {
   importedFromEu: "importedFromEU",
 } as const satisfies Record<string, RuntimeFlag>;
 
+/** The camelCased DB column names for the 5 equipment flags (the keys of FLAG_COLUMN_MAP). */
+export type FlagColumn = keyof typeof FLAG_COLUMN_MAP;
+
 /** The camelCased inspection columns this engine reads to build the active-flag set. */
-export type InspectionFlagRow = Partial<Record<keyof typeof FLAG_COLUMN_MAP, boolean | null>>;
+export type InspectionFlagRow = Partial<Record<FlagColumn, boolean | null>>;
+
+// Reverse of FLAG_COLUMN_MAP — catalogue flag → DB column. The session island works in
+// column space (it reads/writes the inspection's flag columns), so this is the binding it
+// needs to translate a relevant catalogue flag back to the column to persist.
+const FLAG_TO_COLUMN = Object.fromEntries(
+  Object.entries(FLAG_COLUMN_MAP).map(([column, flag]) => [flag, column]),
+) as Record<RuntimeFlag, FlagColumn>;
 
 // --- The visibility predicate (the one contract S-07 reuses) --------------
 
@@ -271,4 +282,54 @@ export function relevantFlags(config: VisibilityConfig): Set<RuntimeFlag> {
     }
   }
   return relevant;
+}
+
+/** An equipment toggle the session screen should render: the catalogue `flag` (for the
+ *  visibility recompute) paired with its DB `column` (for reading/persisting state). */
+export interface RelevantToggle {
+  flag: RuntimeFlag;
+  column: FlagColumn;
+}
+
+/**
+ * The equipment toggles to render for `config`, derived from {@link relevantFlags} so the
+ * toggle UI carries no hand-coded fuel rules to drift. Stable order (RUNTIME_FLAGS order).
+ */
+export function relevantToggles(config: VisibilityConfig): RelevantToggle[] {
+  return [...relevantFlags(config)].map((flag) => ({ flag, column: FLAG_TO_COLUMN[flag] }));
+}
+
+/** The relevant equipment toggles keyed by `fuelType` value (plus `"none"` for an unset
+ *  fuelType). Lets the Part 1 form pick the toggles its live fuelType selection makes
+ *  relevant WITHOUT importing the catalogue. Catalogue-derived via {@link relevantToggles};
+ *  valid because every flag-gated group depends only on `fuelType` — guarded by a unit
+ *  test (`tests/questions.test.ts`). */
+export type RelevantTogglesByFuel = Record<string, RelevantToggle[]>;
+
+export function relevantTogglesByFuel(): RelevantTogglesByFuel {
+  const map: RelevantTogglesByFuel = { none: relevantToggles({}) };
+  for (const fuel of fuelTypeSchema.options) map[fuel] = relevantToggles({ fuelType: fuel });
+  return map;
+}
+
+/**
+ * The catalogue-derived count payload the session island consumes (Phase 4): the
+ * flag-independent `base` per-Part counts plus, for each config-relevant flag, the per-Part
+ * delta that flag reveals. The island recomputes live counts as `base + Σ(active deltas)`
+ * WITHOUT the catalogue (see `@/lib/session-counts`); the additive model guarantees that
+ * sum equals `visibleCountsByPart(config, activeFlags)`.
+ */
+export function sessionCounts(config: VisibilityConfig): SessionCounts {
+  const base = visibleCountsByPart(config, new Set<RuntimeFlag>());
+  const flagDeltas: Partial<Record<RuntimeFlag, PartCounts>> = {};
+  for (const flag of relevantFlags(config)) {
+    const withFlag = visibleCountsByPart(config, new Set<RuntimeFlag>([flag]));
+    flagDeltas[flag] = {
+      part2: withFlag.part2 - base.part2,
+      part3: withFlag.part3 - base.part3,
+      part4: withFlag.part4 - base.part4,
+      part5: withFlag.part5 - base.part5,
+    };
+  }
+  return { base, flagDeltas };
 }

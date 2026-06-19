@@ -19,8 +19,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ServerError } from "@/components/auth/ServerError";
+import EquipmentToggles from "@/components/inspections/EquipmentToggles";
 import { validatePart1, normalizeFieldOnBlur, type Part1Field } from "@/lib/part1-config";
 import { saveInspection, flushQueue, startAutoSync } from "@/lib/sync";
+import type { FlagColumn, RelevantTogglesByFuel, RuntimeFlag } from "@/lib/questions";
 
 // Cosmic glass palette — matches the dashboard/home shell. The shadcn primitives
 // are light-themed by default; these className overrides recolor them for the dark
@@ -143,10 +145,31 @@ export interface Part1FormInspection {
   doorCount: number | null;
   address: string | null;
   notes: string | null;
+  // The 5 FR-014 equipment flags (scalar columns on the inspection row). Configured here
+  // alongside the vehicle config; they feed the same visibility engine the session uses.
+  chargingPortEquipped: boolean | null;
+  evBatteryDocsAvailable: boolean | null;
+  turboEquipped: boolean | null;
+  mechanicalCompressorEquipped: boolean | null;
+  importedFromEu: boolean | null;
 }
 
 interface Props {
   inspection: Part1FormInspection;
+  // The relevant equipment toggles keyed by fuelType (catalogue-derived server-side), so the
+  // form picks toggles from the live fuelType selection without shipping the catalogue.
+  relevantTogglesByFuel: RelevantTogglesByFuel;
+}
+
+// Seed the equipment-flag state from the loaded inspection (null/false → off).
+function seedFlags(i: Part1FormInspection): Record<FlagColumn, boolean> {
+  return {
+    chargingPortEquipped: i.chargingPortEquipped ?? false,
+    evBatteryDocsAvailable: i.evBatteryDocsAvailable ?? false,
+    turboEquipped: i.turboEquipped ?? false,
+    mechanicalCompressorEquipped: i.mechanicalCompressorEquipped ?? false,
+    importedFromEu: i.importedFromEu ?? false,
+  };
 }
 
 // Form values are all strings (the schema INPUT is raw form text). Seed each field
@@ -184,13 +207,20 @@ function seedValues(i: Part1FormInspection): Record<Part1Field, string> {
   };
 }
 
-export default function Part1Form({ inspection }: Props) {
+export default function Part1Form({ inspection, relevantTogglesByFuel }: Props) {
   const [values, setValues] = useState<Record<Part1Field, string>>(() => seedValues(inspection));
   const [errors, setErrors] = useState<Partial<Record<Part1Field, string>>>({});
   const [name, setName] = useState<string | null>(inspection.name);
+  const [flags, setFlags] = useState<Record<FlagColumn, boolean>>(() => seedFlags(inspection));
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Which equipment toggles to show, driven by the live fuelType selection (the only axis
+  // any flag-gated group depends on). Catalogue-derived map, so no fuel rules live here.
+  const toggles = relevantTogglesByFuel[values.fuelType || "none"] ?? relevantTogglesByFuel.none;
+  const activeFlags = new Set<RuntimeFlag>();
+  for (const t of toggles) if (flags[t.column]) activeFlags.add(t.flag);
 
   // Focus targets for UX-3. Inputs register their <input>; selects register their
   // trigger button. Keyed by field id.
@@ -285,6 +315,7 @@ export default function Part1Form({ inspection }: Props) {
         createdAt: inspection.createdAt,
         name: autoName,
         ...config,
+        ...flags, // equipment flags commit together with the config (FR-014)
       });
       setName(autoName);
       // Push the save to the server before navigating, so the session page's SSR load
@@ -301,6 +332,13 @@ export default function Part1Form({ inspection }: Props) {
     } finally {
       setSaving(false);
     }
+  }
+
+  // A toggle only updates local form state — the equipment flags persist together with the
+  // rest of Part 1 on Save (handleSave), consistent with every other field on this form.
+  function handleToggleFlag(column: FlagColumn, next: boolean) {
+    setFlags((prev) => ({ ...prev, [column]: next }));
+    setJustSaved(false);
   }
 
   return (
@@ -324,7 +362,8 @@ export default function Part1Form({ inspection }: Props) {
         </CardHeader>
         <CardContent>
           <div className="grid gap-5 sm:grid-cols-2">
-            {FIELD_ORDER.map((field) => {
+            {/* Notes is pulled out of the grid so the Equipment section can sit above it. */}
+            {FIELD_ORDER.filter((field) => field !== "notes").map((field) => {
               const enumOptions = ENUM_OPTIONS[field];
               if (enumOptions) {
                 // Hide Manual when Electric is selected (CF-1 made unreachable in the UI).
@@ -370,6 +409,30 @@ export default function Part1Form({ inspection }: Props) {
                 />
               );
             })}
+          </div>
+
+          {/* Equipment toggles — relevant to the live fuelType — sit above the Notes input. */}
+          <div className="mt-6">
+            <EquipmentToggles toggles={toggles} active={activeFlags} onToggle={handleToggleFlag} />
+          </div>
+
+          <div className="mt-6">
+            <TextFieldRow
+              field="notes"
+              value={values.notes}
+              error={errors.notes}
+              required={REQUIRED.has("notes")}
+              multiline
+              onInput={(v) => {
+                handleInput("notes", v);
+              }}
+              onBlur={() => {
+                handleBlur("notes");
+              }}
+              registerRef={(el) => {
+                refs.current.notes = el;
+              }}
+            />
           </div>
 
           <div className="mt-6 flex items-center gap-3">

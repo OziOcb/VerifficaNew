@@ -18,6 +18,8 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { saveInspection, flushQueue, startAutoSync } from "@/lib/sync";
+import { countsForFlags, totalCount, type SessionCounts } from "@/lib/session-counts";
+import type { RelevantToggle, RuntimeFlag } from "@/lib/questions";
 
 // Cosmic glass palette — matches Part1Form / the dashboard shell.
 const PANEL = "border-white/10 bg-white/5 text-white backdrop-blur-xl";
@@ -48,13 +50,18 @@ interface Props {
   inspection: SessionInspection;
   // Whether the Part 1 config is valid. Parts 2–5 stay locked in the nav until it is.
   unlocked: boolean;
-  visibleCounts: { part2: number; part3: number; part4: number; part5: number };
-  totalVisible: number;
+  // The catalogue-derived count payload (base + per-relevant-flag deltas) computed
+  // server-side; the island recomputes live counts from it as the persisted flags change.
+  counts: SessionCounts;
+  // The relevant flags' column↔flag bindings (catalogue-derived server-side). Not rendered
+  // here — the toggles live in the Part 1 form; this is only how the screen reads the
+  // persisted flag columns off the live row to recompute the personalized counts.
+  flagBindings: RelevantToggle[];
 }
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
-export default function SessionScreen({ inspection, unlocked, visibleCounts, totalVisible }: Props) {
+export default function SessionScreen({ inspection, unlocked, counts, flagBindings }: Props) {
   // `draft` is the user's in-progress edit (null until they type). The displayed value
   // falls back to the locally-saved Dexie row, then the SSR prop — so an offline edit
   // not yet synced to the server is reflected (via `useLiveQuery`) without an effect
@@ -98,14 +105,28 @@ export default function SessionScreen({ inspection, unlocked, visibleCounts, tot
     setDraft(value);
   }
 
+  // The active-flag set is DERIVED from the persisted flag columns (the live Dexie row,
+  // falling back to the SSR prop), so a flag set in Part 1 — even an offline edit not yet
+  // synced — reflects here via `useLiveQuery` without a server round-trip, and a reload
+  // re-hydrates the same set. The bindings carry the column↔flag map (e.g. importedFromEu →
+  // importedFromEU) since the catalogue itself never reaches this island.
+  const flagRow = liveRow ?? inspection;
+  const activeFlags = new Set<RuntimeFlag>();
+  for (const t of flagBindings) if (flagRow[t.column]) activeFlags.add(t.flag);
+
+  // Live per-Part counts + Total Score / completion denominator, recomputed from the server
+  // payload for the persisted flag set (FR-014). The 80 KB catalogue never reaches here.
+  const liveCounts = countsForFlags(counts, activeFlags);
+  const totalVisible = totalCount(liveCounts);
+
   // Part names + order are the PRD's five parts (prd.md:56) — the real-world physical
   // inspection order (Info → Standstill → Engine → Drive → Documents; prd.md:194).
   const parts = [
     { n: 1, title: "Info", count: null as number | null },
-    { n: 2, title: "Standstill", count: visibleCounts.part2 },
-    { n: 3, title: "Engine", count: visibleCounts.part3 },
-    { n: 4, title: "Drive", count: visibleCounts.part4 },
-    { n: 5, title: "Documents", count: visibleCounts.part5 },
+    { n: 2, title: "Standstill", count: liveCounts.part2 },
+    { n: 3, title: "Engine", count: liveCounts.part3 },
+    { n: 4, title: "Drive", count: liveCounts.part4 },
+    { n: 5, title: "Documents", count: liveCounts.part5 },
   ];
 
   return (
