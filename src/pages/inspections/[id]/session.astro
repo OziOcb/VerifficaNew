@@ -27,6 +27,8 @@ const { data: row } = supabase
       .maybeSingle()
   : { data: null };
 
+// The hub's only redirect: an absent row (RLS hid a foreign/missing id → null). An
+// invalid config does NOT redirect — the hub renders with Parts 2–5 locked in the nav.
 if (!row) {
   return Astro.redirect("/dashboard");
 }

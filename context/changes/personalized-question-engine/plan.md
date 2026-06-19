@@ -333,13 +333,19 @@ phase (flag-gated groups simply hidden); toggles arrive in Phase 4.
 **Intent**: SSR-load the inspection under RLS (redirect to `/dashboard` if absent, per the
 `[id].astro` template), `camelcaseKeys` it, import the catalogue **server-side**, compute
 the visible set + per-Part counts, and pass the _filtered_ set + config + flags to a
-`client:only` island. Gate access behind `isConfigUnlocked` — an inspection without a valid
-config redirects back to the Part 1 form.
+`client:only` island.
+
+> **Addendum (shipped design, see Addendum below):** the session route is the **always-on
+> landing hub**, not gated by `isConfigUnlocked`. It renders regardless of config validity;
+> Parts 2–5 are **locked in the nav** (non-navigable) until the config is valid, and the
+> per-Part 2–5 routes redirect to Part 1 when locked. `[id].astro` redirects to this hub. An
+> invalid config no longer redirects away from `/session` — the hub is the entry point.
 
 **Contract**: New route under the already-protected `/inspections` tree
 (`middleware.ts:4`). Selects the config columns + `global_notes` + the 5 flag columns +
-`name`/`status`. Passes to the island: `{ inspection, visibleGroupsByPart, visibleCounts,
-totalVisible }`. The 80 KB bank never reaches the client.
+`name`/`status`. Passes to the island: `{ inspection, unlocked, counts, flagBindings }`
+(the catalogue-derived `SessionCounts` payload, not the raw group set). The 80 KB bank
+never reaches the client.
 
 #### 2. Session island
 
@@ -391,7 +397,7 @@ treatment.
 
 - [ ] Lint + build pass: `npm run lint && npm run build`
 - [ ] Type check confirms the island receives the filtered set (no catalogue import in the island module)
-- [ ] An e2e/route test (or existing suite) confirms `/inspections/[id]/session` redirects when config is invalid/absent
+- [ ] `/inspections/[id]/session` redirects to `/dashboard` when the row is **absent** (RLS → null). An **invalid config does NOT redirect** — it lands on the hub with Parts 2–5 locked; the per-Part 2–5 routes are what redirect (to Part 1) when locked. (Verified by manual walkthrough; the guard lives in `.astro` frontmatter — no automated route test was added.)
 
 #### Manual Verification:
 
@@ -417,12 +423,22 @@ and Total Score denominator — the exact recompute path S-07 reuses.
 
 #### 1. Relevance-filtered toggle group
 
-**File**: `src/components/inspections/SessionScreen.tsx` (+ a small `EquipmentToggles.tsx`)
+**File**: `src/components/inspections/EquipmentToggles.tsx` (presentational) +
+`src/components/inspections/Part1Form.tsx` (host)
+
+> **Addendum (shipped design):** the toggles live in the **Part 1 form**, not the session
+> screen — this resolves change.md's "open unknown (runtime equipment-flag input affordance)"
+> in favor of treating flags as config that commits **atomically with Part 1 on Save**
+> (`Part1Form.tsx:312-319`), rather than instant per-toggle persistence on the session hub.
+> The Part 1 route receives a catalogue-derived `relevantTogglesByFuel` map (server-side) so
+> the form picks relevant toggles from its live `fuelType` selection **without importing the
+> catalogue**. `SessionScreen` still recomputes counts from the **persisted** flag set (via
+> `flagBindings` + the live Dexie row) but renders no toggle itself.
 
 **Intent**: Render only the flags the current config makes relevant (e.g. hide
 turbo/compressor for an EV, hide charging-port/EV-docs for a combustion car; `importedFromEU`
-always shown). Each toggle persists via `saveInspection` and updates the active-flag set the
-predicate consumes.
+always shown). Each toggle updates local form state and persists via `saveInspection` on the
+Part 1 Save, feeding the active-flag set the predicate consumes.
 
 **Contract**: Flag relevance is **derived from the catalogue, not hand-coded.** Add a pure
 engine helper `relevantFlags(config): Set<RuntimeFlag>` (Phase 1 §2) — a flag X is relevant
@@ -460,7 +476,7 @@ signature S-07 will call on a config change.
 #### Manual Verification:
 
 - [ ] For a hybrid config, the charging-port / EV-docs / turbo / compressor toggles appear; for a petrol config only turbo / compressor / imported show; for an EV no turbo/compressor
-- [ ] Enabling `turboEquipped` increases the Part 4 count and the Total Score denominator immediately, with no reload
+- [ ] Enabling `turboEquipped` in the Part 1 form and saving navigates to the session, where the Part 4 count and Total Score denominator reflect it. (Within the session, the count/denominator recompute live from the persisted flag set via `countsForFlags`; the toggle itself lives in Part 1 and commits on Save, so the rise is seen after the Save → hub navigation, not via an on-session-screen toggle.)
 - [ ] A toggled flag persists across reload (round-tripped to the DB) and re-hydrates the same visible set
 
 **Implementation Note**: After Phase 4, pause for final human confirmation that the full
@@ -517,6 +533,34 @@ migrations are not in the Cloudflare deploy pipeline (see S-02 deploy note).
 - Offline write path: `src/lib/sync.ts:73-100,182-215`; sync boundary `src/pages/api/inspections/sync.ts:44-59`
 - Catalogue: `idea/veriffica-questions-list/question-{bank,mapping-config}.json` (+ schemas)
 - Casing rule: `context/foundation/lessons.md`
+
+## Addendum: shipped-design divergences (2026-06-19, impl-review)
+
+The implementation refined the Phase 3/4 UX during build. The phase bodies above carry
+inline addenda; summarized here so the source of truth is reconciled for S-05/S-07:
+
+1. **Session route is the always-on landing hub** (not gated by `isConfigUnlocked`).
+   `[id].astro` redirects to `/session`; `/session` renders for any config validity with
+   Parts 2–5 locked-in-nav until valid; the per-Part 2–5 routes redirect to Part 1 when
+   locked. (Plan originally: `/session` redirects to the form on invalid config.) Affects
+   Phase 3 §1 and criterion 3.3.
+2. **Equipment toggles live in the Part 1 form, committing on Save** — not on the session
+   screen with instant per-toggle persistence. This resolves change.md's "open unknown
+   (equipment-flag input affordance)": flags are treated as config. `SessionScreen` still
+   recomputes counts from the **persisted** flag set but renders no toggle. Affects Phase 4
+   §1 and criterion 4.5.
+3. **Client recompute is base + Σ(flag deltas)** via the new catalogue-free
+   `src/lib/session-counts.ts` (`SessionCounts`/`countsForFlags`), not by re-filtering a
+   group set in the island. The island ships only numbers; equivalence to
+   `visibleCountsByPart` is pinned by `tests/questions.test.ts:222-253`. New module, not in
+   the original Changes Required.
+
+The Progress checkbox titles below are left verbatim (per "do not rename step titles"); read
+3.3 and 4.5 against the reworded criteria in the phase bodies.
+
+A separate, out-of-scope fix also landed on this branch: the 2-per-owner limit trigger
+(`supabase/migrations/20260617220000_inspections_limit_excludes_self.sql` + `tests/
+inspections.limit.test.ts`, commit 346e03e) — captured as a lessons.md rule.
 
 ## Progress
 

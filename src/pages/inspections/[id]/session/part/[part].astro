@@ -9,8 +9,8 @@ import {
   configFromInspection,
   relevantTogglesByFuel,
   visibleCountsByPart,
-  type PartId,
 } from "@/lib/questions";
+import { isValidPart, resolvePartScreen } from "@/lib/session-routes";
 
 // Per-Part screens under the session hub (S-04). Part 1 IS the Part 1 config form
 // (the existing island); Parts 2–5 are placeholders until S-05 builds the question
@@ -26,7 +26,8 @@ const PART_TITLES: Record<string, string> = {
   "4": "Drive",
   "5": "Documents",
 };
-if (!part || !(part in PART_TITLES)) {
+// Unknown part is not a real screen → dashboard (before any DB work).
+if (!isValidPart(part)) {
   return Astro.redirect("/dashboard");
 }
 
@@ -41,17 +42,19 @@ const { data: row } = supabase
       .maybeSingle()
   : { data: null };
 
+// Absent row (RLS hid a foreign/missing id → null) → dashboard. The early return also
+// narrows `inspection` to non-null for the render path below (no cast needed).
 if (!row) {
   return Astro.redirect("/dashboard");
 }
-
 const inspection = camelcaseKeys(row, { deep: true });
 const unlocked = isConfigUnlocked(rowToInput(inspection));
 
-// Part 1 is always reachable — it's where an invalid config is made valid. Parts 2–5
-// require a valid config, otherwise bounce to the Part 1 form.
-if (part !== "1" && !unlocked) {
-  return Astro.redirect(`/inspections/${id ?? ""}/session/part/1`);
+// Parts 2–5 require a valid config; otherwise back to Part 1 (the only place to make it
+// valid). Part 1 is always reachable. The screen decision is unit-tested in session-routes.
+const screen = resolvePartScreen({ id: id ?? "", part, unlocked });
+if ("redirect" in screen) {
+  return Astro.redirect(screen.redirect);
 }
 
 // The per-Part visible count for the 2–5 placeholders — honoring the persisted equipment
@@ -59,7 +62,7 @@ if (part !== "1" && !unlocked) {
 let visibleCount = 0;
 if (part !== "1") {
   const counts = visibleCountsByPart(configFromInspection(inspection), activeFlagsFromInspection(inspection));
-  visibleCount = counts[`part${part}` as PartId];
+  visibleCount = counts[`part${part}`];
 }
 
 // Part 1 hosts the equipment toggles (FR-014): the catalogue-derived relevance map, keyed
