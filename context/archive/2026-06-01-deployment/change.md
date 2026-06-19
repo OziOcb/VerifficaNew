@@ -1,9 +1,10 @@
 ---
 change_id: deployment
 title: Cloudflare integration & production deployment
-status: implemented
+status: archived
 created: 2026-06-01
 updated: 2026-06-19
+archived_at: 2026-06-19T15:31:04Z
 ---
 
 ## Notes
