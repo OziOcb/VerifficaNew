@@ -227,3 +227,33 @@ export function validatePart1(input: Part1Input): Part1ValidationResult {
 export function isConfigUnlocked(input: Part1Input): boolean {
   return part1ConfigSchema.safeParse(input).success;
 }
+
+/** A camelCased inspection row's config columns as loaded from the DB (mixed types, nullable). */
+export type Part1Row = Partial<Record<Part1Field, string | number | null>>;
+
+/**
+ * Build raw form INPUT (every field a string, "" when empty) from a camelCased DB row,
+ * mirroring the form's seed logic (null → "", numbers → their string form). Lets server
+ * code (e.g. the session route's unlock gate) reuse `validatePart1`/`isConfigUnlocked`
+ * against a persisted row without re-implementing the stringify.
+ */
+export function rowToInput(row: Part1Row): Part1Input {
+  const s = (v: string | number | null | undefined): string => (v === null || v === undefined ? "" : String(v));
+  return {
+    price: s(row.price),
+    make: s(row.make),
+    model: s(row.model),
+    year: s(row.year),
+    registrationNumber: s(row.registrationNumber),
+    vin: s(row.vin),
+    mileage: s(row.mileage),
+    fuelType: s(row.fuelType),
+    transmission: s(row.transmission),
+    drive: s(row.drive),
+    color: s(row.color),
+    bodyType: s(row.bodyType),
+    doorCount: s(row.doorCount),
+    address: s(row.address),
+    notes: s(row.notes),
+  };
+}

@@ -1,0 +1,108 @@
+---
+import camelcaseKeys from "camelcase-keys";
+import Layout from "@/layouts/Layout.astro";
+import Part1Form from "@/components/inspections/Part1Form";
+import { createClient } from "@/lib/supabase";
+import { isConfigUnlocked, rowToInput } from "@/lib/part1-config";
+import {
+  activeFlagsFromInspection,
+  configFromInspection,
+  relevantTogglesByFuel,
+  visibleCountsByPart,
+} from "@/lib/questions";
+import { isValidPart, resolvePartScreen } from "@/lib/session-routes";
+
+// Per-Part screens under the session hub (S-04). Part 1 IS the Part 1 config form
+// (the existing island); Parts 2–5 are placeholders until S-05 builds the question
+// cards. The route + SSR-load + visibility contract here stay; S-05 swaps the body.
+const { id, part } = Astro.params;
+
+// Valid parts are 1–5; anything else is not a real screen → back to the dashboard.
+// Names + order are the PRD's five parts (prd.md:56), in physical-inspection order.
+const PART_TITLES: Record<string, string> = {
+  "1": "Info",
+  "2": "Standstill",
+  "3": "Engine",
+  "4": "Drive",
+  "5": "Documents",
+};
+// Unknown part is not a real screen → dashboard (before any DB work).
+if (!isValidPart(part)) {
+  return Astro.redirect("/dashboard");
+}
+
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+const { data: row } = supabase
+  ? await supabase
+      .from("inspections")
+      .select(
+        "id,name,status,created_at,price,make,model,year,registration_number,vin,mileage,fuel_type,transmission,drive,color,body_type,door_count,address,notes,charging_port_equipped,ev_battery_docs_available,turbo_equipped,mechanical_compressor_equipped,imported_from_eu",
+      )
+      .eq("id", id ?? "")
+      .maybeSingle()
+  : { data: null };
+
+// Absent row (RLS hid a foreign/missing id → null) → dashboard. The early return also
+// narrows `inspection` to non-null for the render path below (no cast needed).
+if (!row) {
+  return Astro.redirect("/dashboard");
+}
+const inspection = camelcaseKeys(row, { deep: true });
+const unlocked = isConfigUnlocked(rowToInput(inspection));
+
+// Parts 2–5 require a valid config; otherwise back to Part 1 (the only place to make it
+// valid). Part 1 is always reachable. The screen decision is unit-tested in session-routes.
+const screen = resolvePartScreen({ id: id ?? "", part, unlocked });
+if ("redirect" in screen) {
+  return Astro.redirect(screen.redirect);
+}
+
+// The per-Part visible count for the 2–5 placeholders — honoring the persisted equipment
+// flags (Phase 4) so it matches what the session nav shows after a toggle.
+let visibleCount = 0;
+if (part !== "1") {
+  const counts = visibleCountsByPart(configFromInspection(inspection), activeFlagsFromInspection(inspection));
+  visibleCount = counts[`part${part}`];
+}
+
+// Part 1 hosts the equipment toggles (FR-014): the catalogue-derived relevance map, keyed
+// by fuelType, lets the form pick relevant toggles from its live selection without the
+// catalogue. Computed here (server-side); only the small map crosses to the island.
+const relevantTogglesMap = relevantTogglesByFuel();
+---
+
+{
+  part === "1" ? (
+    <Layout title="Part 1 — Vehicle configuration">
+      <div class="bg-cosmic min-h-screen w-full">
+        <main class="mx-auto max-w-3xl p-4 sm:p-8">
+          <Part1Form client:only="react" inspection={inspection} relevantTogglesByFuel={relevantTogglesMap} />
+        </main>
+      </div>
+    </Layout>
+  ) : (
+    <Layout title={`Part ${part} — ${PART_TITLES[part]}`}>
+      <div class="bg-cosmic min-h-screen w-full">
+        <main class="mx-auto max-w-3xl space-y-8 p-4 sm:p-8">
+          <header>
+            <a
+              href={`/inspections/${id ?? ""}/session`}
+              class="text-sm text-purple-300 transition-colors hover:text-purple-100 hover:underline"
+            >
+              &larr; Back to session
+            </a>
+            <p class="mt-4 text-xs tracking-wider text-blue-100/40 uppercase">Part {part}</p>
+            <h1 class="mt-1 text-2xl font-bold text-white">{PART_TITLES[part]}</h1>
+            <p class="mt-1 text-blue-100/60">
+              {visibleCount} {visibleCount === 1 ? "question" : "questions"} for this car.
+            </p>
+          </header>
+
+          <section class="rounded-xl border border-white/10 bg-white/5 p-6 text-blue-100/70 backdrop-blur-xl">
+            <p>Question cards arrive next.</p>
+          </section>
+        </main>
+      </div>
+    </Layout>
+  )
+}

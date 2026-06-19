@@ -1,44 +1,9 @@
 ---
-import camelcaseKeys from "camelcase-keys";
-import Layout from "@/layouts/Layout.astro";
-import Part1Form from "@/components/inspections/Part1Form";
-import { createClient } from "@/lib/supabase";
-
-// Part 1 / config screen (S-03). SSR-load the inspection by id under RLS: a
-// foreign or nonexistent id is hidden by RLS and surfaces as null, so we redirect
-// back to the dashboard rather than rendering an empty shell. Route is protected
-// via PROTECTED_ROUTES.
-//
-// SECOND read boundary out of supabase-js (lessons.md "Field casing"): the dashboard
-// stub only selected id,name (identical in both cases), but the config columns are
-// snake_case (fuel_type, body_type, …) while the form/Dexie type is camelCase — so
-// we run the loaded row through the same generic, table-agnostic `camelcaseKeys`
-// the sync endpoint uses before handing it to the island. The frontmatter stays
-// Dexie-free (the form is `client:only`, never SSR-rendered).
+// The inspection entry point now lives under the session hub (S-04): the Part 1 config
+// form moved to `/inspections/[id]/session/part/1` and the hub is `/inspections/[id]/session`.
+// Keep this path working (the dashboard still links to `/inspections/${id}`) by redirecting
+// to the session hub, which itself bounces to the Part 1 form when the config is not yet
+// valid. RLS / not-found handling lives in the hub route.
 const { id } = Astro.params;
-const supabase = createClient(Astro.request.headers, Astro.cookies);
-
-const { data: row } = supabase
-  ? await supabase
-      .from("inspections")
-      .select(
-        "id,name,status,created_at,price,make,model,year,registration_number,vin,mileage,fuel_type,transmission,drive,color,body_type,door_count,address,notes",
-      )
-      .eq("id", id ?? "")
-      .maybeSingle()
-  : { data: null };
-
-if (!row) {
-  return Astro.redirect("/dashboard");
-}
-
-const inspection = camelcaseKeys(row, { deep: true });
+return Astro.redirect(`/inspections/${id ?? ""}/session`);
 ---
-
-<Layout title="Inspection">
-  <div class="bg-cosmic min-h-screen w-full">
-    <main class="mx-auto max-w-3xl p-4 sm:p-8">
-      <Part1Form client:only="react" inspection={inspection} />
-    </main>
-  </div>
-</Layout>

@@ -1,0 +1,77 @@
+---
+import camelcaseKeys from "camelcase-keys";
+import Layout from "@/layouts/Layout.astro";
+import SessionScreen from "@/components/inspections/SessionScreen";
+import { createClient } from "@/lib/supabase";
+import { isConfigUnlocked, rowToInput } from "@/lib/part1-config";
+import { configFromInspection, relevantToggles, sessionCounts } from "@/lib/questions";
+
+// Session hub (S-04, FR-010). SSR-load the inspection under RLS (same template as
+// `[id].astro`): a foreign/absent id is hidden by RLS → null → redirect to the
+// dashboard. The route lives under the already-protected `/inspections` tree.
+//
+// The FR-014 visibility engine runs HERE, server-side: the 80 KB catalogue is imported
+// only in this frontmatter (via `@/lib/questions`), the personalized set is computed, and
+// ONLY the count payload + relevant toggles cross to the `client:only` island — the bank
+// never ships to the browser. The island recomputes live counts as equipment flags toggle.
+const { id } = Astro.params;
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+
+const { data: row } = supabase
+  ? await supabase
+      .from("inspections")
+      .select(
+        "id,name,status,price,make,model,year,registration_number,vin,mileage,fuel_type,transmission,drive,color,body_type,door_count,address,notes,global_notes,charging_port_equipped,ev_battery_docs_available,turbo_equipped,mechanical_compressor_equipped,imported_from_eu",
+      )
+      .eq("id", id ?? "")
+      .maybeSingle()
+  : { data: null };
+
+// The hub's only redirect: an absent row (RLS hid a foreign/missing id → null). An
+// invalid config does NOT redirect — the hub renders with Parts 2–5 locked in the nav.
+if (!row) {
+  return Astro.redirect("/dashboard");
+}
+
+// Single snake→camel boundary (lessons.md "Field casing"), as in `[id].astro`.
+const inspection = camelcaseKeys(row, { deep: true });
+
+// The hub is the LANDING page for an inspection (the dashboard's Resume / Start new
+// inspection both route here via `[id].astro`). It renders regardless of config
+// validity — a brand-new inspection lands here, not on the form. Parts 2–5 stay locked
+// in the nav until the Part 1 config is valid; the user opens Part 1 (Info) from the hub
+// to configure. The per-Part routes still guard server-side (part 2–5 → form when locked).
+const unlocked = isConfigUnlocked(rowToInput(inspection));
+
+// The FR-014 engine runs HERE (server-side, with the catalogue): build the count payload
+// (base + per-relevant-flag deltas) and the relevant flags' column↔flag bindings for this
+// config. The island recomputes live counts from the payload for the persisted flag set
+// (toggled in the Part 1 form) — the catalogue stays here, never shipped to the browser.
+const config = configFromInspection(inspection);
+const counts = sessionCounts(config);
+const flagBindings = relevantToggles(config);
+---
+
+<Layout title="Inspection session">
+  <div class="bg-cosmic min-h-screen w-full">
+    <main class="mx-auto max-w-3xl p-4 sm:p-8">
+      <SessionScreen
+        client:only="react"
+        inspection={{
+          id: inspection.id,
+          name: inspection.name,
+          status: inspection.status,
+          globalNotes: inspection.globalNotes,
+          chargingPortEquipped: inspection.chargingPortEquipped,
+          evBatteryDocsAvailable: inspection.evBatteryDocsAvailable,
+          turboEquipped: inspection.turboEquipped,
+          mechanicalCompressorEquipped: inspection.mechanicalCompressorEquipped,
+          importedFromEu: inspection.importedFromEu,
+        }}
+        unlocked={unlocked}
+        counts={counts}
+        flagBindings={flagBindings}
+      />
+    </main>
+  </div>
+</Layout>

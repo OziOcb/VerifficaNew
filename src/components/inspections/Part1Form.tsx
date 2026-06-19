@@ -4,24 +4,25 @@
 //
 // MUST be mounted `client:only="react"` — it imports @/lib/sync → @/lib/db
 // (Dexie), which has no global on the workerd SSR runtime; a server mount throws
-// (see src/lib/db.ts). The SSR page (`[id].astro`) loads the inspection under RLS,
-// camelizes the row at that boundary, and passes it in as the `inspection` prop.
+// (see src/lib/db.ts). The SSR page (`session/part/[part].astro`, part 1) loads the
+// inspection under RLS, camelizes the row at that boundary, and passes it in as the
+// `inspection` prop. This form is the Part 1 (Info) screen under the S-04 session hub;
+// a successful Save syncs and navigates back to `/inspections/[id]/session`.
 //
 // Validation timing mirrors the rules doc §2: soft on input (no blocking), inline
-// on blur (UX-1), full blocking validation on Save (UX-2/UX-3 scroll+focus). The
-// Parts 2-5 unlock is derived purely from `isConfigUnlocked(values)` — the full
-// schema parse incl. CF-1 — so it tracks the current values, never a "saved" flag
-// (CF-3: re-editing an invalid required field re-locks).
+// on blur (UX-1), full blocking validation on Save (UX-2/UX-3 scroll+focus).
 import { useEffect, useRef, useState } from "react";
-import { CircleAlert, Lock } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ServerError } from "@/components/auth/ServerError";
-import { validatePart1, isConfigUnlocked, normalizeFieldOnBlur, type Part1Field } from "@/lib/part1-config";
+import EquipmentToggles from "@/components/inspections/EquipmentToggles";
+import { validatePart1, normalizeFieldOnBlur, type Part1Field } from "@/lib/part1-config";
 import { saveInspection, flushQueue, startAutoSync } from "@/lib/sync";
+import type { FlagColumn, RelevantTogglesByFuel, RuntimeFlag } from "@/lib/questions";
 
 // Cosmic glass palette — matches the dashboard/home shell. The shadcn primitives
 // are light-themed by default; these className overrides recolor them for the dark
@@ -144,10 +145,31 @@ export interface Part1FormInspection {
   doorCount: number | null;
   address: string | null;
   notes: string | null;
+  // The 5 FR-014 equipment flags (scalar columns on the inspection row). Configured here
+  // alongside the vehicle config; they feed the same visibility engine the session uses.
+  chargingPortEquipped: boolean | null;
+  evBatteryDocsAvailable: boolean | null;
+  turboEquipped: boolean | null;
+  mechanicalCompressorEquipped: boolean | null;
+  importedFromEu: boolean | null;
 }
 
 interface Props {
   inspection: Part1FormInspection;
+  // The relevant equipment toggles keyed by fuelType (catalogue-derived server-side), so the
+  // form picks toggles from the live fuelType selection without shipping the catalogue.
+  relevantTogglesByFuel: RelevantTogglesByFuel;
+}
+
+// Seed the equipment-flag state from the loaded inspection (null/false → off).
+function seedFlags(i: Part1FormInspection): Record<FlagColumn, boolean> {
+  return {
+    chargingPortEquipped: i.chargingPortEquipped ?? false,
+    evBatteryDocsAvailable: i.evBatteryDocsAvailable ?? false,
+    turboEquipped: i.turboEquipped ?? false,
+    mechanicalCompressorEquipped: i.mechanicalCompressorEquipped ?? false,
+    importedFromEu: i.importedFromEu ?? false,
+  };
 }
 
 // Form values are all strings (the schema INPUT is raw form text). Seed each field
@@ -185,13 +207,20 @@ function seedValues(i: Part1FormInspection): Record<Part1Field, string> {
   };
 }
 
-export default function Part1Form({ inspection }: Props) {
+export default function Part1Form({ inspection, relevantTogglesByFuel }: Props) {
   const [values, setValues] = useState<Record<Part1Field, string>>(() => seedValues(inspection));
   const [errors, setErrors] = useState<Partial<Record<Part1Field, string>>>({});
   const [name, setName] = useState<string | null>(inspection.name);
+  const [flags, setFlags] = useState<Record<FlagColumn, boolean>>(() => seedFlags(inspection));
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Which equipment toggles to show, driven by the live fuelType selection (the only axis
+  // any flag-gated group depends on). Catalogue-derived map, so no fuel rules live here.
+  const toggles = relevantTogglesByFuel[values.fuelType || "none"] ?? relevantTogglesByFuel.none;
+  const activeFlags = new Set<RuntimeFlag>();
+  for (const t of toggles) if (flags[t.column]) activeFlags.add(t.flag);
 
   // Focus targets for UX-3. Inputs register their <input>; selects register their
   // trigger button. Keyed by field id.
@@ -200,10 +229,6 @@ export default function Part1Form({ inspection }: Props) {
   // Drain the outbox for this session: a Save enqueues, and these redundant
   // triggers (online/visibility/timer/initial) guarantee it reaches the server.
   useEffect(() => startAutoSync(), []);
-
-  // Unlock is derived from the current values every render — exactly "would a Save
-  // succeed" (full schema incl. CF-1). No "saved" flag (CF-3).
-  const unlocked = isConfigUnlocked(values);
 
   // Re-run full validation but only (un)set the one field's error, so blurring a
   // field never lights up untouched fields.
@@ -290,10 +315,15 @@ export default function Part1Form({ inspection }: Props) {
         createdAt: inspection.createdAt,
         name: autoName,
         ...config,
+        ...flags, // equipment flags commit together with the config (FR-014)
       });
-      void flushQueue();
       setName(autoName);
-      setJustSaved(true);
+      // Push the save to the server before navigating, so the session page's SSR load
+      // sees the saved config and unlocks. `flushQueue` is best-effort (a no-op when
+      // offline) and never throws, so we always continue to the hub afterwards.
+      await flushQueue();
+      window.location.assign(`/inspections/${inspection.id}/session`);
+      return; // navigating away — keep the button disabled (no `finally` reset needed)
     } catch {
       // The optimistic Dexie write failed (e.g. IndexedDB quota/blocked,
       // private browsing). Nothing was persisted — surface it so the user
@@ -304,14 +334,21 @@ export default function Part1Form({ inspection }: Props) {
     }
   }
 
+  // A toggle only updates local form state — the equipment flags persist together with the
+  // rest of Part 1 on Save (handleSave), consistent with every other field on this form.
+  function handleToggleFlag(column: FlagColumn, next: boolean) {
+    setFlags((prev) => ({ ...prev, [column]: next }));
+    setJustSaved(false);
+  }
+
   return (
     <div className="space-y-8">
       <header>
         <a
-          href="/dashboard"
+          href={`/inspections/${inspection.id}/session`}
           className="text-sm text-purple-300 transition-colors hover:text-purple-100 hover:underline"
         >
-          &larr; Back to dashboard
+          &larr; Back to session
         </a>
         <h1 className="mt-4 text-2xl font-bold text-white">{name ?? "Inspection"}</h1>
         <p className="mt-1 text-blue-100/60">
@@ -325,7 +362,8 @@ export default function Part1Form({ inspection }: Props) {
         </CardHeader>
         <CardContent>
           <div className="grid gap-5 sm:grid-cols-2">
-            {FIELD_ORDER.map((field) => {
+            {/* Notes is pulled out of the grid so the Equipment section can sit above it. */}
+            {FIELD_ORDER.filter((field) => field !== "notes").map((field) => {
               const enumOptions = ENUM_OPTIONS[field];
               if (enumOptions) {
                 // Hide Manual when Electric is selected (CF-1 made unreachable in the UI).
@@ -373,6 +411,30 @@ export default function Part1Form({ inspection }: Props) {
             })}
           </div>
 
+          {/* Equipment toggles — relevant to the live fuelType — sit above the Notes input. */}
+          <div className="mt-6">
+            <EquipmentToggles toggles={toggles} active={activeFlags} onToggle={handleToggleFlag} />
+          </div>
+
+          <div className="mt-6">
+            <TextFieldRow
+              field="notes"
+              value={values.notes}
+              error={errors.notes}
+              required={REQUIRED.has("notes")}
+              multiline
+              onInput={(v) => {
+                handleInput("notes", v);
+              }}
+              onBlur={() => {
+                handleBlur("notes");
+              }}
+              registerRef={(el) => {
+                refs.current.notes = el;
+              }}
+            />
+          </div>
+
           <div className="mt-6 flex items-center gap-3">
             <Button type="button" onClick={() => void handleSave()} disabled={saving} className={PRIMARY_BTN}>
               {saving ? "Saving…" : "Save Part 1"}
@@ -386,8 +448,6 @@ export default function Part1Form({ inspection }: Props) {
           )}
         </CardContent>
       </Card>
-
-      <PartsNav unlocked={unlocked} />
     </div>
   );
 }
@@ -504,50 +564,5 @@ function FieldError({ message }: { message: string }) {
       <CircleAlert className="size-3 shrink-0" />
       {message}
     </p>
-  );
-}
-
-// Parts 2-5 placeholder. Disabled (with an explanatory line) until the config is
-// fully valid; once unlocked the cards are enabled-but-inert (no S-04 target yet).
-function PartsNav({ unlocked }: { unlocked: boolean }) {
-  const parts = [
-    { n: 2, title: "Condition" },
-    { n: 3, title: "Documents" },
-    { n: 4, title: "Test drive" },
-    { n: 5, title: "Summary" },
-  ];
-  return (
-    <section className={`rounded-xl border p-5 ${PANEL}`}>
-      <div className="mb-3 flex items-center gap-2">
-        <h2 className="text-lg font-semibold text-white">Parts 2–5</h2>
-        {!unlocked && <Lock className="size-4 text-blue-100/50" />}
-      </div>
-      {!unlocked && (
-        <p className="mb-4 text-sm text-blue-100/60">Save the required Part 1 fields to unlock Parts 2–5.</p>
-      )}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {parts.map((p) => (
-          <div
-            key={p.n}
-            aria-disabled={!unlocked}
-            className={`rounded-lg border p-4 transition-opacity ${
-              unlocked ? "border-white/15 bg-white/10" : "border-white/10 bg-white/5 opacity-50"
-            }`}
-          >
-            <p className="text-xs tracking-wider text-blue-100/40 uppercase">Part {p.n}</p>
-            <p className="mt-1 font-medium text-white">{p.title}</p>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={!unlocked}
-              className="mt-3 border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
-            >
-              Open
-            </Button>
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }
