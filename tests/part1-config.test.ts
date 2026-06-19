@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isConfigUnlocked, rowToInput, validatePart1, type Part1Input, type Part1Row } from "@/lib/part1-config";
 
 // Exhaustive coverage of idea/veriffica-part-1-validation-rules.md: per-field
@@ -298,5 +298,32 @@ describe("rowToInput + isConfigUnlocked — the S-04 session-route gate", () => 
 
   it("redirects (locked) for an invalid stored combo (electric + manual, CF-1)", () => {
     expect(isConfigUnlocked(rowToInput(validRow({ fuelType: "electric", transmission: "manual" })))).toBe(false);
+  });
+});
+
+// Regression for the Cloudflare frozen-clock bug: the year upper bound MUST be read
+// at validation time, not captured when the schema module loads. On Workers, module
+// top-level code runs outside a request where the clock is frozen at the epoch, so a
+// build-time `new Date().getFullYear()` froze the bound at 1970 and rejected every
+// real year — silently re-locking Parts 2–5. These move the (fake) clock AFTER import
+// and assert the bound tracks it, which only holds if the year is computed lazily.
+describe("year bound is read lazily (Cloudflare frozen-clock regression)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("accepts a year matching the live clock, not the import-time year", () => {
+    vi.setSystemTime(new Date("2050-06-19T00:00:00Z"));
+    expect(parse({ year: "2050" }).ok).toBe(true);
+  });
+
+  it("still rejects a year past the live clock", () => {
+    vi.setSystemTime(new Date("2050-06-19T00:00:00Z"));
+    const result = parse({ year: "2051" });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.year).toBeDefined();
   });
 });

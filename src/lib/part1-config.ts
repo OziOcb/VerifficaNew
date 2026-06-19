@@ -45,8 +45,15 @@ const VIN_RE = /^[A-HJ-NPR-Z0-9]{17}$/;
 // Registration: letters, digits, spaces, hyphen; 2-15 chars (after uppercasing).
 const REGISTRATION_RE = /^[A-Z0-9 -]{2,15}$/;
 // Year upper bound is dynamic — the current year (no future years); lower bound 1886.
+// IMPORTANT: the upper bound MUST be read lazily (per-validation), never cached at
+// module load. On the Cloudflare Workers runtime, top-level module code runs outside
+// a request context where the clock is frozen at the Unix epoch (Spectre mitigation),
+// so a module-level `new Date().getFullYear()` evaluates to 1970 on the server and
+// rejects every real year — silently re-locking Parts 2–5 (the `isConfigUnlocked`
+// gate in session.astro). Computed inside the refine, it runs per request where the
+// clock is live. Browser-side (the client:only form) was unaffected; this keeps both correct.
 const MIN_YEAR = 1886;
-const MAX_YEAR = new Date().getFullYear();
+const currentYear = (): number => new Date().getFullYear();
 
 // Trim + collapse runs of whitespace to a single space (rules "collapse repeated spaces").
 const collapse = (s: string): string => s.trim().replace(/\s+/g, " ");
@@ -97,11 +104,20 @@ const optionalText = (
     )
     .transform((s) => (s === "" ? null : s));
 
-const optionalInt = (message: string, opts: { min: number; max: number; stripSpaces?: boolean }) =>
+// `max` may be a function so date-derived bounds (the year) are read per-validation,
+// not captured at schema-build time — see the Cloudflare frozen-clock note above.
+const optionalInt = (message: string, opts: { min: number; max: number | (() => number); stripSpaces?: boolean }) =>
   z
     .string()
     .transform((s) => (opts.stripSpaces ? s.replace(/\s+/g, "") : s.trim()))
-    .refine((s) => s === "" || (/^\d+$/.test(s) && Number(s) >= opts.min && Number(s) <= opts.max), { message })
+    .refine(
+      (s) => {
+        if (s === "") return true;
+        const max = typeof opts.max === "function" ? opts.max() : opts.max;
+        return /^\d+$/.test(s) && Number(s) >= opts.min && Number(s) <= max;
+      },
+      { message },
+    )
     .transform((s) => (s === "" ? null : Number(s)));
 
 const enumField = <const T extends readonly [string, ...string[]]>(values: T, message: string) => {
@@ -132,7 +148,7 @@ export const part1ConfigSchema = z
     // FR-006 uses them for the tile title only, not the question logic). They still
     // validate strictly when present. This diverges from the rules-doc §4 table,
     // which marked them Required — the PRD is authoritative.
-    year: optionalInt(M.year, { min: MIN_YEAR, max: MAX_YEAR }),
+    year: optionalInt(M.year, { min: MIN_YEAR, max: currentYear }),
     registrationNumber: optionalText(M.registrationNumber, {
       min: 2,
       max: 15,
