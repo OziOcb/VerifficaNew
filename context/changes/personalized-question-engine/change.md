@@ -1,9 +1,9 @@
 ---
 change_id: personalized-question-engine
 title: Session screen + personalized question generation
-status: implementing
+status: implemented
 created: 2026-06-15
-updated: 2026-06-17
+updated: 2026-06-19
 archived_at: null
 ---
 

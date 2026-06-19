@@ -571,12 +571,12 @@ migrations are not in the Cloudflare deploy pipeline (see S-02 deploy note).
 
 #### Automated
 
-- [x] 4.1 Unit test: each flag toggle changes `selectVisibleQuestionIds` by exactly its gated group
-- [x] 4.2 Lint + build pass: `npm run lint && npm run build`
-- [x] 4.3 Full suite passes: `npm test`
+- [x] 4.1 Unit test: each flag toggle changes `selectVisibleQuestionIds` by exactly its gated group — 0dced2f
+- [x] 4.2 Lint + build pass: `npm run lint && npm run build` — 0dced2f
+- [x] 4.3 Full suite passes: `npm test` — 0dced2f
 
 #### Manual
 
-- [x] 4.4 Relevant toggles shown per config (hybrid vs petrol vs EV)
-- [x] 4.5 Enabling `turboEquipped` raises the Part 4 count + Total Score denominator instantly
-- [x] 4.6 A toggled flag persists across reload and re-hydrates the same visible set
+- [x] 4.4 Relevant toggles shown per config (hybrid vs petrol vs EV) — 0dced2f
+- [x] 4.5 Enabling `turboEquipped` raises the Part 4 count + Total Score denominator instantly — 0dced2f
+- [x] 4.6 A toggled flag persists across reload and re-hydrates the same visible set — 0dced2f
