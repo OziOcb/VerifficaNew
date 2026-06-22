@@ -434,6 +434,25 @@ describe("descriptive metadata matches the real group coverage", () => {
     }
   });
 
+  it("every visibleWhen value falls within the test's declared axis domains", () => {
+    // The 128-matrix drives the hand-listed FUEL_TYPES/…/BODY_TYPES domains. If a future
+    // catalogue edit introduces an axis value outside them, the matrix would silently never
+    // exercise it — so assert here that the test domains still cover every value the
+    // catalogue actually uses. Closes the one drift corner the matrix can't see itself.
+    const domains: Record<keyof VisibilityConfig, readonly string[]> = {
+      fuelType: FUEL_TYPES,
+      transmission: TRANSMISSIONS,
+      drive: DRIVES,
+      bodyType: BODY_TYPES,
+    };
+    for (const g of mappingJson.questionGroups) {
+      const vw = g.visibleWhen as VisibleWhen;
+      for (const axis of Object.keys(vw) as (keyof VisibilityConfig)[]) {
+        for (const value of vw[axis] ?? []) expect(domains[axis]).toContain(value);
+      }
+    }
+  });
+
   it("formula covers exactly the axes any group references, plus base", () => {
     const referenced = new Set<string>();
     for (const g of mappingJson.questionGroups) for (const axis of Object.keys(g.visibleWhen)) referenced.add(axis);
