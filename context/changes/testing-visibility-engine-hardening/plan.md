@@ -264,8 +264,8 @@ None — test-only change, no data or schema impact.
 
 #### Automated
 
-- [x] 3.1 Unit suite passes: `npm test`
-- [x] 3.2 `idea/` ↔ `src/data` `toEqual` guard green for both JSON files
-- [x] 3.3 Metadata cross-check: declared-empty buckets truly empty; `formula` matches referenced axes
-- [x] 3.4 Garbage-config returns base groups only, no throw
-- [x] 3.5 Lint + typecheck pass: `npm run lint`
+- [x] 3.1 Unit suite passes: `npm test` — 63ae623
+- [x] 3.2 `idea/` ↔ `src/data` `toEqual` guard green for both JSON files — 63ae623
+- [x] 3.3 Metadata cross-check: declared-empty buckets truly empty; `formula` matches referenced axes — 63ae623
+- [x] 3.4 Garbage-config returns base groups only, no throw — 63ae623
+- [x] 3.5 Lint + typecheck pass: `npm run lint` — 63ae623
