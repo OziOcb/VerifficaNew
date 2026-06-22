@@ -246,10 +246,10 @@ None — test-only change, no data or schema impact.
 
 #### Automated
 
-- [ ] 1.1 Type checking + lint pass: `npm run lint`
-- [ ] 1.2 Unit suite passes: `npm test`
-- [ ] 1.3 128-config matrix runs; engine equals `expectedGroupIds` for every case
-- [ ] 1.4 Negative check: mutated `visibleWhen` makes the matrix assertion diverge (then removed)
+- [x] 1.1 Type checking + lint pass: `npm run lint`
+- [x] 1.2 Unit suite passes: `npm test`
+- [x] 1.3 128-config matrix runs; engine equals `expectedGroupIds` for every case
+- [x] 1.4 Negative check: mutated `visibleWhen` makes the matrix assertion diverge (then removed)
 
 ### Phase 2: Flag layering reconciliation
 

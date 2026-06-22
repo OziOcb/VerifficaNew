@@ -1,7 +1,7 @@
 ---
 change_id: testing-visibility-engine-hardening
 title: Visibility-engine hardening — reconcile emitted question set against the authored catalogue
-status: planned
+status: implementing
 created: 2026-06-22
 updated: 2026-06-22
 archived_at: null

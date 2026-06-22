@@ -19,10 +19,18 @@ import { countsForFlags, totalCount } from "@/lib/session-counts";
 import bankJson from "@/data/questions/question-bank.json";
 import mappingJson from "@/data/questions/question-mapping-config.json";
 
-// Pure-unit coverage of the FR-014 additive visibility engine. Reference counts below
-// were computed against the markdown source-of-truth catalogue and lock the predicate
-// behavior; they shift only if the authored catalogue changes (which would be a
-// deliberate, reviewed edit).
+// Pure-unit coverage of the FR-014 additive visibility engine. Two independent oracles
+// guard the predicate, belt-and-suspenders:
+//   1. The CATALOGUE-DERIVED oracle (`expectedGroupIds`/`expectedQuestionIds` below)
+//      recomputes the expected visible set straight from `mappingJson`/`bankJson` — the
+//      independently-authored catalogue — NEVER from the engine's own output. It drives
+//      the full 128 axis-config matrix and so catches a wrong/missing/extra group from a
+//      traversal bug. This is the primary oracle the whole suite hangs on.
+//   2. The hand-written magic-number literals (the "frozen catalogue & stable counts"
+//      block) are a deliberate INDEPENDENT MANUAL COUNT against the markdown source — a
+//      human canary that catches a wrong manual count the derived oracle would miss
+//      because both it and the engine read the same JSON. They shift only on a
+//      deliberate, reviewed catalogue edit.
 
 const NO_FLAGS = new Set<RuntimeFlag>();
 const flags = (...f: RuntimeFlag[]) => new Set<RuntimeFlag>(f);
@@ -30,6 +38,56 @@ const flags = (...f: RuntimeFlag[]) => new Set<RuntimeFlag>(f);
 const PETROL: VisibilityConfig = { fuelType: "petrol", transmission: "manual", drive: "2wd", bodyType: "sedan" };
 const EV: VisibilityConfig = { fuelType: "electric", transmission: "automatic", drive: "2wd", bodyType: "sedan" };
 const HYBRID: VisibilityConfig = { fuelType: "hybrid", transmission: "automatic", drive: "2wd", bodyType: "sedan" };
+
+// --- The catalogue-derived oracle (the independent source of truth) --------
+//
+// `expectedGroupIds`/`expectedQuestionIds` reproduce the engine's predicate by reading the
+// authored catalogue (`mappingJson` groups, `bankJson` questions) directly — they must
+// NEVER call `selectVisibleGroups`/`selectVisibleQuestionIds`. Asserting the engine against
+// its own output is the banned anti-pattern; this oracle is authored from the same data the
+// HUMAN authored, so a divergence means the engine traverses the catalogue wrongly.
+
+// Axis value domains, mirroring the engine enums (`src/lib/questions.ts:33-36`). Listed here
+// (not lifted at runtime — the schemas aren't exported) so the 128-product is explicit; the
+// `relevantTogglesByFuel` / formula cross-checks guard against these drifting from the data.
+const FUEL_TYPES = ["petrol", "diesel", "hybrid", "electric"] as const;
+const TRANSMISSIONS = ["manual", "automatic"] as const;
+const DRIVES = ["2wd", "4wd"] as const;
+const BODY_TYPES = ["sedan", "hatchback", "suv", "coupe", "convertible", "van", "pickup", "other"] as const;
+
+// `visibleWhen` as the oracle reads it: a partial map of axis → allowed values.
+type VisibleWhen = Partial<Record<keyof VisibilityConfig, string[]>>;
+
+/** Expected visible group ids for `(config, flags)`, ordered by `group.order`, computed
+ *  purely from `mappingJson` — the independent oracle. */
+function expectedGroupIds(config: VisibilityConfig, activeFlags: ReadonlySet<RuntimeFlag>): string[] {
+  return mappingJson.questionGroups
+    .filter((g) => {
+      const visibleWhen = g.visibleWhen as VisibleWhen;
+      const axisMatch = (Object.keys(visibleWhen) as (keyof VisibilityConfig)[]).every((axis) => {
+        const v = config[axis];
+        return v != null && (visibleWhen[axis]?.includes(v) ?? false);
+      });
+      const flagMatch = !g.requiresEquipmentFlag || activeFlags.has(g.requiresEquipmentFlag as RuntimeFlag);
+      return axisMatch && flagMatch;
+    })
+    .sort((a, b) => a.order - b.order)
+    .map((g) => g.id);
+}
+
+/** Expected visible question ids for `(config, flags)`, mapping the oracle's group set
+ *  through `bankJson.questions` by `groupId`. */
+function expectedQuestionIds(config: VisibilityConfig, activeFlags: ReadonlySet<RuntimeFlag>): Set<string> {
+  const groupIds = new Set(expectedGroupIds(config, activeFlags));
+  return new Set(bankJson.questions.filter((q) => groupIds.has(q.groupId)).map((q) => q.id));
+}
+
+// The full 4×2×2×8 = 128 axis-config product, the matrix the engine is reconciled against.
+const ALL_AXIS_CONFIGS: VisibilityConfig[] = FUEL_TYPES.flatMap((fuelType) =>
+  TRANSMISSIONS.flatMap((transmission) =>
+    DRIVES.flatMap((drive) => BODY_TYPES.map((bodyType) => ({ fuelType, transmission, drive, bodyType }))),
+  ),
+);
 
 describe("base groups (visibleWhen {})", () => {
   it("are the only groups visible for an empty config with no flags", () => {
@@ -78,6 +136,25 @@ describe("empty buckets add nothing", () => {
     const a = selectVisibleQuestionIds(PETROL, NO_FLAGS);
     const b = selectVisibleQuestionIds({ ...PETROL, bodyType: "hatchback" }, NO_FLAGS);
     expect([...a].sort()).toEqual([...b].sort());
+  });
+});
+
+describe("full axis-config matrix reconciles against the catalogue oracle", () => {
+  // All 128 axis configs (4 fuel × 2 transmission × 2 drive × 8 body), no flags. Each row
+  // asserts the engine's emitted group set AND ORDER equals the independent oracle, and the
+  // question-id projection matches too. This subsumes the empty-bucket no-op and petrol↔diesel
+  // mirror cases above, and is the first place `4wd` and the non-empty body types
+  // (`suv`/`van`/`pickup`/`convertible`) are asserted visible.
+  const cases = ALL_AXIS_CONFIGS.map(
+    (c) => [`${c.fuelType ?? ""}/${c.transmission ?? ""}/${c.drive ?? ""}/${c.bodyType ?? ""}`, c] as const,
+  );
+
+  it.each(cases)("%s: engine group set + order equals the oracle", (_name, config) => {
+    expect(selectVisibleGroups(config, NO_FLAGS).map((g) => g.id)).toEqual(expectedGroupIds(config, NO_FLAGS));
+  });
+
+  it.each(cases)("%s: engine visible question ids equal the oracle", (_name, config) => {
+    expect(selectVisibleQuestionIds(config, NO_FLAGS)).toEqual(expectedQuestionIds(config, NO_FLAGS));
   });
 });
 
