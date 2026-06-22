@@ -246,19 +246,19 @@ None — test-only change, no data or schema impact.
 
 #### Automated
 
-- [x] 1.1 Type checking + lint pass: `npm run lint`
-- [x] 1.2 Unit suite passes: `npm test`
-- [x] 1.3 128-config matrix runs; engine equals `expectedGroupIds` for every case
-- [x] 1.4 Negative check: mutated `visibleWhen` makes the matrix assertion diverge (then removed)
+- [x] 1.1 Type checking + lint pass: `npm run lint` — 9d76b4b
+- [x] 1.2 Unit suite passes: `npm test` — 9d76b4b
+- [x] 1.3 128-config matrix runs; engine equals `expectedGroupIds` for every case — 9d76b4b
+- [x] 1.4 Negative check: mutated `visibleWhen` makes the matrix assertion diverge (then removed) — 9d76b4b
 
 ### Phase 2: Flag layering reconciliation
 
 #### Automated
 
-- [ ] 2.1 Unit suite passes: `npm test`
-- [ ] 2.2 Per-flag pass uses the catalogue oracle (`expectedQuestionIds`), not same-JSON `expectedFor`
-- [ ] 2.3 `importedFromEU` config-independence asserted on ≥2 structurally different configs
-- [ ] 2.4 EV cross-axis exclusion under flags still green
+- [x] 2.1 Unit suite passes: `npm test`
+- [x] 2.2 Per-flag pass uses the catalogue oracle (`expectedQuestionIds`), not same-JSON `expectedFor`
+- [x] 2.3 `importedFromEU` config-independence asserted on ≥2 structurally different configs
+- [x] 2.4 EV cross-axis exclusion under flags still green
 
 ### Phase 3: Drift & trust-boundary guards
 

@@ -171,9 +171,13 @@ describe("equipment-flag gating", () => {
 
   it("EV cross-case: electric never reveals turbo/compressor even if the flag is set", () => {
     // The fuel axis already excludes electric, so the flag can't bring the group back.
+    const flagged = flags("turboEquipped", "mechanicalCompressorEquipped");
     const evNoFlags = selectVisibleQuestionIds(EV, NO_FLAGS);
-    const evWithTurbo = selectVisibleQuestionIds(EV, flags("turboEquipped", "mechanicalCompressorEquipped"));
-    expect([...evWithTurbo].sort()).toEqual([...evNoFlags].sort());
+    const evWithTurbo = selectVisibleQuestionIds(EV, flagged);
+    expect(evWithTurbo).toEqual(evNoFlags);
+    // ...and the oracle agrees an axis-excluded group cannot be resurrected by a flag.
+    expect(expectedQuestionIds(EV, flagged)).toEqual(expectedQuestionIds(EV, NO_FLAGS));
+    expect(evWithTurbo).toEqual(expectedQuestionIds(EV, flagged));
   });
 });
 
@@ -193,6 +197,53 @@ describe("frozen catalogue & stable counts", () => {
     const without = selectVisibleQuestionIds(PETROL, NO_FLAGS);
     const withEu = selectVisibleQuestionIds(PETROL, flags("importedFromEU"));
     expect(withEu.size - without.size).toBe(8);
+  });
+});
+
+describe("importedFromEU groups gate purely on the flag, config-independent", () => {
+  // The two importedFromEU groups carry `visibleWhen: {}`, so they must appear under ANY
+  // axis config when the flag is active and vanish when it is not — independent of fuel/
+  // transmission/drive/body. Proven on two structurally different configs.
+  const A: VisibilityConfig = { fuelType: "petrol", transmission: "automatic", drive: "4wd", bodyType: "suv" };
+  const B: VisibilityConfig = EV; // electric 2wd sedan — different on every axis
+
+  const oracleEuDelta = (config: VisibilityConfig) => {
+    const without = new Set(expectedGroupIds(config, NO_FLAGS));
+    return expectedGroupIds(config, flags("importedFromEU"))
+      .filter((id) => !without.has(id))
+      .sort();
+  };
+  const engineEuDelta = (config: VisibilityConfig) => {
+    const without = new Set(selectVisibleGroups(config, NO_FLAGS).map((g) => g.id));
+    return selectVisibleGroups(config, flags("importedFromEU"))
+      .map((g) => g.id)
+      .filter((id) => !without.has(id))
+      .sort();
+  };
+
+  it("the same two empty-visibleWhen groups appear under any config, and the engine agrees", () => {
+    const deltaA = oracleEuDelta(A);
+    const deltaB = oracleEuDelta(B);
+    // identical added group set across structurally different configs → config-independent
+    expect(deltaA).toEqual(deltaB);
+    expect(deltaA).toHaveLength(2);
+    // the engine matches the oracle delta for each config
+    expect(engineEuDelta(A)).toEqual(deltaA);
+    expect(engineEuDelta(B)).toEqual(deltaA);
+    // the two added groups really have empty visibleWhen (so they gate purely on the flag)
+    const emptyVisibleWhenIds = mappingJson.questionGroups
+      .filter((g) => Object.keys(g.visibleWhen).length === 0 && g.requiresEquipmentFlag === "importedFromEU")
+      .map((g) => g.id)
+      .sort();
+    expect(deltaA).toEqual(emptyVisibleWhenIds);
+  });
+
+  it("reconciles the +8 imported-question literal against the oracle", () => {
+    // The literal (human canary) and the oracle agree, on a config with no shared fuel axis.
+    const without = expectedQuestionIds(B, NO_FLAGS);
+    const withEu = expectedQuestionIds(B, flags("importedFromEU"));
+    expect(withEu.size - without.size).toBe(8);
+    expect(selectVisibleQuestionIds(B, flags("importedFromEU"))).toEqual(withEu);
   });
 });
 
@@ -271,28 +322,52 @@ describe("relevantTogglesByFuel (Part 1's catalogue-free relevance map)", () => 
   });
 });
 
-describe("Phase 4: each flag toggle changes the visible set by exactly its gated group", () => {
-  // HYBRID makes all 5 flags relevant (asserted by relevantFlags above), so every
-  // flag-gated group is config-visible — the clean fixture for the per-flag delta contract.
-  const base = selectVisibleQuestionIds(HYBRID, NO_FLAGS);
+describe("flag layering reconciles against the catalogue oracle across diverse configs", () => {
+  // Span the matrix, not just the 2wd/sedan fixtures: a 4wd + non-empty-body config per fuel
+  // family, plus the original PETROL/EV/HYBRID. For each, every RELEVANT flag must layer
+  // purely additively and the resulting set must equal the independent oracle — so a wrong
+  // catalogue is caught, not merely a flag-traversal bug.
+  const DIVERSE_CONFIGS: { name: string; config: VisibilityConfig }[] = [
+    { name: "petrol 2wd sedan", config: PETROL },
+    { name: "EV 2wd sedan", config: EV },
+    { name: "hybrid 2wd sedan", config: HYBRID },
+    {
+      name: "petrol 4wd suv",
+      config: { fuelType: "petrol", transmission: "automatic", drive: "4wd", bodyType: "suv" },
+    },
+    {
+      name: "diesel 4wd pickup",
+      config: { fuelType: "diesel", transmission: "manual", drive: "4wd", bodyType: "pickup" },
+    },
+    {
+      name: "hybrid 4wd van",
+      config: { fuelType: "hybrid", transmission: "automatic", drive: "4wd", bodyType: "van" },
+    },
+    {
+      name: "electric 4wd suv",
+      config: { fuelType: "electric", transmission: "automatic", drive: "4wd", bodyType: "suv" },
+    },
+  ];
 
-  // The questions a flag should reveal, derived straight from the JSON: questions whose
-  // group is gated by that flag (under HYBRID every such group passes its config axes).
-  const expectedFor = (flag: RuntimeFlag) =>
-    new Set(
-      bankJson.questions
-        .filter((q) => mappingJson.questionGroups.find((g) => g.id === q.groupId)?.requiresEquipmentFlag === flag)
-        .map((q) => q.id),
-    );
+  it.each(DIVERSE_CONFIGS)("$name: each relevant flag layers additively and matches the oracle", ({ config }) => {
+    const base = selectVisibleQuestionIds(config, NO_FLAGS);
+    for (const flag of relevantFlags(config)) {
+      const withFlag = selectVisibleQuestionIds(config, flags(flag));
+      const oracle = expectedQuestionIds(config, flags(flag));
 
-  it.each(RUNTIME_FLAGS)("toggling %s adds exactly that flag's gated questions, additively", (flag) => {
-    const withFlag = selectVisibleQuestionIds(HYBRID, new Set<RuntimeFlag>([flag]));
-    const added = new Set([...withFlag].filter((id) => !base.has(id)));
-    const expected = expectedFor(flag);
-    expect(expected.size).toBeGreaterThan(0); // every flag reveals at least one question
-    expect(added).toEqual(expected); // exactly the gated group's questions, no more
-    expect([...base].every((id) => withFlag.has(id))).toBe(true); // purely additive
-    expect(withFlag.size).toBe(base.size + expected.size);
+      // Headline: the engine equals the independently-authored catalogue oracle.
+      expect(withFlag).toEqual(oracle);
+
+      // The questions the flag added, per engine and per oracle, must be the same non-empty set.
+      const addedByEngine = new Set([...withFlag].filter((id) => !base.has(id)));
+      const addedByOracle = new Set([...oracle].filter((id) => !base.has(id)));
+      expect(addedByOracle.size).toBeGreaterThan(0); // a relevant flag reveals at least one question
+      expect(addedByEngine).toEqual(addedByOracle);
+
+      // Purely additive: base ⊆ withFlag, and the size grows by exactly the oracle delta.
+      expect([...base].every((id) => withFlag.has(id))).toBe(true);
+      expect(withFlag.size).toBe(base.size + addedByOracle.size);
+    }
   });
 });
 
