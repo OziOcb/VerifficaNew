@@ -18,6 +18,11 @@ import {
 import { countsForFlags, totalCount } from "@/lib/session-counts";
 import bankJson from "@/data/questions/question-bank.json";
 import mappingJson from "@/data/questions/question-mapping-config.json";
+// The authored originals the runtime copies under `src/data/questions/` are hand-copied
+// from — imported here (relative, outside the `@/` → src alias) so the drift guard fails
+// loudly if the two ever diverge.
+import ideaBankJson from "../idea/veriffica-questions-list/question-bank.json";
+import ideaMappingJson from "../idea/veriffica-questions-list/question-mapping-config.json";
 
 // Pure-unit coverage of the FR-014 additive visibility engine. Two independent oracles
 // guard the predicate, belt-and-suspenders:
@@ -401,6 +406,61 @@ describe("Phase 4: sessionCounts ⇄ countsForFlags equals the engine for any fl
       "evBatteryDocsAvailable",
       "importedFromEu",
     ]);
+  });
+});
+
+describe("drift guard: runtime catalogue equals the authored idea/ originals", () => {
+  // The runtime copies under src/data/questions/ are hand-copied from idea/. Zod-parse-at-load
+  // guards their SHAPE; this guards COPY FIDELITY — a hand-edit drift fails loudly here.
+  it("question-mapping-config.json matches idea/veriffica-questions-list", () => {
+    expect(mappingJson).toEqual(ideaMappingJson);
+  });
+
+  it("question-bank.json matches idea/veriffica-questions-list", () => {
+    expect(bankJson).toEqual(ideaBankJson);
+  });
+});
+
+describe("descriptive metadata matches the real group coverage", () => {
+  it("declared-empty buckets are truly empty (no group's visibleWhen names them)", () => {
+    const { emptyBuckets } = mappingJson.visibilityModel;
+    for (const [axis, values] of Object.entries(emptyBuckets)) {
+      for (const value of values) {
+        const offenders = mappingJson.questionGroups
+          .filter((g) => (g.visibleWhen as VisibleWhen)[axis as keyof VisibilityConfig]?.includes(value) ?? false)
+          .map((g) => g.id);
+        expect(offenders).toEqual([]); // declared empty → really empty
+      }
+    }
+  });
+
+  it("formula covers exactly the axes any group references, plus base", () => {
+    const referenced = new Set<string>();
+    for (const g of mappingJson.questionGroups) for (const axis of Object.keys(g.visibleWhen)) referenced.add(axis);
+    // `base` stands for the empty-visibleWhen groups; the remaining formula entries must be
+    // exactly the axes some group actually references — no stale or missing axis.
+    const formulaAxes = mappingJson.visibilityModel.formula.filter((f) => f !== "base");
+    expect(new Set(formulaAxes)).toEqual(referenced);
+    expect(mappingJson.visibilityModel.formula).toEqual(["base", "fuelType", "transmission", "drive", "bodyType"]);
+  });
+});
+
+describe("trust boundary: garbage config degrades to base groups, never throws", () => {
+  it("an out-of-enum fuelType yields exactly the base groups (the DB-CHECK trust boundary)", () => {
+    // The engine does NOT runtime-validate config enums — it trusts the DB CHECK constraint
+    // on the inspection columns. An impossible value simply fails every axis predicate, so
+    // only the base (empty-visibleWhen, unflagged) groups survive. It must never throw.
+    const baseIds = mappingJson.questionGroups
+      .filter((g) => Object.keys(g.visibleWhen).length === 0 && !g.requiresEquipmentFlag)
+      .map((g) => g.id)
+      .sort();
+    const run = () => selectVisibleGroups({ fuelType: "lpg" } as unknown as VisibilityConfig, NO_FLAGS);
+    expect(run).not.toThrow();
+    expect(
+      run()
+        .map((g) => g.id)
+        .sort(),
+    ).toEqual(baseIds);
   });
 });
 

@@ -255,17 +255,17 @@ None — test-only change, no data or schema impact.
 
 #### Automated
 
-- [x] 2.1 Unit suite passes: `npm test`
-- [x] 2.2 Per-flag pass uses the catalogue oracle (`expectedQuestionIds`), not same-JSON `expectedFor`
-- [x] 2.3 `importedFromEU` config-independence asserted on ≥2 structurally different configs
-- [x] 2.4 EV cross-axis exclusion under flags still green
+- [x] 2.1 Unit suite passes: `npm test` — efb023b
+- [x] 2.2 Per-flag pass uses the catalogue oracle (`expectedQuestionIds`), not same-JSON `expectedFor` — efb023b
+- [x] 2.3 `importedFromEU` config-independence asserted on ≥2 structurally different configs — efb023b
+- [x] 2.4 EV cross-axis exclusion under flags still green — efb023b
 
 ### Phase 3: Drift & trust-boundary guards
 
 #### Automated
 
-- [ ] 3.1 Unit suite passes: `npm test`
-- [ ] 3.2 `idea/` ↔ `src/data` `toEqual` guard green for both JSON files
-- [ ] 3.3 Metadata cross-check: declared-empty buckets truly empty; `formula` matches referenced axes
-- [ ] 3.4 Garbage-config returns base groups only, no throw
-- [ ] 3.5 Lint + typecheck pass: `npm run lint`
+- [x] 3.1 Unit suite passes: `npm test`
+- [x] 3.2 `idea/` ↔ `src/data` `toEqual` guard green for both JSON files
+- [x] 3.3 Metadata cross-check: declared-empty buckets truly empty; `formula` matches referenced axes
+- [x] 3.4 Garbage-config returns base groups only, no throw
+- [x] 3.5 Lint + typecheck pass: `npm run lint`
