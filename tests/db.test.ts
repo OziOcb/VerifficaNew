@@ -17,8 +17,9 @@ function makeInspection(overrides: Partial<Inspection> = {}): Inspection {
     name: "Test inspection",
     createdAt: now,
     updatedAt: now,
-    // 15 Part 1 config columns: nullable in the DB but required keys on the
-    // widened `Inspection` type, so the fixture must list them (default null).
+    // Part 1 config columns: nullable in the DB but required keys on the widened
+    // `Inspection` type, so the fixture must list every one (default null). Keep in
+    // sync with the inspections schema — `npm run db:types` adds new columns here.
     price: null,
     make: null,
     model: null,
@@ -34,6 +35,12 @@ function makeInspection(overrides: Partial<Inspection> = {}): Inspection {
     doorCount: null,
     address: null,
     notes: null,
+    globalNotes: null,
+    chargingPortEquipped: null,
+    evBatteryDocsAvailable: null,
+    mechanicalCompressorEquipped: null,
+    turboEquipped: null,
+    importedFromEu: null,
     synced: 0,
     ...overrides,
   };
@@ -89,6 +96,11 @@ describe("Dexie store (src/lib/db.ts)", () => {
       createdAt: Date.now() + 1,
     });
 
+    // `add` resolves to the key type `number | undefined` (seq is optional at
+    // insert); the auto-increment guarantees a number at runtime, so narrow both.
+    if (typeof seq1 !== "number" || typeof seq2 !== "number") {
+      throw new Error("expected numeric auto-increment seq keys");
+    }
     expect(seq2).toBeGreaterThan(seq1);
 
     const ordered = await db.changeQueue.orderBy("createdAt").toArray();

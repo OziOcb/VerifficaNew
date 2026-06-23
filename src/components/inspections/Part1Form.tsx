@@ -395,7 +395,7 @@ export default function Part1Form({ inspection, relevantTogglesByFuel }: Props) 
                   value={values[field]}
                   error={errors[field]}
                   required={REQUIRED.has(field)}
-                  multiline={field === "notes"}
+                  multiline={false}
                   inputModeHint={field === "mileage" ? "numeric" : field === "price" ? "decimal" : undefined}
                   onInput={(v) => {
                     handleInput(field, v);
