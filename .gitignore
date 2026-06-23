@@ -34,3 +34,6 @@ pnpm-debug.log*
 
 # personal Claude Code instructions
 CLAUDE.local.md
+
+# stryker temp files
+.stryker-tmp
