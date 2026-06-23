@@ -110,9 +110,72 @@ describe("base groups (visibleWhen {})", () => {
     expect(baseInPetrol).toEqual(empty);
   });
 
-  it("returns groups sorted by order", () => {
-    const orders = selectVisibleGroups(PETROL, NO_FLAGS).map((g) => g.order);
-    expect(orders).toEqual([...orders].sort((a, b) => a - b));
+  it("returns the petrol/manual/2wd/sedan groups in the exact authored order", () => {
+    // A hard-coded ordered-id oracle (NOT the engine's own output sorted against itself).
+    // This is the real guard for Risk #2 (a missing / extra / reordered group in the session
+    // nav): it pins both the membership and the sequence the buyer sees. The previous
+    // assertion `expect(orders).toEqual([...orders].sort())` was tautological — it passes for
+    // any already-ascending array, so it never proved the engine sorts.
+    //
+    // NOTE on the engine's `.sort((a, b) => a.order - b.order)`: mutation testing flags the
+    // three sort mutants (drop `.sort`, no-op comparator, `a.order + b.order`) as SURVIVED.
+    // They are genuinely EQUIVALENT under the current data — the catalogue is authored in
+    // unique, strictly-ascending `order` (enforced by the invariant test below), so sorting an
+    // already-sorted input is a no-op. Killing them would require feeding the engine an
+    // unsorted catalogue, i.e. making the catalogue injectable — a production refactor not
+    // worth it for an equivalent mutant. The `.sort()` stays as defence for the day the
+    // catalogue is authored out of order; that day is what the invariant test guards against.
+    const ids = selectVisibleGroups(PETROL, NO_FLAGS).map((g) => g.id);
+    expect(ids).toEqual([
+      "g_p2_base_car_body_corrosion",
+      "g_p2_base_car_body_repair_traces",
+      "g_p2_base_engine_structure_bumpers_fenders",
+      "g_p2_base_engine_structure_side_members",
+      "g_p2_base_engine_structure_welds",
+      "g_p2_base_front_suspension_condition",
+      "g_p2_base_tires_condition",
+      "g_p2_base_interior_high_mileage_wear",
+      "g_p2_base_interior_upholstery_condition",
+      "g_p2_base_interior_electrics",
+      "g_p2_base_interior_steering_system",
+      "g_p2_fuel_combustion_coolant_condition",
+      "g_p2_fuel_combustion_oil_condition",
+      "g_p2_fuel_combustion_belts_pulleys",
+      "g_p2_fuel_combustion_exhaust_condition",
+      "g_p2_fuel_petrol_hybrid_spark_plugs",
+      "g_p3_base_interior_steering_system",
+      "g_p3_fuel_combustion_engine_start_up",
+      "g_p3_fuel_combustion_engine_condition",
+      "g_p3_fuel_combustion_exhaust_system",
+      "g_p3_fuel_petrol_hybrid_black_exhaust",
+      "g_p4_base_suspension_responses",
+      "g_p4_base_steering_responses",
+      "g_p4_base_other_phenomena",
+      "g_p4_base_braking_responses",
+      "g_p4_transmission_manual_gearbox_clutch_condition",
+      "g_p5_base_vin_number_compliance",
+      "g_p5_base_service_booklet",
+      "g_p5_base_registration_certificate",
+      "g_p5_base_vehicle_card",
+    ]);
+  });
+
+  it("authored group order is unique and strictly ascending within every part", () => {
+    // The precondition that makes the engine's `.sort()` a no-op AND keeps the session nav
+    // deterministic. If a future catalogue edit introduces a duplicate or out-of-order
+    // `order`, the nav sequence becomes unstable — this fails loudly at the authoring step,
+    // before the (equivalent today) sort ever matters.
+    const byPart = new Map<string, number[]>();
+    for (const g of mappingJson.questionGroups) {
+      const list = byPart.get(g.part) ?? [];
+      list.push(g.order);
+      byPart.set(g.part, list);
+    }
+    for (const [, orders] of byPart) {
+      const strictlyAscending = orders.slice(1).every((o, i) => o > orders[i]);
+      expect(strictlyAscending).toBe(true);
+      expect(new Set(orders).size).toBe(orders.length);
+    }
   });
 });
 
@@ -202,6 +265,16 @@ describe("frozen catalogue & stable counts", () => {
     const without = selectVisibleQuestionIds(PETROL, NO_FLAGS);
     const withEu = selectVisibleQuestionIds(PETROL, flags("importedFromEU"));
     expect(withEu.size - without.size).toBe(8);
+  });
+
+  it("hands out a deeply frozen catalogue (no consumer can mutate it)", () => {
+    // `deepFreeze` (src/lib/questions.ts) recursively freezes the parsed catalogue at module
+    // load so no consumer can mutate the shared singleton. Nothing asserted this before, so
+    // the entire freeze body could be deleted with the suite still green. Reach a group object
+    // and its nested `visibleWhen` through the public engine output and prove both are frozen.
+    const group = selectVisibleGroups(PETROL, NO_FLAGS)[0];
+    expect(Object.isFrozen(group)).toBe(true);
+    expect(Object.isFrozen(group.visibleWhen)).toBe(true);
   });
 });
 
@@ -500,5 +573,16 @@ describe("drift guard: a malformed catalogue throws at parse", () => {
 
   it("accepts the real catalogue (the module-load drift guard passes)", () => {
     expect(() => parseCatalogue(bankJson, mappingJson)).not.toThrow();
+  });
+
+  it("returns the assembled catalogue shape, not an empty/partial object", () => {
+    // Without this, `parseCatalogue`'s whole body (the assembly that wires the two parsed
+    // files into one catalogue) can be replaced by `{}` and the suite stays green — the
+    // existing tests only assert it throws / does not throw, never what it returns.
+    const catalogue = parseCatalogue(bankJson, mappingJson);
+    expect(catalogue.groups).toEqual(mappingJson.questionGroups);
+    expect(catalogue.questions).toEqual(bankJson.questions);
+    expect(catalogue.explanations).toEqual(bankJson.explanations);
+    expect(catalogue.runtimeFlags).toEqual(mappingJson.visibilityModel.runtimeFlags);
   });
 });
