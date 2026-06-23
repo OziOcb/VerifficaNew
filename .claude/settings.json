@@ -21,13 +21,7 @@
       "Edit",
       "Write"
     ],
-    "deny": [
-      "Bash(rm -rf *)",
-      "Bash(git reset --hard *)",
-      "Bash(git clean -fd *)",
-      "Bash(sudo *)",
-      "Bash(eval *)"
-    ],
+    "deny": ["Bash(rm -rf *)", "Bash(git reset --hard *)", "Bash(git clean -fd *)", "Bash(sudo *)", "Bash(eval *)"],
     "ask": [
       "Bash(curl *)",
       "Bash(wget *)",
@@ -46,6 +40,21 @@
             "type": "command",
             "command": "jq -r '.tool_response.filePath // .tool_input.file_path' | { read -r f; [ -n \"$f\" ] || exit 0; npx prettier --write --ignore-unknown \"$f\"; case \"$f\" in *.ts|*.tsx|*.astro) npx eslint --fix \"$f\";; esac; } 2>/dev/null || true",
             "statusMessage": "Formatting edited file..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "out=$(npx astro check 2>&1) || { echo \"$out\"; exit 2; }",
+            "asyncRewake": true,
+            "rewakeMessage": "`astro check` found type errors introduced this turn — fix them before finishing:",
+            "rewakeSummary": "Typecheck failed",
+            "statusMessage": "Type-checking project (astro check)...",
+            "timeout": 180
           }
         ]
       }
