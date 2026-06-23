@@ -7,7 +7,7 @@ import { defineConfig, devices } from "@playwright/test";
 Object.assign(process.env, loadEnv("test", process.cwd(), ""));
 
 const PORT = 4321;
-const BASE_URL = `http://127.0.0.1:${PORT}`;
+const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -21,7 +21,15 @@ export default defineConfig({
     baseURL: BASE_URL,
     trace: "on-first-retry",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    { name: "setup", testMatch: /auth\.setup\.ts/ },
+    {
+      name: "chromium",
+      use: { storageState: "playwright/.auth/user.json" },
+      dependencies: ["setup"],
+    },
+    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+  ],
   // The service worker is emitted ONLY by a production build, so the e2e runs
   // against the built app served by wrangler (the Cloudflare adapter has no
   // working `astro preview`). Requires local Supabase running for auth.

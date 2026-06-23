@@ -37,3 +37,7 @@ CLAUDE.local.md
 
 # stryker temp files
 .stryker-tmp
+
+# playwright auth files
+playwright/.auth/
+.playwright-cli
