@@ -415,13 +415,13 @@ Integration tests are in-memory (fake-indexeddb) and fast. The e2e adds one spec
 
 #### Automated
 
-- [ ] 1.1 Type checking + lint pass (`npm run lint`)
-- [ ] 1.2 Unit/integration suite passes (`npm test`)
-- [ ] 1.3 New drain suite fails when `orderBy("seq")` is reverted (FIFO-tie case red)
+- [x] 1.1 Type checking + lint pass (`npm run lint`)
+- [x] 1.2 Unit/integration suite passes (`npm test`)
+- [x] 1.3 New drain suite fails when `orderBy("seq")` is reverted (FIFO-tie case red)
 
 #### Manual
 
-- [ ] 1.4 Narrowed Stryker run over `src/lib/sync.ts:159-192`; survivors reviewed one-by-one; assertions added only for real durability bugs; accepted survivors recorded
+- [x] 1.4 Narrowed Stryker run over `src/lib/sync.ts:159-192`; survivors reviewed one-by-one; assertions added only for real durability bugs; accepted survivors recorded
 
 ### Phase 2: E2e shared-auth infrastructure
 

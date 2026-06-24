@@ -157,7 +157,11 @@ export async function flushQueue(): Promise<void> {
 }
 
 async function drainQueue(): Promise<void> {
-  const ops = await db.changeQueue.orderBy("createdAt").toArray();
+  // Order by the monotonic `++seq` primary key, not `createdAt`: `createdAt` is a
+  // `Date.now()` millisecond stamp that two rapid saves can tie on, and Dexie does
+  // not guarantee a FIFO tie-break on a non-unique index. `seq` is strictly
+  // increasing by construction, so FIFO holds even when timestamps collide.
+  const ops = await db.changeQueue.orderBy("seq").toArray();
 
   for (const op of ops) {
     let res: Response;
