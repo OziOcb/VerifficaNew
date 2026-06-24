@@ -6,7 +6,12 @@ import { defineConfig, devices } from "@playwright/test";
 // tests/helpers/supabase.ts (service-role admin client).
 Object.assign(process.env, loadEnv("test", process.cwd(), ""));
 
-const PORT = 4321;
+// Dedicated e2e port (NOT 4321). `npm run dev` (astro dev) and the e2e's
+// `wrangler dev` both default to 4321; sharing it means Playwright's
+// `reuseExistingServer` silently reuses a running dev server (Vite-dev modules,
+// no service worker) instead of the built app, and a build-test SW left on 4321
+// hijacks later dev sessions (see lessons.md). A separate port isolates both.
+const PORT = 4322;
 const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
