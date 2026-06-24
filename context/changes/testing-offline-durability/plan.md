@@ -427,13 +427,13 @@ Integration tests are in-memory (fake-indexeddb) and fast. The e2e adds one spec
 
 #### Automated
 
-- [ ] 2.1 Lint/type pass (`npm run lint`)
-- [ ] 2.2 `npm run test:e2e` runs setup → `seed.spec.ts` (shared auth) → teardown; no orphaned user remains
+- [x] 2.1 Lint/type pass (`npm run lint`)
+- [x] 2.2 `npm run test:e2e` runs setup → `seed.spec.ts` (shared auth) → teardown; no orphaned user remains
 
 #### Manual
 
-- [ ] 2.3 `playwright/.auth/user.json` produced and git-ignored; no leftover users/rows in local Supabase
-- [ ] 2.4 `npm run test:e2e` run twice consecutively stays green (no cap/residue flake)
+- [x] 2.3 `playwright/.auth/user.json` produced and git-ignored; no leftover users/rows in local Supabase
+- [x] 2.4 `npm run test:e2e` run twice consecutively stays green (no cap/residue flake)
 
 ### Phase 3: Rebuilt offline durability e2e
 

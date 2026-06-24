@@ -22,13 +22,19 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [
-    { name: "setup", testMatch: /auth\.setup\.ts/ },
+    // Setup signs in a shared user and persists storageState; its `teardown`
+    // project deletes that user after the run.
+    {
+      name: "setup",
+      testMatch: /auth\.setup\.ts/,
+      teardown: "teardown",
+    },
+    { name: "teardown", testMatch: /auth\.teardown\.ts/ },
     {
       name: "chromium",
-      use: { storageState: "playwright/.auth/user.json" },
+      use: { ...devices["Desktop Chrome"], storageState: "playwright/.auth/user.json" },
       dependencies: ["setup"],
     },
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
   ],
   // The service worker is emitted ONLY by a production build, so the e2e runs
   // against the built app served by wrangler (the Cloudflare adapter has no
