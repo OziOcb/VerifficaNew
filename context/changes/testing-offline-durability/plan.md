@@ -439,12 +439,12 @@ Integration tests are in-memory (fake-indexeddb) and fast. The e2e adds one spec
 
 #### Automated
 
-- [x] 3.1 Lint/type pass (`npm run lint`)
-- [x] 3.2 `npm run test:e2e` green end-to-end (setup → seed → offline-durability → teardown)
-- [x] 3.3 Spec fails when reconnect/drain is skipped (per-write SSR assertions go red)
+- [x] 3.1 Lint/type pass (`npm run lint`) — d24c47f
+- [x] 3.2 `npm run test:e2e` green end-to-end (setup → seed → offline-durability → teardown) — d24c47f
+- [x] 3.3 Spec fails when reconnect/drain is skipped (per-write SSR assertions go red) — d24c47f
 
 #### Manual
 
-- [x] 3.4 Headed run: offline reload serves the SW shell (not Chrome's offline page); notes/config persist visually
-- [x] 3.5 No orphaned inspection rows remain for the shared user after the run
-- [x] 3.6 `context/foundation/test-plan.md` updated: §6.3 multi-write pattern, §3 Phase 2 status, §6.6 per-phase note
+- [x] 3.4 Headed run: offline reload serves the SW shell (not Chrome's offline page); notes/config persist visually — d24c47f
+- [x] 3.5 No orphaned inspection rows remain for the shared user after the run — d24c47f
+- [x] 3.6 `context/foundation/test-plan.md` updated: §6.3 multi-write pattern, §3 Phase 2 status, §6.6 per-phase note — d24c47f
