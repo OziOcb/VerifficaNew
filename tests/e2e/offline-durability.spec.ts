@@ -125,6 +125,10 @@ test("multiple offline writes survive offline reload and sync per-write on recon
   //    op independently: the name heading (derived server-side from the config make+model)
   //    proves the config op landed; the notes value proves both note ops landed; the
   //    absence of the "Complete Part 1" lock proves the config was accepted as valid.
+  //    NOTE: op 1 and op 2 both write `globalNotes`, so op 2 overwrites op 1 server-side —
+  //    this e2e verifies the *final* notes value, not NOTE_ONE's independent landing. That
+  //    each op is POSTed exactly once, in FIFO order, is proven separately and
+  //    deterministically by the integration suite (tests/sync.drain.test.ts).
   await context.setOffline(false);
   await expect(async () => {
     await page.goto(`/inspections/${id}/session`);
