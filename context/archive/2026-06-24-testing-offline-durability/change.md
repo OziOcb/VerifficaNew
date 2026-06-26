@@ -1,10 +1,10 @@
 ---
 change_id: testing-offline-durability
 title: Offline durability at flow level — multiple offline writes survive reload + reconnect
-status: impl_reviewed
+status: archived
 created: 2026-06-24
 updated: 2026-06-26
-archived_at: null
+archived_at: 2026-06-26T14:37:46Z
 ---
 
 ## Notes
