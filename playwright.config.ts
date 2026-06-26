@@ -6,7 +6,12 @@ import { defineConfig, devices } from "@playwright/test";
 // tests/helpers/supabase.ts (service-role admin client).
 Object.assign(process.env, loadEnv("test", process.cwd(), ""));
 
-const PORT = 4321;
+// Dedicated e2e port (NOT 4321). `npm run dev` (astro dev) and the e2e's
+// `wrangler dev` both default to 4321; sharing it means Playwright's
+// `reuseExistingServer` silently reuses a running dev server (Vite-dev modules,
+// no service worker) instead of the built app, and a build-test SW left on 4321
+// hijacks later dev sessions (see lessons.md). A separate port isolates both.
+const PORT = 4322;
 const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
@@ -22,13 +27,19 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [
-    { name: "setup", testMatch: /auth\.setup\.ts/ },
+    // Setup signs in a shared user and persists storageState; its `teardown`
+    // project deletes that user after the run.
+    {
+      name: "setup",
+      testMatch: /auth\.setup\.ts/,
+      teardown: "teardown",
+    },
+    { name: "teardown", testMatch: /auth\.teardown\.ts/ },
     {
       name: "chromium",
-      use: { storageState: "playwright/.auth/user.json" },
+      use: { ...devices["Desktop Chrome"], storageState: "playwright/.auth/user.json" },
       dependencies: ["setup"],
     },
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
   ],
   // The service worker is emitted ONLY by a production build, so the e2e runs
   // against the built app served by wrangler (the Cloudflare adapter has no

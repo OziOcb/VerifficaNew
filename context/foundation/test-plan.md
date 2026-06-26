@@ -80,7 +80,7 @@ orchestrator updates Status as artifacts appear on disk.
 | #   | Phase name                       | Goal (one line)                                                                                                                | Risks covered   | Test types                      | Status      | Change folder                                                   |
 | --- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------- | ------------------------------- | ----------- | --------------------------------------------------------------- |
 | 1   | Visibility-engine hardening      | Prove engine output matches the authored catalogue across the axis+flag matrix — a trustworthy oracle for future Smart Pruning | #2 (proxies #3) | unit + catalogue reconciliation | complete    | context/archive/2026-06-22-testing-visibility-engine-hardening/ |
-| 2   | Offline durability at flow level | Multiple offline answers + a note survive offline → reload → reconnect; the queue drains in order                              | #1              | integration + e2e               | not started | —                                                               |
+| 2   | Offline durability at flow level | Multiple offline answers + a note survive offline → reload → reconnect; the queue drains in order                              | #1              | integration + e2e               | complete    | context/changes/testing-offline-durability/                     |
 | 3   | Sync-endpoint server-trust       | The server boundary rejects malformed / oversized domain writes regardless of the client                                       | #6              | integration                     | not started | —                                                               |
 | 4   | workerd deployed smoke-gate      | A repeatable deployed `wrangler tail` smoke of sync/create + SW load, wired as a gate                                          | #5              | deployed smoke / CI gate        | not started | —                                                               |
 
@@ -162,9 +162,10 @@ relevant rollout phase ships; before that, it reads "TBD — see §3 Phase N."
 ### 6.3 Adding an e2e test
 
 - **Location**: `tests/e2e/<flow>.spec.ts`.
-- **Reference test**: `tests/e2e/offline-roundtrip.spec.ts`.
+- **Reference test**: `tests/e2e/offline-durability.spec.ts` (multi-write offline), `tests/e2e/seed.spec.ts` (create→SSR-read→delete).
 - **Run locally**: `npm run test:e2e` (builds + serves via `wrangler dev`; SW is build-only).
-- Multi-write offline pattern TBD — see §3 Phase 2.
+- **Shared auth**: `auth.setup.ts` signs in one confirmed user and persists `storageState`; specs start authenticated and must self-delete the rows they create (2-per-owner cap). `auth.teardown.ts` deletes the user (cascade) as a backstop.
+- **Multi-write offline pattern**: warm the SW (`navigator.serviceWorker.ready` + a reload until `navigator.serviceWorker.controller` is truthy) AND pre-visit every route you drive offline so the NetworkFirst "pages" cache holds them (`/dashboard` is excluded — create online). Go offline, make several distinct writes (notes via the session screen + config via Part 1), and assert the Dexie `changeQueue` depth grows per write (the unsynced state — there is no on-screen pending badge; a local save shows "Saved."). Reload offline to prove SW-shell survival (`useLiveQuery` rehydrates from Dexie; the SSR prop is stale). Reconnect, then assert **each** write landed via the SSR re-read (`session.astro`) — the config-derived name heading AND the notes value — not a single terminal badge. Wrap the post-reconnect oracle in `expect(...).toPass()` so re-navigation re-drains while the assertions ride out the async drain.
 
 ### 6.4 Adding a test for a new API endpoint
 
@@ -181,6 +182,18 @@ relevant rollout phase ships; before that, it reads "TBD — see §3 Phase N."
 
 (Optional. After each phase lands, `/10x-implement` appends a 2–3 line note
 here capturing anything surprising the phase taught.)
+
+- **Phase 2 (Offline durability), 2026-06-24** — Two surprises shaped the e2e: (1)
+  the session screen has **no on-screen "pending sync" badge** — a local optimistic
+  save shows "Saved." even offline — so the unsynced state had to be read from the
+  Dexie `changeQueue` depth (via raw IndexedDB in `page.evaluate`), which doubles as
+  a deterministic per-write enqueue signal with no transient-UI race. (2) After an
+  offline config save, the **SSR `unlocked`/name props stay stale** (served from the
+  warmed SW cache); only the `useLiveQuery` island rehydrates from Dexie, so offline
+  assertions target the island (notes value), and the server-truth oracle (name
+  heading derived from make+model, unlocked) is asserted only after the **online** SSR
+  re-read. The drain FIFO source fix (`orderBy("seq")`) is proved at the integration
+  layer (`tests/sync.drain.test.ts`), not the e2e.
 
 ## 7. What We Deliberately Don't Test
 

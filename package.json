@@ -13,7 +13,8 @@
     "db:types": "supabase gen types typescript --local > src/db/database.types.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.8",
