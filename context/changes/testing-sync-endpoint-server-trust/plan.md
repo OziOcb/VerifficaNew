@@ -221,13 +221,13 @@ None — no schema change.
 
 #### Automated
 
-- [ ] 1.1 Existing test suite passes: `npm test`
-- [ ] 1.2 Type-checked lint passes: `npm run lint`
-- [ ] 1.3 Production build passes: `npm run build`
+- [x] 1.1 Existing test suite passes: `npm test`
+- [x] 1.2 Type-checked lint passes: `npm run lint`
+- [x] 1.3 Production build passes: `npm run build`
 
 #### Manual
 
-- [ ] 1.4 Session screen over-limit gate unchanged after moving the constant
+- [x] 1.4 Session screen over-limit gate unchanged after moving the constant
 
 ### Phase 2: Add the server guard + prove it
 
