@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import camelcaseKeys from "camelcase-keys";
 import snakecaseKeys from "snakecase-keys";
 import { createClient } from "@/lib/supabase";
+import { validateSyncPayload } from "@/lib/sync-payload-validation";
 
 // The SINGLE server boundary for syncing one queued op to `inspections`. Mirrors
 // /api/auth/* (server client + cookie session). It re-establishes server
@@ -46,6 +47,13 @@ export const POST: APIRoute = async (context) => {
   // any client-sent ownerId is overwritten here. camel → snake at this boundary;
   // scalar columns only (no jsonb yet), so the top-level transform is sufficient.
   const { synced: _synced, ...row } = body.payload ?? {};
+
+  // Server-trust guard: reject the oversized / cross-field-invalid bands the client
+  // blocks (Risk #6). Runs on the camelCase row, before snakecasing, so a curl/devtools
+  // bypass cannot persist what the browser validators would have stopped.
+  const validation = validateSyncPayload(row);
+  if (!validation.ok) return new Response(validation.message, { status: 400 });
+
   const payload = snakecaseKeys({ ...row, ownerId: user.id });
 
   const { data, error } = await supabase

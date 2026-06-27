@@ -14,8 +14,9 @@
 import { z } from "zod";
 
 // Field-level error copy — the EXACT strings from rules doc §9. Do not reword:
-// they are user-facing and asserted verbatim in tests.
-const M = {
+// they are user-facing and asserted verbatim in tests. Exported so the sync-boundary
+// server guard returns the identical messages the client shows (single source of truth).
+export const M = {
   price: "Enter a valid price greater than or equal to 0.",
   make: "Enter the car make.",
   model: "Enter the car model.",
@@ -32,7 +33,28 @@ const M = {
   address: "Enter a valid address.",
   notes: "Notes cannot be longer than 1000 characters.",
   crossFieldElectricTransmission: "Electric cars must use Automatic transmission.",
+  // The inspection-level global-notes document (FR-010) — distinct from Part 1 `notes`.
+  // Lives here (not in the React island) so the server guard can import it without
+  // pulling in Dexie. Verbatim from the SessionScreen island it replaces.
+  globalNotes: "Global notes cannot be longer than 10,000 characters.",
 } as const;
+
+// Length caps shared by the client validators and the sync-boundary server guard,
+// so neither limit is duplicated. `MAX_GLOBAL_NOTES_LENGTH` is the new home for the
+// literal that used to live in SessionScreen.tsx.
+export const MAX_PART1_NOTES_LENGTH = 1000;
+export const MAX_GLOBAL_NOTES_LENGTH = 10_000;
+
+/**
+ * CF-1 predicate: Electric cars must use Automatic transmission. Assumes BOTH fields are
+ * concretely set — it returns false (violation) for electric paired with a missing/null
+ * transmission, so callers must only invoke it once both values are present. The schema's
+ * object-level `.refine` runs after every field parses (both required), and the
+ * sync-boundary server guard pre-checks `typeof === "string"` on both, so both enforce
+ * the identical rule without ever handing this an absent transmission.
+ */
+export const isElectricTransmissionValid = (d: { fuelType?: string | null; transmission?: string | null }): boolean =>
+  !(d.fuelType === "electric" && d.transmission !== "automatic");
 
 // Enum keys are stored lowercase (rules §8); these mirror the DB CHECK constraints.
 const FUEL_TYPES = ["petrol", "diesel", "hybrid", "electric"] as const;
@@ -169,14 +191,14 @@ export const part1ConfigSchema = z
     notes: z
       .string()
       .transform((s) => capitalizeFirst(s.trim()))
-      .refine((s) => s.length <= 1000, { message: M.notes })
+      .refine((s) => s.length <= MAX_PART1_NOTES_LENGTH, { message: M.notes })
       .transform((s) => (s === "" ? null : s)),
   })
   // CF-1: Electric requires Automatic. Surfaced on the transmission field so the
   // first-invalid focus/scroll lands somewhere meaningful. Object-level refines
   // run only once all fields parse — which is exactly the case we must catch
   // (electric + manual are each individually valid), so this also drives unlock.
-  .refine((d) => !(d.fuelType === "electric" && d.transmission !== "automatic"), {
+  .refine((d) => isElectricTransmissionValid(d), {
     message: M.crossFieldElectricTransmission,
     path: ["transmission"],
   });

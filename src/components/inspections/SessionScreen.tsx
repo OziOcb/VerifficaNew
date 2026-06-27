@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { saveInspection, flushQueue, startAutoSync } from "@/lib/sync";
 import { countsForFlags, totalCount, type SessionCounts } from "@/lib/session-counts";
+import { MAX_GLOBAL_NOTES_LENGTH, M } from "@/lib/part1-config";
 import type { RelevantToggle, RuntimeFlag } from "@/lib/questions";
 
 // Cosmic glass palette — matches Part1Form / the dashboard shell.
@@ -26,9 +27,11 @@ const PANEL = "border-white/10 bg-white/5 text-white backdrop-blur-xl";
 const FIELD_INPUT = "border-white/20 bg-white/10 text-white placeholder:text-white/40";
 
 // FR-010: the global notes document is a distinct 10,000-char inspection-level doc
-// (separate from the 1,000-char Part 1 `notes`). Enforced app-side (mirrors Part 1).
-const MAX_NOTES = 10_000;
-const NOTES_TOO_LONG = "Global notes cannot be longer than 10,000 characters.";
+// (separate from the 1,000-char Part 1 `notes`). The cap + message now live in
+// `@/lib/part1-config` so the client island and the sync-boundary server guard enforce
+// the identical limit (single source of truth).
+const MAX_NOTES = MAX_GLOBAL_NOTES_LENGTH;
+const NOTES_TOO_LONG = M.globalNotes;
 
 // Debounce window for persisting notes edits through the outbox.
 const SAVE_DEBOUNCE_MS = 600;
