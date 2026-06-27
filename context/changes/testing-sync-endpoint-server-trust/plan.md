@@ -221,24 +221,24 @@ None — no schema change.
 
 #### Automated
 
-- [x] 1.1 Existing test suite passes: `npm test`
-- [x] 1.2 Type-checked lint passes: `npm run lint`
-- [x] 1.3 Production build passes: `npm run build`
+- [x] 1.1 Existing test suite passes: `npm test` — 38e9fff
+- [x] 1.2 Type-checked lint passes: `npm run lint` — 38e9fff
+- [x] 1.3 Production build passes: `npm run build` — 38e9fff
 
 #### Manual
 
-- [x] 1.4 Session screen over-limit gate unchanged after moving the constant
+- [x] 1.4 Session screen over-limit gate unchanged after moving the constant — 38e9fff
 
 ### Phase 2: Add the server guard + prove it
 
 #### Automated
 
-- [ ] 2.1 New + existing sync cases pass: `npm test`
-- [ ] 2.2 Type-checked lint passes: `npm run lint`
-- [ ] 2.3 Production build passes: `npm run build`
+- [x] 2.1 New + existing sync cases pass: `npm test`
+- [x] 2.2 Type-checked lint passes: `npm run lint`
+- [x] 2.3 Production build passes: `npm run build`
 
 #### Manual
 
-- [ ] 2.4 Bypassing curl with oversized `globalNotes` → 400 + message, no row persisted
-- [ ] 2.5 Bypassing curl with electric + manual → 400
-- [ ] 2.6 Normal UI inspection edit still saves (no false rejection)
+- [x] 2.4 Bypassing curl with oversized `globalNotes` → 400 + message, no row persisted
+- [x] 2.5 Bypassing curl with electric + manual → 400
+- [x] 2.6 Normal UI inspection edit still saves (no false rejection)

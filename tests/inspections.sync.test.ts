@@ -2,6 +2,7 @@ import type { APIContext } from "astro";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { Database } from "@/db/database.types";
+import { MAX_GLOBAL_NOTES_LENGTH, MAX_PART1_NOTES_LENGTH, M } from "@/lib/part1-config";
 import { createConfirmedUser, deleteUser, signInAs } from "./helpers/supabase";
 
 // Exercises POST /api/inspections/sync against a real local Supabase under RLS.
@@ -165,5 +166,130 @@ describe("POST /api/inspections/sync", () => {
     const check = await bClient.from("inspections").select("id").eq("id", bRowId).single();
     expect(check.error).toBeNull();
     expect(check.data?.id).toBe(bRowId);
+  });
+
+  // --- Server-trust guard (Risk #6) -----------------------------------------
+  // The browser validators block these bands; a curl/devtools bypass must not slip
+  // them past the server. Each rejection is proven specifically (the DB enforces
+  // none of these — no length/cross-field CHECK) AND proven to persist nothing.
+
+  it("rejects an oversized globalNotes with 400 + the shared message and persists nothing", async () => {
+    mockClient = aClient;
+    const id = crypto.randomUUID();
+    const res = await POST(
+      makeContext({
+        user: { id: aId },
+        body: {
+          op: "put",
+          entityId: id,
+          payload: { id, status: "draft", globalNotes: "x".repeat(MAX_GLOBAL_NOTES_LENGTH + 1), synced: 0 },
+        },
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(await res.text()).toBe(M.globalNotes);
+
+    // Nothing was written — the upsert never ran.
+    const check = await aClient.from("inspections").select("id").eq("id", id);
+    expect(check.error).toBeNull();
+    expect(check.data).toEqual([]);
+  });
+
+  it("rejects an oversized Part-1 notes with 400 + the shared message and persists nothing", async () => {
+    mockClient = aClient;
+    const id = crypto.randomUUID();
+    const res = await POST(
+      makeContext({
+        user: { id: aId },
+        body: {
+          op: "put",
+          entityId: id,
+          payload: { id, status: "draft", notes: "y".repeat(MAX_PART1_NOTES_LENGTH + 1), synced: 0 },
+        },
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(await res.text()).toBe(M.notes);
+
+    const check = await aClient.from("inspections").select("id").eq("id", id);
+    expect(check.error).toBeNull();
+    expect(check.data).toEqual([]);
+  });
+
+  it("rejects an Electric + Manual config (CF-1) with 400 + the shared message and persists nothing", async () => {
+    mockClient = aClient;
+    const id = crypto.randomUUID();
+    const res = await POST(
+      makeContext({
+        user: { id: aId },
+        body: {
+          op: "put",
+          entityId: id,
+          payload: { id, status: "draft", fuelType: "electric", transmission: "manual", synced: 0 },
+        },
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(await res.text()).toBe(M.crossFieldElectricTransmission);
+
+    const check = await aClient.from("inspections").select("id").eq("id", id);
+    expect(check.error).toBeNull();
+    expect(check.data).toEqual([]);
+  });
+
+  it("accepts a valid partial draft (electric + automatic, in-limit notes) and persists it", async () => {
+    mockClient = aClient;
+    // Free a slot under the 2-per-owner cap (earlier tests left A at the limit); this
+    // case is about the guard accepting a valid write, not the unrelated row-count cap.
+    await aClient.from("inspections").delete().eq("owner_id", aId);
+    const id = crypto.randomUUID();
+    const res = await POST(
+      makeContext({
+        user: { id: aId },
+        body: {
+          op: "put",
+          entityId: id,
+          payload: {
+            id,
+            status: "draft",
+            globalNotes: "ok",
+            fuelType: "electric",
+            transmission: "automatic",
+            synced: 0,
+          },
+        },
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    const saved = (await res.json()) as Record<string, unknown>;
+    expect(saved.globalNotes).toBe("ok");
+
+    const check = await aClient.from("inspections").select().eq("id", id).single();
+    expect(check.error).toBeNull();
+    expect(check.data?.fuel_type).toBe("electric");
+    expect(check.data?.transmission).toBe("automatic");
+  });
+
+  it("accepts electric with transmission absent (CF-1 fires only when both present)", async () => {
+    mockClient = aClient;
+    // Free a slot under the 2-per-owner cap (see above) — orthogonal to the guard.
+    await aClient.from("inspections").delete().eq("owner_id", aId);
+    const id = crypto.randomUUID();
+    const res = await POST(
+      makeContext({
+        user: { id: aId },
+        body: { op: "put", entityId: id, payload: { id, status: "draft", fuelType: "electric", synced: 0 } },
+      }),
+    );
+
+    expect(res.status).toBe(200);
+
+    const check = await aClient.from("inspections").select("fuel_type").eq("id", id).single();
+    expect(check.error).toBeNull();
+    expect(check.data?.fuel_type).toBe("electric");
   });
 });
