@@ -233,12 +233,12 @@ None — no schema change.
 
 #### Automated
 
-- [x] 2.1 New + existing sync cases pass: `npm test`
-- [x] 2.2 Type-checked lint passes: `npm run lint`
-- [x] 2.3 Production build passes: `npm run build`
+- [x] 2.1 New + existing sync cases pass: `npm test` — 5169028
+- [x] 2.2 Type-checked lint passes: `npm run lint` — 5169028
+- [x] 2.3 Production build passes: `npm run build` — 5169028
 
 #### Manual
 
-- [x] 2.4 Bypassing curl with oversized `globalNotes` → 400 + message, no row persisted
-- [x] 2.5 Bypassing curl with electric + manual → 400
-- [x] 2.6 Normal UI inspection edit still saves (no false rejection)
+- [x] 2.4 Bypassing curl with oversized `globalNotes` → 400 + message, no row persisted — 5169028
+- [x] 2.5 Bypassing curl with electric + manual → 400 — 5169028
+- [x] 2.6 Normal UI inspection edit still saves (no false rejection) — 5169028
