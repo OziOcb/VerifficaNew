@@ -1,10 +1,10 @@
 ---
 change_id: testing-sync-endpoint-server-trust
 title: Sync-endpoint server-trust — prove the server rejects oversized / cross-field-invalid writes
-status: impl_reviewed
+status: archived
 created: 2026-06-27
 updated: 2026-06-27
-archived_at: null
+archived_at: 2026-06-27T20:11:38Z
 ---
 
 ## Notes
