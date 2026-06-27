@@ -46,10 +46,12 @@ export const MAX_PART1_NOTES_LENGTH = 1000;
 export const MAX_GLOBAL_NOTES_LENGTH = 10_000;
 
 /**
- * CF-1 predicate: Electric cars must use Automatic transmission. Returns true when the
- * pair is valid (or when either field is absent — an electric car with no transmission
- * set yet is not a violation). Consumed by the schema's object-level `.refine` and by
- * the sync-boundary server guard so both enforce the identical rule.
+ * CF-1 predicate: Electric cars must use Automatic transmission. Assumes BOTH fields are
+ * concretely set — it returns false (violation) for electric paired with a missing/null
+ * transmission, so callers must only invoke it once both values are present. The schema's
+ * object-level `.refine` runs after every field parses (both required), and the
+ * sync-boundary server guard pre-checks `typeof === "string"` on both, so both enforce
+ * the identical rule without ever handing this an absent transmission.
  */
 export const isElectricTransmissionValid = (d: { fuelType?: string | null; transmission?: string | null }): boolean =>
   !(d.fuelType === "electric" && d.transmission !== "automatic");

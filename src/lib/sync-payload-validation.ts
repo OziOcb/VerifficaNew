@@ -33,15 +33,15 @@ export function validateSyncPayload(payload: Record<string, unknown>): SyncPaylo
     return { ok: false, message: M.notes };
   }
 
-  // CF-1 fires only when BOTH fields are present — an electric car with no transmission
-  // set yet is a valid partial save, not a violation.
+  // CF-1 fires only when BOTH fields are concretely set (a string) — an electric car
+  // with no transmission chosen yet is a valid partial save, not a violation. The real
+  // outbox always sends `transmission` as a key (null when unset, never absent), so we
+  // must treat null the same as absent here; a bare `!== undefined` check would let a
+  // cleared transmission slip through and falsely reject the in-progress draft.
   if (
-    fuelType !== undefined &&
-    transmission !== undefined &&
-    !isElectricTransmissionValid({
-      fuelType: typeof fuelType === "string" ? fuelType : null,
-      transmission: typeof transmission === "string" ? transmission : null,
-    })
+    typeof fuelType === "string" &&
+    typeof transmission === "string" &&
+    !isElectricTransmissionValid({ fuelType, transmission })
   ) {
     return { ok: false, message: M.crossFieldElectricTransmission };
   }

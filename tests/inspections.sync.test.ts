@@ -292,4 +292,30 @@ describe("POST /api/inspections/sync", () => {
     expect(check.error).toBeNull();
     expect(check.data?.fuel_type).toBe("electric");
   });
+
+  it("accepts electric with transmission null (the real outbox sends every column; null is not yet-set)", async () => {
+    mockClient = aClient;
+    // The real outbox payload carries every DATA_FIELD as a key — `transmission` is
+    // null (not absent) until the user picks one. CF-1 must treat that as a valid
+    // partial draft, exactly like the omitted-key case above.
+    await aClient.from("inspections").delete().eq("owner_id", aId);
+    const id = crypto.randomUUID();
+    const res = await POST(
+      makeContext({
+        user: { id: aId },
+        body: {
+          op: "put",
+          entityId: id,
+          payload: { id, status: "draft", fuelType: "electric", transmission: null, synced: 0 },
+        },
+      }),
+    );
+
+    expect(res.status).toBe(200);
+
+    const check = await aClient.from("inspections").select("fuel_type, transmission").eq("id", id).single();
+    expect(check.error).toBeNull();
+    expect(check.data?.fuel_type).toBe("electric");
+    expect(check.data?.transmission).toBeNull();
+  });
 });
