@@ -305,10 +305,10 @@ None. No schema, data, or deploy-pipeline changes. The ephemeral prod user is cr
 
 #### Automated
 
-- [x] 3.1 Markdown lint/format passes
-- [x] 3.2 §6.5 no longer contains "TBD — see §3 Phase 4"
+- [x] 3.1 Markdown lint/format passes — 5e75ad9
+- [x] 3.2 §6.5 no longer contains "TBD — see §3 Phase 4" — 5e75ad9
 
 #### Manual
 
-- [x] 3.3 A reader can follow §6.5 to run the smoke from scratch
-- [x] 3.4 §5/§3 status accurately reflects the gate being enforced
+- [x] 3.3 A reader can follow §6.5 to run the smoke from scratch — 5e75ad9
+- [x] 3.4 §5/§3 status accurately reflects the gate being enforced — 5e75ad9
