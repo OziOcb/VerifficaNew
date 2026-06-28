@@ -26,6 +26,19 @@ const USER_SIDECAR = path.join(AUTH_DIR, "deployed-user.meta.json");
 setup("authenticate ephemeral prod user", async ({ page }) => {
   fs.mkdirSync(AUTH_DIR, { recursive: true });
 
+  // Fail fast if creds resolved to LOCAL Supabase: loadEnv loads `.env` first
+  // and only overlays `.env.smoke`, so a missing/partial `.env.smoke` would
+  // silently create the ephemeral user in the local project while the probes
+  // still hit the live Worker — a confusing mixed-target run. The user/row
+  // deletion is always scoped to the minted id, so this is a guardrail against
+  // a wrong-project run, not a data-loss risk.
+  const supabaseUrl = process.env.SUPABASE_URL ?? "";
+  if (/(?:^|\/\/)(?:localhost|127\.0\.0\.1)(?::|\/|$)/.test(supabaseUrl)) {
+    throw new Error(
+      `Deployed smoke targets a LOCAL Supabase URL (${supabaseUrl}). Populate .env.smoke with PROD creds before running smoke:deployed.`,
+    );
+  }
+
   const email = `smoke-deployed-${Date.now()}@example.com`;
   const userId = await createConfirmedUser(email, PASSWORD);
 

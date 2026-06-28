@@ -12,7 +12,9 @@ import type { Database } from "@/db/database.types";
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`Missing required env var ${name}. Is local Supabase running (npx supabase start)?`);
+    throw new Error(
+      `Missing required env var ${name}. For local runs, is Supabase up (npx supabase start)? For the deployed smoke, is .env.smoke populated with prod creds?`,
+    );
   }
   return value;
 }

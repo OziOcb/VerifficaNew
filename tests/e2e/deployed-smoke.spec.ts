@@ -102,4 +102,17 @@ test.describe("deployed workerd smoke — authenticated round-trip", () => {
     });
     expect(del.status()).toBe(204);
   });
+
+  test("sync endpoint rejects a malformed (non-JSON) body with 400", async ({ request, baseURL }) => {
+    // sync.ts checks auth BEFORE parsing the body, so the 400 ("Invalid JSON body")
+    // branch is only reachable on an AUTHENTICATED request — an unauthenticated
+    // malformed POST returns 401, not 400. This probe guards that parse branch on
+    // the live Worker. Origin satisfies Astro's checkOrigin CSRF guard.
+    const origin = baseURL ?? "https://veriffica.veriffica.workers.dev";
+    const res = await request.post("/api/inspections/sync", {
+      headers: { Origin: origin, "Content-Type": "application/json" },
+      data: "not-json{",
+    });
+    expect(res.status()).toBe(400);
+  });
 });
