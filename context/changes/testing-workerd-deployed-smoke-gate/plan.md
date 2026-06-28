@@ -291,24 +291,24 @@ None. No schema, data, or deploy-pipeline changes. The ephemeral prod user is cr
 
 #### Automated
 
-- [x] 2.1 Lint passes: `npm run lint`
-- [x] 2.2 `npm run smoke:deployed` runs both rungs against the live Worker and exits 0
-- [x] 2.3 Round-trip asserts `201 {id}`, `200 + camelCase body`, `204`
+- [x] 2.1 Lint passes: `npm run lint` — ee9ddc1
+- [x] 2.2 `npm run smoke:deployed` runs both rungs against the live Worker and exits 0 — ee9ddc1
+- [x] 2.3 Round-trip asserts `201 {id}`, `200 + camelCase body`, `204` — ee9ddc1
 
 #### Manual
 
-- [x] 2.4 No leftover prod smoke user or `inspections` rows after the run
-- [x] 2.5 Tail log shows authenticated requests `Ok`, no Node-API/undefined-env errors
-- [x] 2.6 Current-year config `put` accepted (no module-clock regression)
+- [x] 2.4 No leftover prod smoke user or `inspections` rows after the run — ee9ddc1
+- [x] 2.5 Tail log shows authenticated requests `Ok`, no Node-API/undefined-env errors — ee9ddc1
+- [x] 2.6 Current-year config `put` accepted (no module-clock regression) — ee9ddc1
 
 ### Phase 3: Docs & Gate Registration
 
 #### Automated
 
-- [ ] 3.1 Markdown lint/format passes
-- [ ] 3.2 §6.5 no longer contains "TBD — see §3 Phase 4"
+- [x] 3.1 Markdown lint/format passes
+- [x] 3.2 §6.5 no longer contains "TBD — see §3 Phase 4"
 
 #### Manual
 
-- [ ] 3.3 A reader can follow §6.5 to run the smoke from scratch
-- [ ] 3.4 §5/§3 status accurately reflects the gate being enforced
+- [x] 3.3 A reader can follow §6.5 to run the smoke from scratch
+- [x] 3.4 §5/§3 status accurately reflects the gate being enforced
