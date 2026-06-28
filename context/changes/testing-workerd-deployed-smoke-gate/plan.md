@@ -291,15 +291,15 @@ None. No schema, data, or deploy-pipeline changes. The ephemeral prod user is cr
 
 #### Automated
 
-- [ ] 2.1 Lint passes: `npm run lint`
-- [ ] 2.2 `npm run smoke:deployed` runs both rungs against the live Worker and exits 0
-- [ ] 2.3 Round-trip asserts `201 {id}`, `200 + camelCase body`, `204`
+- [x] 2.1 Lint passes: `npm run lint`
+- [x] 2.2 `npm run smoke:deployed` runs both rungs against the live Worker and exits 0
+- [x] 2.3 Round-trip asserts `201 {id}`, `200 + camelCase body`, `204`
 
 #### Manual
 
-- [ ] 2.4 No leftover prod smoke user or `inspections` rows after the run
-- [ ] 2.5 Tail log shows authenticated requests `Ok`, no Node-API/undefined-env errors
-- [ ] 2.6 Current-year config `put` accepted (no module-clock regression)
+- [x] 2.4 No leftover prod smoke user or `inspections` rows after the run
+- [x] 2.5 Tail log shows authenticated requests `Ok`, no Node-API/undefined-env errors
+- [x] 2.6 Current-year config `put` accepted (no module-clock regression)
 
 ### Phase 3: Docs & Gate Registration
 

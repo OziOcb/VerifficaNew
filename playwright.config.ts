@@ -37,9 +37,24 @@ export default defineConfig({
   },
   projects: SMOKE_DEPLOYED
     ? [
-        // Phase 1: the unauthenticated rung only. Phase 2 adds the deployed
-        // setup/teardown projects + an authenticated storageState.
-        { name: "deployed", testMatch: /deployed-smoke\.spec\.ts/ },
+        // deployed-setup creates an ephemeral PROD user and signs in through the
+        // LIVE UI (persisting storageState); its `teardown` cascade-deletes that
+        // user after the run — even on failure.
+        {
+          name: "deployed-setup",
+          testMatch: /deployed-auth\.setup\.ts/,
+          teardown: "deployed-teardown",
+        },
+        { name: "deployed-teardown", testMatch: /deployed-auth\.teardown\.ts/ },
+        {
+          // Both rungs run here: the unauthenticated probes override storageState
+          // to empty in-spec (so the 401 probe really is unauthenticated), the
+          // authenticated round-trip uses this project's storageState cookie.
+          name: "deployed",
+          testMatch: /deployed-smoke\.spec\.ts/,
+          use: { storageState: "playwright/.auth/deployed-user.json" },
+          dependencies: ["deployed-setup"],
+        },
       ]
     : [
         // Setup signs in a shared user and persists storageState; its `teardown`
