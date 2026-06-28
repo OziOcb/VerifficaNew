@@ -19,6 +19,7 @@ put NAME` in a non-interactive shell (CI/agent/piped) silently uploads an EMPTY 
 secret list`. Use real Worker secrets — not `wrangler.jsonc` `vars`/build variables —
   for runtime config; if a value still reads `undefined`, import from `cloudflare:workers`
   instead of `astro:env/server`.
+- **Repeatable gate**: `npm run smoke:deployed` (test-plan §6.5; `tests/e2e/deployed-smoke.spec.ts`) is the realization of this rule — `wrangler tail` evidence around positive-oracle probes of `/api/inspections/{create,sync}` + the SW on the live Worker.
 - **Applies to**: research, plan, implement, impl-review
 
 ## Field casing: camelCase in app code, snake_case in Postgres, convert at one boundary

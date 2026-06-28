@@ -77,12 +77,12 @@ Each row is a discrete rollout phase that will open its own change folder
 via `/10x-new`. Status moves left-to-right through the values below; the
 orchestrator updates Status as artifacts appear on disk.
 
-| #   | Phase name                       | Goal (one line)                                                                                                                | Risks covered   | Test types                      | Status      | Change folder                                                   |
-| --- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------- | ------------------------------- | ----------- | --------------------------------------------------------------- |
-| 1   | Visibility-engine hardening      | Prove engine output matches the authored catalogue across the axis+flag matrix — a trustworthy oracle for future Smart Pruning | #2 (proxies #3) | unit + catalogue reconciliation | complete    | context/archive/2026-06-22-testing-visibility-engine-hardening/ |
-| 2   | Offline durability at flow level | Multiple offline answers + a note survive offline → reload → reconnect; the queue drains in order                              | #1              | integration + e2e               | complete    | context/changes/testing-offline-durability/                     |
-| 3   | Sync-endpoint server-trust       | The server boundary rejects malformed / oversized domain writes regardless of the client                                       | #6              | integration                     | complete    | context/archive/2026-06-27-testing-sync-endpoint-server-trust/  |
-| 4   | workerd deployed smoke-gate      | A repeatable deployed `wrangler tail` smoke of sync/create + SW load, wired as a gate                                          | #5              | deployed smoke / CI gate        | not started | —                                                               |
+| #   | Phase name                       | Goal (one line)                                                                                                                | Risks covered   | Test types                      | Status   | Change folder                                                   |
+| --- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------- | ------------------------------- | -------- | --------------------------------------------------------------- |
+| 1   | Visibility-engine hardening      | Prove engine output matches the authored catalogue across the axis+flag matrix — a trustworthy oracle for future Smart Pruning | #2 (proxies #3) | unit + catalogue reconciliation | complete | context/archive/2026-06-22-testing-visibility-engine-hardening/ |
+| 2   | Offline durability at flow level | Multiple offline answers + a note survive offline → reload → reconnect; the queue drains in order                              | #1              | integration + e2e               | complete | context/archive/2026-06-24-testing-offline-durability/          |
+| 3   | Sync-endpoint server-trust       | The server boundary rejects malformed / oversized domain writes regardless of the client                                       | #6              | integration                     | complete | context/archive/2026-06-27-testing-sync-endpoint-server-trust/  |
+| 4   | workerd deployed smoke-gate      | A repeatable deployed `wrangler tail` smoke of sync/create + SW load, wired as a gate                                          | #5              | deployed smoke / CI gate        | complete | context/archive/2026-06-27-testing-workerd-deployed-smoke-gate/ |
 
 **Status vocabulary** (fixed — parser literals):
 
@@ -176,7 +176,16 @@ relevant rollout phase ships; before that, it reads "TBD — see §3 Phase N."
 
 ### 6.5 Adding a deployed smoke-test
 
-- TBD — see §3 Phase 4 (`wrangler tail` against the live Worker; see `lessons.md` "Verify Cloudflare Workers runtime parity").
+- **Command**: `npm run smoke:deployed` (wraps `node scripts/smoke-deployed.mjs`).
+- **Reference test**: `tests/e2e/deployed-smoke.spec.ts`; deployed auth in `tests/e2e/deployed-auth.setup.ts` / `deployed-auth.teardown.ts`.
+- **When to run**: manual / break-glass, **after a deploy reaches the live Worker** (Workers Builds on push to `main`) — between merge and "deploy done". This is the realization of `lessons.md` "Verify Cloudflare Workers runtime parity."
+- **Prerequisites**: copy `.env.smoke.example` → `.env.smoke` (gitignored) with **prod** `SUPABASE_URL`, `SUPABASE_KEY` (anon), `SUPABASE_SERVICE_ROLE_KEY`; a `wrangler login` with tail access. Optional `SMOKE_URL` overrides the live URL (defaults to `https://veriffica.veriffica.workers.dev`).
+- **How it runs**: the script starts `wrangler tail` (backgrounded, logged to a timestamped file under `smoke-logs/`), runs the Playwright `deployed` project with `SMOKE_DEPLOYED=1` (which flips `playwright.config.ts` to the live `baseURL` and omits the local `webServer`), then stops tail on exit and prints the log path. The Playwright exit code is propagated.
+- **Two rungs, positive oracles** (never merely "no 500" — the dominant failures degrade to a quiet `503`/`404`):
+  - **Unauthenticated** (no DB, no user — immediate workerd-init + dropped-SW signal): `GET /sw.js` → `200` + JS content-type; `GET /manifest.webmanifest` → `200`; `GET /` → `200`; unauthenticated `POST /api/inspections/sync` → `401`.
+  - **Authenticated round-trip** (exercises the SSR dep graph, secret path, edge cookie leg, module-clock guard): `create` → `201 {id}`; `sync put` with a **current-year** Part 1 config → `200` + a **camelCase** body field; `sync delete` → `204`; `sync` with a non-JSON body → `400` (the parse branch runs only after the auth check — an unauthenticated malformed POST returns `401`, not `400`).
+- **Ephemeral, self-cleaning user**: `deployed-auth.setup.ts` creates a confirmed user against **prod** Supabase (service-role admin), signs in through the **live UI** (exercising the edge cookie/`getUser()` leg), and persists `storageState` + a user-id sidecar before any probe. The `sync delete` op cleans the row; `deployed-auth.teardown.ts` cascade-deletes the user as a backstop even on mid-run failure.
+- **Tail is human-reviewed evidence, not a programmatic oracle**: a green Playwright run **plus** a clean tail log (no Node-API / `nodejs_compat` / undefined-env errors, every request `Ok`) is the parity confirmation. Open the printed log path and read it.
 
 ### 6.6 Per-rollout-phase notes
 
