@@ -1,10 +1,10 @@
 ---
 change_id: testing-workerd-deployed-smoke-gate
 title: Deployed workerd smoke-gate for SSR endpoints and service worker (test-plan Phase 4)
-status: impl_reviewed
+status: archived
 created: 2026-06-27
 updated: 2026-06-28
-archived_at: null
+archived_at: 2026-06-28T20:58:04Z
 ---
 
 ## Notes
