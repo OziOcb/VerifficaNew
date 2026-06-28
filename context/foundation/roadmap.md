@@ -3,7 +3,7 @@ project: Veriffica
 version: 1
 status: draft
 created: 2026-06-09
-updated: 2026-06-19
+updated: 2026-06-28
 prd_version: 1
 main_goal: quality
 top_blocker: skills
@@ -50,7 +50,7 @@ is the _complete, reliable_ loop, not a partial demo.
 | S-02 | inspection-dashboard-lifecycle  | see, start, resume, and delete inspections; hit the 2-inspection limit        | F-01, F-02    | FR-006, FR-007, FR-008, FR-009, US-01  | implemented |
 | S-03 | part-1-config-validation        | fill & validate Part 1 config and unlock Parts 2–5                            | S-02          | FR-011, FR-012, FR-013, US-01          | implemented |
 | S-04 | personalized-question-engine    | open the session screen and see questions personalized to their car           | S-03          | FR-010, FR-014, US-01                  | implemented |
-| S-05 | question-card-answering         | answer Parts 2–5 as swipeable cards, with education pop-ups and notes         | S-04          | FR-015, FR-017, FR-018, US-01          | proposed    |
+| S-05 | question-card-answering         | answer Parts 2–5 as swipeable cards, with education pop-ups and notes         | S-04          | FR-015, FR-017, FR-018, US-01          | in progress |
 | S-06 | summary-scoring-finalize        | view the Summary distribution, edit inline, and finalize to Completed         | S-05          | FR-019, FR-020, FR-021, US-01          | proposed    |
 | S-07 | config-change-smart-pruning     | change config and keep valid answers while orphans are pruned (recompute)     | S-04, S-05    | FR-016, US-02                          | proposed    |
 | S-08 | offline-inspection-survival     | lose/regain connectivity mid-inspection with no loss and no logout            | F-02, S-05    | FR-023, US-03                          | proposed    |
@@ -173,7 +173,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** The core interaction surface; mandatory answering and lossless back-navigation are the UX guarantees the completion-rate success metric depends on. Sequenced after the question set exists (S-04) so there is a real personalized set to answer.
-- **Status:** proposed
+- **Status:** in progress (branch `feat/question-card-answering`)
 
 ### S-06: Summary, scoring distribution & finalize
 
@@ -245,7 +245,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 | S-02       | inspection-dashboard-lifecycle  | Dashboard + inspection lifecycle (CRUD + limit)    | no                    | Needs F-01, F-02                                                      |
 | S-03       | part-1-config-validation        | Part 1 config form, validation & Parts 2–5 unlock  | in progress           | S-02 done; branch `feat/part-1-config-validation`                     |
 | S-04       | personalized-question-engine    | Session screen + personalized question generation  | implemented           | Archived → `context/archive/2026-06-15-personalized-question-engine/` |
-| S-05       | question-card-answering         | Swipeable answer cards + education + notes         | no                    | Needs S-04                                                            |
+| S-05       | question-card-answering         | Swipeable answer cards + education + notes         | in progress           | S-04 done; branch `feat/question-card-answering`                      |
 | S-06       | summary-scoring-finalize        | Summary distribution, inline edit & finalize       | no                    | North star; needs S-05                                                |
 | S-07       | config-change-smart-pruning     | Smart Pruning on config change                     | no                    | Needs S-04, S-05                                                      |
 | S-08       | offline-inspection-survival     | Offline inspection survival end-to-end             | no                    | Needs F-02, S-05                                                      |
