@@ -276,16 +276,16 @@ None. No schema, data, or deploy-pipeline changes. The ephemeral prod user is cr
 
 #### Automated
 
-- [x] 1.1 Lint passes: `npm run lint`
-- [x] 1.2 Type checking passes (astro sync clean / type-checked lint)
-- [x] 1.3 `npm run smoke:deployed` runs unauthenticated probes against the live Worker and exits 0
-- [x] 1.4 A non-empty tail log file is produced at the printed path
+- [x] 1.1 Lint passes: `npm run lint` — c9797e1
+- [x] 1.2 Type checking passes (astro sync clean / type-checked lint) — c9797e1
+- [x] 1.3 `npm run smoke:deployed` runs unauthenticated probes against the live Worker and exits 0 — c9797e1
+- [x] 1.4 A non-empty tail log file is produced at the printed path — c9797e1
 
 #### Manual
 
-- [x] 1.5 Tail log shows requests `Ok`, no Node-API/`nodejs_compat`/undefined-env errors
-- [x] 1.6 `GET /sw.js` returns real Workbox JS, not the 404 page
-- [x] 1.7 Running without `SMOKE_DEPLOYED` still runs the existing localhost e2e unchanged
+- [x] 1.5 Tail log shows requests `Ok`, no Node-API/`nodejs_compat`/undefined-env errors — c9797e1
+- [x] 1.6 `GET /sw.js` returns real Workbox JS, not the 404 page — c9797e1
+- [x] 1.7 Running without `SMOKE_DEPLOYED` still runs the existing localhost e2e unchanged — c9797e1
 
 ### Phase 2: Authenticated Round-Trip Rung
 
