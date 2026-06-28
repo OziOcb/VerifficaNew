@@ -73,6 +73,20 @@ const astroConfig = tseslint.config({
   },
 });
 
+// Plain-JS ops scripts (e.g. the deployed smoke orchestrator). They run on Node,
+// not in the browser/type-checked app graph: declare Node globals, drop the
+// type-checked rules (they misfire on untyped JS), and allow console output.
+const scriptsConfig = tseslint.config({
+  files: ["scripts/**/*.{js,mjs,cjs}"],
+  extends: [tseslint.configs.disableTypeChecked],
+  languageOptions: {
+    globals: { process: true, console: true, setTimeout: true },
+  },
+  rules: {
+    "no-console": "off",
+  },
+});
+
 export default tseslint.config(
   includeIgnoreFile(gitignorePath),
   // Supabase-generated types: committed but never hand-edited; regenerated via
@@ -84,5 +98,6 @@ export default tseslint.config(
   eslintPluginAstro.configs["flat/recommended"],
   ...eslintPluginAstro.configs["flat/jsx-a11y-recommended"],
   astroConfig,
+  scriptsConfig,
   eslintPluginPrettier,
 );

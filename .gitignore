@@ -21,10 +21,14 @@ pnpm-debug.log*
 # environment variables
 .env
 .env.production
+.env.smoke
 
 # cloudflare
 .dev.vars
 .wrangler/
+
+# deployed smoke-gate tail logs
+smoke-logs/
 
 # macOS-specific files
 .DS_Store
