@@ -461,18 +461,18 @@ The column is additive and owner-scoped via the inherited RLS policy.
 
 #### Automated
 
-- [x] 3.1 Navigation tests: no advance unanswered; Next gated on answered; Back decrements; resume index honored
-- [x] 3.2 Type check + lint pass: `npm run lint`
-- [x] 3.3 Full suite green: `npm test`
-- [x] 3.4 Production build succeeds: `npm run build`
+- [x] 3.1 Navigation tests: no advance unanswered; Next gated on answered; Back decrements; resume index honored — 48c1a76
+- [x] 3.2 Type check + lint pass: `npm run lint` — 48c1a76
+- [x] 3.3 Full suite green: `npm test` — 48c1a76
+- [x] 3.4 Production build succeeds: `npm run build` — 48c1a76
 
 #### Manual
 
-- [x] 3.5 Part opens at first unanswered card; answered Parts pre-select with Next available
-- [x] 3.6 Tap records + auto-advances; cannot advance without answering
-- [x] 3.7 Back (in-card and browser/OS) is lossless; first-card Back → session screen
-- [x] 3.8 Per-Part progress correct; transition screen `OK` → session
-- [x] 3.9 Reload mid-Part resumes correctly with answers intact
+- [x] 3.5 Part opens at first unanswered card; answered Parts pre-select with Next available — 48c1a76
+- [x] 3.6 Tap records + auto-advances; cannot advance without answering — 48c1a76
+- [x] 3.7 Back (in-card and browser/OS) is lossless; first-card Back → session screen — 48c1a76
+- [x] 3.8 Per-Part progress correct; transition screen `OK` → session — 48c1a76
+- [x] 3.9 Reload mid-Part resumes correctly with answers intact — 48c1a76
 
 ### Phase 4: Education popup & contextual notes
 
