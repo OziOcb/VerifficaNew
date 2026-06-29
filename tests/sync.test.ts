@@ -67,7 +67,7 @@ describe("saveInspection read-merge (src/lib/sync.ts)", () => {
     expect(row?.globalNotes).toBe("keep me");
   });
 
-  it("a first write defaults omitted data columns to null", async () => {
+  it("a first write defaults omitted data columns to null, but the jsonb answers map to {}", async () => {
     const id = crypto.randomUUID();
     await saveInspection({ id, make: "Honda" });
 
@@ -76,6 +76,24 @@ describe("saveInspection read-merge (src/lib/sync.ts)", () => {
     expect(row?.model).toBeNull();
     expect(row?.globalNotes).toBeNull();
     expect(row?.turboEquipped).toBeNull();
+    // `answers` is `not null default '{}'` in Postgres and the outbox sends every
+    // data field as a key, so the read-merge must default it to `{}` (never `null`)
+    // or a first-write upsert would hit the not-null constraint.
+    expect(row?.answers).toEqual({});
+    const ops = await db.changeQueue.orderBy("createdAt").toArray();
+    expect(ops.at(-1)?.payload.answers).toEqual({});
     expect(row?.synced).toBe(0);
+  });
+
+  it("an answers-only save preserves config and persists the map", async () => {
+    const id = crypto.randomUUID();
+    await saveInspection({ id, make: "Audi", globalNotes: "keep me" });
+    const answers = { q_p2_base_car_body_corrosion_bonnet: "yes" as const };
+    await saveInspection({ id, answers });
+
+    const row = await db.inspections.get(id);
+    expect(row?.answers).toEqual(answers);
+    expect(row?.make).toBe("Audi");
+    expect(row?.globalNotes).toBe("keep me");
   });
 });

@@ -433,15 +433,15 @@ The column is additive and owner-scoped via the inherited RLS policy.
 
 #### Automated
 
-- [ ] 1.1 Migration applies cleanly against local Supabase
-- [ ] 1.2 `npm run db:types` diff contains `answers`; tree clean after commit
-- [ ] 1.3 Type checking passes: `npm run lint`
-- [ ] 1.4 Existing sync/round-trip tests pass: `npm test`
-- [ ] 1.5 New test: `answers` `q_…` keys round-trip the endpoint transform unchanged
+- [x] 1.1 Migration applies cleanly against local Supabase
+- [x] 1.2 `npm run db:types` diff contains `answers`; tree clean after commit
+- [x] 1.3 Type checking passes: `npm run lint`
+- [x] 1.4 Existing sync/round-trip tests pass: `npm test`
+- [x] 1.5 New test: `answers` `q_…` keys round-trip the endpoint transform unchanged
 
 #### Manual
 
-- [ ] 1.6 Supabase row `answers` shows the map with original `q_…` keys after save + flush
+- [x] 1.6 Supabase row `answers` shows the map with original `q_…` keys after save + flush
 
 ### Phase 2: Pure answer / question / note logic
 

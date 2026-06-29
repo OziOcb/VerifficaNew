@@ -64,5 +64,9 @@ export const POST: APIRoute = async (context) => {
 
   if (error) return new Response(error.message, { status: 400 });
   // snake → camel: hand the authoritative row (incl. server-stamped updatedAt) back.
-  return Response.json(camelcaseKeys(data, { deep: true }));
+  // `stopPaths: ["answers"]` excludes the jsonb answers map from the deep recursion so
+  // its opaque catalogue question-ID keys (e.g. `q_p2_base_car_body_corrosion_bonnet`)
+  // survive verbatim — a deep transform would mangle them (lessons.md "Field casing":
+  // scope the transform to top-level keys, exclude jsonb column contents).
+  return Response.json(camelcaseKeys(data, { deep: true, stopPaths: ["answers"] }));
 };
