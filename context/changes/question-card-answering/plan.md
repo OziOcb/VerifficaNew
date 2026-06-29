@@ -433,29 +433,29 @@ The column is additive and owner-scoped via the inherited RLS policy.
 
 #### Automated
 
-- [x] 1.1 Migration applies cleanly against local Supabase
-- [x] 1.2 `npm run db:types` diff contains `answers`; tree clean after commit
-- [x] 1.3 Type checking passes: `npm run lint`
-- [x] 1.4 Existing sync/round-trip tests pass: `npm test`
-- [x] 1.5 New test: `answers` `q_…` keys round-trip the endpoint transform unchanged
+- [x] 1.1 Migration applies cleanly against local Supabase — 2d4a787
+- [x] 1.2 `npm run db:types` diff contains `answers`; tree clean after commit — 2d4a787
+- [x] 1.3 Type checking passes: `npm run lint` — 2d4a787
+- [x] 1.4 Existing sync/round-trip tests pass: `npm test` — 2d4a787
+- [x] 1.5 New test: `answers` `q_…` keys round-trip the endpoint transform unchanged — 2d4a787
 
 #### Manual
 
-- [x] 1.6 Supabase row `answers` shows the map with original `q_…` keys after save + flush
+- [x] 1.6 Supabase row `answers` shows the map with original `q_…` keys after save + flush — 2d4a787
 
 ### Phase 2: Pure answer / question / note logic
 
 #### Automated
 
-- [ ] 2.1 Unit tests for `answers.ts` (`answeredCount`, `firstUnansweredIndex`, `distribution`)
-- [ ] 2.2 Unit tests for `upsertNoteBlock` (insert, replace-same-header, empty removal, ordering)
-- [ ] 2.3 Unit tests for `selectVisibleQuestions` / card payload (order, explanation resolution)
-- [ ] 2.4 Type check + lint pass: `npm run lint`
-- [ ] 2.5 Full suite green: `npm test`
+- [x] 2.1 Unit tests for `answers.ts` (`answeredCount`, `firstUnansweredIndex`, `distribution`)
+- [x] 2.2 Unit tests for `upsertNoteBlock` (insert, replace-same-header, empty removal, ordering)
+- [x] 2.3 Unit tests for `selectVisibleQuestions` / card payload (order, explanation resolution)
+- [x] 2.4 Type check + lint pass: `npm run lint`
+- [x] 2.5 Full suite green: `npm test`
 
 #### Manual
 
-- [ ] 2.6 Composed note header reads naturally (reconciled vs `list-of-questions.md`)
+- [x] 2.6 Composed note header reads naturally (reconciled vs `list-of-questions.md`)
 
 ### Phase 3: Card deck island & answer flow
 

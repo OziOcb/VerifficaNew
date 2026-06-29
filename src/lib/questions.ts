@@ -254,6 +254,73 @@ export function resolveExplanation(ref: string): string | null {
   return CATALOGUE.explanations[ref]?.text ?? null;
 }
 
+// --- The card deck (S-05) -------------------------------------------------
+//
+// The route asks the engine for ONE Part's ordered, personalized cards and ships the
+// result to the `client:only` island. The 80 KB catalogue and `resolveExplanation` stay
+// server-side: the island receives only the filtered `QuestionCard[]` — never the bank.
+
+/**
+ * One question as the card island consumes it: the stable `id` (answer-map key), the
+ * display fields, the resolved `explanation` text (`null` when the question has no
+ * `explanationRef`), and the FR-018 note `header` that keys its contextual-note block.
+ */
+export interface QuestionCard {
+  id: string;
+  header: string;
+  label: string;
+  section: string;
+  subsection: string | null;
+  explanation: string | null;
+}
+
+/**
+ * The FR-018 contextual-note header for a question: its `section`, `subsection` (when
+ * present), and `label` joined with " — ", so the note block reads naturally in the
+ * global notes document (e.g. "Front suspension — Suspension condition — cracked rubber
+ * parts"). Exported for direct unit reconciliation against the catalogue.
+ */
+export function composeNoteHeader(section: string, subsection: string | null, label: string): string {
+  return [section, subsection, label].filter((p): p is string => p != null && p !== "").join(" — ");
+}
+
+/**
+ * The visible questions for ONE Part, ordered by group `order` then question `order` —
+ * the exact sequence the buyer swipes through. Built from {@link selectVisibleGroups}, so
+ * it shares the single visibility predicate S-07 will re-run and diff.
+ */
+export function selectVisibleQuestions(
+  config: VisibilityConfig,
+  flags: ReadonlySet<RuntimeFlag>,
+  part: PartId,
+): Question[] {
+  const visibleGroups = selectVisibleGroups(config, flags).filter((g) => g.part === part);
+  const groupOrder = new Map(visibleGroups.map((g) => [g.id, g.order]));
+  return CATALOGUE.questions
+    .filter((q) => groupOrder.has(q.groupId))
+    .sort((a, b) => (groupOrder.get(a.groupId) ?? 0) - (groupOrder.get(b.groupId) ?? 0) || a.order - b.order);
+}
+
+/**
+ * The ordered card payload for ONE Part: {@link selectVisibleQuestions} with each question
+ * mapped to a {@link QuestionCard} (display fields + resolved explanation + note header).
+ * This is the single call the Part route makes to hand the island its deck.
+ */
+export function selectCardDeck(
+  config: VisibilityConfig,
+  flags: ReadonlySet<RuntimeFlag>,
+  part: PartId,
+): QuestionCard[] {
+  return selectVisibleQuestions(config, flags, part).map((q) => ({
+    id: q.id,
+    header: composeNoteHeader(q.section, q.subsection, q.label),
+    label: q.label,
+    section: q.section,
+    subsection: q.subsection,
+    explanation: q.explanationRef ? resolveExplanation(q.explanationRef) : null,
+  }));
+}
+
 /**
  * Build the active-flag set the predicate consumes from a camelCased inspection row, via
  * the explicit {@link FLAG_COLUMN_MAP} (NOT incidental casing agreement). A column whose
