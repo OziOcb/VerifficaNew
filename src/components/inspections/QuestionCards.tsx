@@ -185,9 +185,9 @@ export default function QuestionCards({ id, cards, initialAnswers }: Props) {
       >
         <Card className={PANEL}>
           <CardContent className="space-y-2 p-6">
-            <p className="text-xs tracking-wider text-blue-100/40 uppercase">
-              {card.subsection ? `${card.section} — ${card.subsection}` : card.section}
-            </p>
+            {/* Section (bold) above subsection, on separate lines — the inspection hierarchy. */}
+            <p className="text-xs font-bold tracking-wider text-blue-100/60 uppercase">{card.section}</p>
+            {card.subsection && <p className="text-xs tracking-wider text-blue-100/40 uppercase">{card.subsection}</p>}
             <p className="text-lg font-medium text-white">{card.label}</p>
           </CardContent>
         </Card>
