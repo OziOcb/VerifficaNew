@@ -14,12 +14,14 @@ import {
   selectVisibleQuestionIds,
   selectVisibleQuestions,
   sessionCounts,
+  sessionQuestionIds,
   visibleCountsByPart,
+  visibleQuestionIdsByPart,
   type PartId,
   type RuntimeFlag,
   type VisibilityConfig,
 } from "@/lib/questions";
-import { countsForFlags, totalCount } from "@/lib/session-counts";
+import { countsForFlags, questionIdsForFlags, totalCount } from "@/lib/session-counts";
 import bankJson from "@/data/questions/question-bank.json";
 import mappingJson from "@/data/questions/question-mapping-config.json";
 // The authored originals the runtime copies under `src/data/questions/` are hand-copied
@@ -565,6 +567,32 @@ describe("Phase 4: sessionCounts ⇄ countsForFlags equals the engine for any fl
       "evBatteryDocsAvailable",
       "importedFromEu",
     ]);
+  });
+});
+
+describe("sessionQuestionIds ⇄ questionIdsForFlags equals the engine for any flag subset", () => {
+  const PARTS: PartId[] = ["part2", "part3", "part4", "part5"];
+
+  it.each([
+    ["petrol", PETROL],
+    ["EV", EV],
+    ["hybrid", HYBRID],
+  ])("recomputes %s visible IDs client-side identically to visibleQuestionIdsByPart", (_name, cfg) => {
+    const payload = sessionQuestionIds(cfg);
+    const rel = [...relevantFlags(cfg)];
+    const subsets: RuntimeFlag[][] = [[], rel, ...rel.map((f) => [f])];
+    for (const sub of subsets) {
+      const active = new Set(sub);
+      const live = questionIdsForFlags(payload, active);
+      const expected = visibleQuestionIdsByPart(cfg, active);
+      // Compare as sets per Part — order is not part of the contract for the answered tally.
+      for (const part of PARTS) {
+        expect([...live[part]].sort()).toEqual([...expected[part]].sort());
+      }
+      // And the ID-count tracks the count payload exactly (numerator/denominator consistency).
+      const liveCounts = countsForFlags(sessionCounts(cfg), active);
+      for (const part of PARTS) expect(live[part].length).toBe(liveCounts[part]);
+    }
   });
 });
 

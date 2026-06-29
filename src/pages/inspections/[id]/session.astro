@@ -4,7 +4,8 @@ import Layout from "@/layouts/Layout.astro";
 import SessionScreen from "@/components/inspections/SessionScreen";
 import { createClient } from "@/lib/supabase";
 import { isConfigUnlocked, rowToInput } from "@/lib/part1-config";
-import { configFromInspection, relevantToggles, sessionCounts } from "@/lib/questions";
+import { configFromInspection, relevantToggles, sessionCounts, sessionQuestionIds } from "@/lib/questions";
+import type { AnswersMap } from "@/lib/answers";
 
 // Session hub (S-04, FR-010). SSR-load the inspection under RLS (same template as
 // `[id].astro`): a foreign/absent id is hidden by RLS → null → redirect to the
@@ -21,7 +22,7 @@ const { data: row } = supabase
   ? await supabase
       .from("inspections")
       .select(
-        "id,name,status,price,make,model,year,registration_number,vin,mileage,fuel_type,transmission,drive,color,body_type,door_count,address,notes,global_notes,charging_port_equipped,ev_battery_docs_available,turbo_equipped,mechanical_compressor_equipped,imported_from_eu",
+        "id,name,status,price,make,model,year,registration_number,vin,mileage,fuel_type,transmission,drive,color,body_type,door_count,address,notes,global_notes,charging_port_equipped,ev_battery_docs_available,turbo_equipped,mechanical_compressor_equipped,imported_from_eu,answers",
       )
       .eq("id", id ?? "")
       .maybeSingle()
@@ -49,7 +50,15 @@ const unlocked = isConfigUnlocked(rowToInput(inspection));
 // (toggled in the Part 1 form) — the catalogue stays here, never shipped to the browser.
 const config = configFromInspection(inspection);
 const counts = sessionCounts(config);
+// Parallel ID payload so the island can tally ANSWERED per Part (FR-010) by intersecting
+// the live answers with the visible set — same additive base+delta shape as `counts`.
+const questionIds = sessionQuestionIds(config);
 const flagBindings = relevantToggles(config);
+
+// Read the answers map off the RAW snake_case `row` (not the camelized `inspection`):
+// forcing the deep camel transform over jsonb `Json` blows the type checker up (ts2589).
+// `answers` is a single word, so casing is moot; its `q_…` keys are opaque IDs.
+const initialAnswers = (row.answers ?? {}) as AnswersMap;
 ---
 
 <Layout title="Inspection session">
@@ -70,6 +79,8 @@ const flagBindings = relevantToggles(config);
         }}
         unlocked={unlocked}
         counts={counts}
+        questionIds={questionIds}
+        initialAnswers={initialAnswers}
         flagBindings={flagBindings}
       />
     </main>

@@ -69,6 +69,11 @@ export default function QuestionCards({ id, cards, initialAnswers }: Props) {
   const [navIndex, setNavIndex] = useState<number | null>(null);
   const index = navIndex ?? initialIndex(orderedIds, answers);
 
+  // Slide direction for the card transition (#3): a forward move (answer / Next) slides the
+  // new card in from the right, a Back from the left. Set alongside each navigation so the
+  // keyed wrapper below replays the matching enter animation.
+  const [direction, setDirection] = useState<"next" | "prev">("next");
+
   // Drain the outbox for this session (same resilient triggers as SessionScreen / Part1Form).
   useEffect(() => startAutoSync(), []);
 
@@ -90,6 +95,7 @@ export default function QuestionCards({ id, cards, initialAnswers }: Props) {
         return;
       }
       window.history.pushState({ veriffica: "card-deck" }, "");
+      setDirection("prev");
       setNavIndex(result.index);
     };
     window.addEventListener("popstate", onPop);
@@ -107,6 +113,7 @@ export default function QuestionCards({ id, cards, initialAnswers }: Props) {
     setSaveError(false);
     void saveInspection({ id, answers: nextMap }).then(
       () => {
+        setDirection("next");
         setNavIndex(nextIndex(index, length));
         void flushQueue();
       },
@@ -119,6 +126,7 @@ export default function QuestionCards({ id, cards, initialAnswers }: Props) {
   // Explicit Next — only reachable when the current card is already answered (the gate is
   // `canAdvance`); used to move forward off a Back-visited card without re-answering.
   function handleNext() {
+    setDirection("next");
     setNavIndex(nextIndex(index, length));
   }
 
@@ -167,36 +175,45 @@ export default function QuestionCards({ id, cards, initialAnswers }: Props) {
         </button>
       </div>
 
-      <Card className={PANEL}>
-        <CardContent className="space-y-2 p-6">
-          <p className="text-xs tracking-wider text-blue-100/40 uppercase">
-            {card.subsection ? `${card.section} — ${card.subsection}` : card.section}
-          </p>
-          <p className="text-lg font-medium text-white">{card.label}</p>
-        </CardContent>
-      </Card>
+      {/* Keyed on `index` so each card change replays the enter animation — a slide from the
+          right on a forward move, from the left on Back (#3). The catalogue stays server-side. */}
+      <div
+        key={index}
+        className={`animate-in fade-in space-y-6 duration-500 ${
+          direction === "next" ? "slide-in-from-right-8" : "slide-in-from-left-8"
+        }`}
+      >
+        <Card className={PANEL}>
+          <CardContent className="space-y-2 p-6">
+            <p className="text-xs tracking-wider text-blue-100/40 uppercase">
+              {card.subsection ? `${card.section} — ${card.subsection}` : card.section}
+            </p>
+            <p className="text-lg font-medium text-white">{card.label}</p>
+          </CardContent>
+        </Card>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        {ANSWER_OPTIONS.map((opt) => {
-          const isSelected = selected === opt.value;
-          return (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => {
-                handleAnswer(opt.value);
-              }}
-              aria-pressed={isSelected}
-              className={`rounded-lg border px-4 py-3 text-center font-medium transition-colors ${
-                isSelected
-                  ? opt.selected
-                  : "border-white/15 bg-white/10 text-white hover:border-white/30 hover:bg-white/15"
-              }`}
-            >
-              {opt.label}
-            </button>
-          );
-        })}
+        <div className="grid gap-3 sm:grid-cols-3">
+          {ANSWER_OPTIONS.map((opt) => {
+            const isSelected = selected === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  handleAnswer(opt.value);
+                }}
+                aria-pressed={isSelected}
+                className={`rounded-lg border px-4 py-3 text-center font-medium transition-colors ${
+                  isSelected
+                    ? opt.selected
+                    : "border-white/15 bg-white/10 text-white hover:border-white/30 hover:bg-white/15"
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {saveError && (

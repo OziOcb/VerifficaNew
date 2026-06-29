@@ -23,7 +23,7 @@
 // via an EXPLICIT column↔flag map — see FLAG_COLUMN_MAP below.
 import { z } from "zod";
 import type { Part1Config } from "@/lib/part1-config";
-import type { PartCounts, SessionCounts } from "@/lib/session-counts";
+import type { PartCounts, PartQuestionIds, SessionCounts, SessionQuestionIds } from "@/lib/session-counts";
 import bankJson from "@/data/questions/question-bank.json";
 import mappingJson from "@/data/questions/question-mapping-config.json";
 
@@ -249,6 +249,14 @@ export function visibleCountsByPart(config: VisibilityConfig, flags: ReadonlySet
   return counts;
 }
 
+/** Per-Part visible question IDs (the ID-list analogue of {@link visibleCountsByPart}). */
+export function visibleQuestionIdsByPart(config: VisibilityConfig, flags: ReadonlySet<RuntimeFlag>): PartQuestionIds {
+  const visibleGroupIds = new Set(selectVisibleGroups(config, flags).map((g) => g.id));
+  const ids: PartQuestionIds = { part2: [], part3: [], part4: [], part5: [] };
+  for (const q of CATALOGUE.questions) if (visibleGroupIds.has(q.groupId)) ids[q.part].push(q.id);
+  return ids;
+}
+
 /** `explanationRef` → explanation text (for S-05; S-04 only wires it). */
 export function resolveExplanation(ref: string): string | null {
   return CATALOGUE.explanations[ref]?.text ?? null;
@@ -396,6 +404,30 @@ export function sessionCounts(config: VisibilityConfig): SessionCounts {
       part3: withFlag.part3 - base.part3,
       part4: withFlag.part4 - base.part4,
       part5: withFlag.part5 - base.part5,
+    };
+  }
+  return { base, flagDeltas };
+}
+
+/**
+ * The ID-list analogue of {@link sessionCounts}: the per-Part base visible question IDs plus,
+ * for each config-relevant flag, the IDs that flag reveals (its delta over the base). The
+ * session island unions the base with the active flags' deltas (`questionIdsForFlags`) to get
+ * the live visible set, then counts how many are answered (FR-010). The additive model
+ * guarantees `|base| + Σ|delta|` equals `visibleQuestionIdsByPart(config, activeFlags)`.
+ */
+export function sessionQuestionIds(config: VisibilityConfig): SessionQuestionIds {
+  const base = visibleQuestionIdsByPart(config, new Set<RuntimeFlag>());
+  const flagDeltas: Partial<Record<RuntimeFlag, PartQuestionIds>> = {};
+  for (const flag of relevantFlags(config)) {
+    const withFlag = visibleQuestionIdsByPart(config, new Set<RuntimeFlag>([flag]));
+    // The flag's delta = its visible IDs not already in the base (additive model: withFlag ⊇ base).
+    const notInBase = (part: PartId) => withFlag[part].filter((id) => !base[part].includes(id));
+    flagDeltas[flag] = {
+      part2: notInBase("part2"),
+      part3: notInBase("part3"),
+      part4: notInBase("part4"),
+      part5: notInBase("part5"),
     };
   }
   return { base, flagDeltas };
