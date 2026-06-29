@@ -447,32 +447,32 @@ The column is additive and owner-scoped via the inherited RLS policy.
 
 #### Automated
 
-- [x] 2.1 Unit tests for `answers.ts` (`answeredCount`, `firstUnansweredIndex`, `distribution`)
-- [x] 2.2 Unit tests for `upsertNoteBlock` (insert, replace-same-header, empty removal, ordering)
-- [x] 2.3 Unit tests for `selectVisibleQuestions` / card payload (order, explanation resolution)
-- [x] 2.4 Type check + lint pass: `npm run lint`
-- [x] 2.5 Full suite green: `npm test`
+- [x] 2.1 Unit tests for `answers.ts` (`answeredCount`, `firstUnansweredIndex`, `distribution`) — fab2d8e
+- [x] 2.2 Unit tests for `upsertNoteBlock` (insert, replace-same-header, empty removal, ordering) — fab2d8e
+- [x] 2.3 Unit tests for `selectVisibleQuestions` / card payload (order, explanation resolution) — fab2d8e
+- [x] 2.4 Type check + lint pass: `npm run lint` — fab2d8e
+- [x] 2.5 Full suite green: `npm test` — fab2d8e
 
 #### Manual
 
-- [x] 2.6 Composed note header reads naturally (reconciled vs `list-of-questions.md`)
+- [x] 2.6 Composed note header reads naturally (reconciled vs `list-of-questions.md`) — fab2d8e
 
 ### Phase 3: Card deck island & answer flow
 
 #### Automated
 
-- [ ] 3.1 Navigation tests: no advance unanswered; Next gated on answered; Back decrements; resume index honored
-- [ ] 3.2 Type check + lint pass: `npm run lint`
-- [ ] 3.3 Full suite green: `npm test`
-- [ ] 3.4 Production build succeeds: `npm run build`
+- [x] 3.1 Navigation tests: no advance unanswered; Next gated on answered; Back decrements; resume index honored
+- [x] 3.2 Type check + lint pass: `npm run lint`
+- [x] 3.3 Full suite green: `npm test`
+- [x] 3.4 Production build succeeds: `npm run build`
 
 #### Manual
 
-- [ ] 3.5 Part opens at first unanswered card; answered Parts pre-select with Next available
-- [ ] 3.6 Tap records + auto-advances; cannot advance without answering
-- [ ] 3.7 Back (in-card and browser/OS) is lossless; first-card Back → session screen
-- [ ] 3.8 Per-Part progress correct; transition screen `OK` → session
-- [ ] 3.9 Reload mid-Part resumes correctly with answers intact
+- [x] 3.5 Part opens at first unanswered card; answered Parts pre-select with Next available
+- [x] 3.6 Tap records + auto-advances; cannot advance without answering
+- [x] 3.7 Back (in-card and browser/OS) is lossless; first-card Back → session screen
+- [x] 3.8 Per-Part progress correct; transition screen `OK` → session
+- [x] 3.9 Reload mid-Part resumes correctly with answers intact
 
 ### Phase 4: Education popup & contextual notes
 

@@ -2,14 +2,17 @@
 import camelcaseKeys from "camelcase-keys";
 import Layout from "@/layouts/Layout.astro";
 import Part1Form from "@/components/inspections/Part1Form";
+import QuestionCards from "@/components/inspections/QuestionCards";
 import { createClient } from "@/lib/supabase";
 import { isConfigUnlocked, rowToInput } from "@/lib/part1-config";
 import {
   activeFlagsFromInspection,
   configFromInspection,
   relevantTogglesByFuel,
+  selectCardDeck,
   visibleCountsByPart,
 } from "@/lib/questions";
+import type { AnswersMap } from "@/lib/answers";
 import { isValidPart, resolvePartScreen } from "@/lib/session-routes";
 
 // Per-Part screens under the session hub (S-04). Part 1 IS the Part 1 config form
@@ -36,7 +39,7 @@ const { data: row } = supabase
   ? await supabase
       .from("inspections")
       .select(
-        "id,name,status,created_at,price,make,model,year,registration_number,vin,mileage,fuel_type,transmission,drive,color,body_type,door_count,address,notes,charging_port_equipped,ev_battery_docs_available,turbo_equipped,mechanical_compressor_equipped,imported_from_eu",
+        "id,name,status,created_at,price,make,model,year,registration_number,vin,mileage,fuel_type,transmission,drive,color,body_type,door_count,address,notes,charging_port_equipped,ev_battery_docs_available,turbo_equipped,mechanical_compressor_equipped,imported_from_eu,answers",
       )
       .eq("id", id ?? "")
       .maybeSingle()
@@ -47,7 +50,10 @@ const { data: row } = supabase
 if (!row) {
   return Astro.redirect("/dashboard");
 }
-const inspection = camelcaseKeys(row, { deep: true });
+// Single snake→camel boundary (lessons.md "Field casing"). `stopPaths: ["answers"]`
+// excludes the jsonb answers map from the deep transform so its opaque `q_…` question-ID
+// keys survive verbatim — camelizing them would break the catalogue lookup (Phase 1).
+const inspection = camelcaseKeys(row, { deep: true, stopPaths: ["answers"] });
 const unlocked = isConfigUnlocked(rowToInput(inspection));
 
 // Parts 2–5 require a valid config; otherwise back to Part 1 (the only place to make it
@@ -57,12 +63,23 @@ if ("redirect" in screen) {
   return Astro.redirect(screen.redirect);
 }
 
-// The per-Part visible count for the 2–5 placeholders — honoring the persisted equipment
-// flags (Phase 4) so it matches what the session nav shows after a toggle.
+// The FR-014 engine runs HERE (server-side, with the 80 KB catalogue): for Parts 2–5 build
+// the ordered, personalized card deck + per-Part count, honoring the persisted equipment
+// flags so it matches what the session nav shows after a toggle. Only the filtered deck +
+// the answers map cross to the `client:only` island — the catalogue never ships.
 let visibleCount = 0;
+let cards: ReturnType<typeof selectCardDeck> = [];
+let initialAnswers: AnswersMap = {};
 if (part !== "1") {
-  const counts = visibleCountsByPart(configFromInspection(inspection), activeFlagsFromInspection(inspection));
-  visibleCount = counts[`part${part}`];
+  const config = configFromInspection(inspection);
+  const flags = activeFlagsFromInspection(inspection);
+  visibleCount = visibleCountsByPart(config, flags)[`part${part}`];
+  cards = selectCardDeck(config, flags, `part${part}`);
+  // Read the answers off the RAW snake_case `row`, not the camelized `inspection`: `answers`
+  // is jsonb typed `Json`, and forcing the deep camel transform to instantiate over Json's
+  // recursive union blows the type checker up (ts2589). `answers` is a single word, so casing
+  // is moot — its verbatim `q_…` keys are preserved by the `stopPaths` boundary above.
+  initialAnswers = (row.answers ?? {}) as AnswersMap;
 }
 
 // Part 1 hosts the equipment toggles (FR-014): the catalogue-derived relevance map, keyed
@@ -98,9 +115,7 @@ const relevantTogglesMap = relevantTogglesByFuel();
             </p>
           </header>
 
-          <section class="rounded-xl border border-white/10 bg-white/5 p-6 text-blue-100/70 backdrop-blur-xl">
-            <p>Question cards arrive next.</p>
-          </section>
+          <QuestionCards client:only="react" id={id ?? ""} cards={cards} initialAnswers={initialAnswers} />
         </main>
       </div>
     </Layout>
