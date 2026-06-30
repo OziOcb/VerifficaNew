@@ -219,23 +219,23 @@ The dark-clamped cookie hook is forward-compatible: S-10 widens the resolver's a
 
 #### Automated
 
-- [x] 1.1 `npx astro sync` succeeds
-- [x] 1.2 Linting passes: `npm run lint`
-- [x] 1.3 Production build succeeds: `npm run build`
-- [x] 1.4 Existing test suite passes: `npm test`
+- [x] 1.1 `npx astro sync` succeeds — d3ba07f
+- [x] 1.2 Linting passes: `npm run lint` — d3ba07f
+- [x] 1.3 Production build succeeds: `npm run build` — d3ba07f
+- [x] 1.4 Existing test suite passes: `npm test` — d3ba07f
 
 #### Manual
 
-- [x] 1.5 Whole viewport is dark on dev server; no white around the page
-- [x] 1.6 Auth/dashboard/session render coherently under dark shadcn tokens
-- [x] 1.7 Source shows `<html class="dark">`, dark `theme-color`, `viewport-fit=cover`, no flash
+- [x] 1.5 Whole viewport is dark on dev server; no white around the page — d3ba07f
+- [x] 1.6 Auth/dashboard/session render coherently under dark shadcn tokens — d3ba07f
+- [x] 1.7 Source shows `<html class="dark">`, dark `theme-color`, `viewport-fit=cover`, no flash — d3ba07f
 
 ### Phase 2: Bug 1 finish — iOS safe area
 
 #### Automated
 
-- [ ] 2.1 Linting passes: `npm run lint`
-- [ ] 2.2 Production build succeeds: `npm run build`
+- [x] 2.1 Linting passes: `npm run lint`
+- [x] 2.2 Production build succeeds: `npm run build`
 
 #### Manual
 
