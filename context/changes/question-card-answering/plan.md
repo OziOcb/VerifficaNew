@@ -425,6 +425,21 @@ The column is additive and owner-scoped via the inherited RLS policy.
 - Casing rule: `context/foundation/lessons.md` ("Field casing", jsonb exclusion)
 - Card route placeholder: `src/pages/inspections/[id]/session/part/[part].astro:100`
 
+## Addenda
+
+- **Per-Part answered progress on the session screen (landed alongside S-05, commit
+  `bffe6da`).** Not in the original Phase change-lists. Adds a per-Part "X of Y answered"
+  subtitle + "Completed" badge to `SessionScreen.tsx`, backed by a new
+  `src/lib/session-counts.ts` (`questionIdsForFlags`, catalogue-free ID payload) and
+  `src/pages/inspections/[id]/session.astro` wiring. **The "What We're NOT Doing" guardrail
+  holds:** the deferred S-06 _global_ Total Score / Completion numerators stay hardcoded at 0;
+  only the _per-Part_ answered tally (intersection-based, tolerant of orphaned answers) was
+  added.
+- **`src/lib/card-nav.ts` (new).** Pure, Node-testable navigation rules
+  (`initialIndex`, `isTransition`, `canAdvance`, `nextIndex`, `back`) extracted out of
+  `QuestionCards.tsx` to satisfy the Phase 3 headless nav-test criterion. The History API
+  side-effects (`pushState`/`popstate`) remain contained in the component per the plan.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.

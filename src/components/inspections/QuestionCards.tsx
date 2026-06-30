@@ -31,7 +31,7 @@ import { db } from "@/lib/db";
 import { saveInspection, flushQueue, startAutoSync } from "@/lib/sync";
 import { back, canAdvance, initialIndex, isTransition, nextIndex } from "@/lib/card-nav";
 import { readNoteBlock, upsertNoteBlock, type Answer, type AnswersMap } from "@/lib/answers";
-import { MAX_CONTEXTUAL_NOTE_LENGTH, M } from "@/lib/part1-config";
+import { MAX_CONTEXTUAL_NOTE_LENGTH, MAX_GLOBAL_NOTES_LENGTH, M } from "@/lib/part1-config";
 import type { QuestionCard } from "@/lib/questions";
 
 // Cosmic glass palette — matches Part1Form / SessionScreen / the dashboard shell.
@@ -88,6 +88,11 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
   // rather than duplicating. `noteSaveError` surfaces a failed local write inline.
   const [noteDraft, setNoteDraft] = useState<string | null>(null);
   const [noteSaveError, setNoteSaveError] = useState(false);
+  // Set when this question's note would push the global-notes document past its 10,000-char
+  // cap. The sync-boundary guard rejects an over-limit doc with a deterministic 400, which
+  // `flushQueue` would park at the head of the FIFO outbox — blocking every later answer from
+  // syncing on this device. So we block the save here, mirroring SessionScreen's overLimit gate.
+  const [noteDocOverLimit, setNoteDocOverLimit] = useState(false);
 
   // The current card index. `navIndex` is null until the user navigates; until then the
   // index is DERIVED as the resume position from the freshest answers — so it "upgrades"
@@ -168,6 +173,7 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
   // Open the note editor for the current card, pre-filled from its existing block (or empty).
   function openNote(header: string) {
     setNoteSaveError(false);
+    setNoteDocOverLimit(false);
     setNoteDraft(readNoteBlock(globalNotes, header) ?? "");
   }
 
@@ -177,6 +183,13 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
   function saveNote(header: string) {
     if (noteDraft === null) return;
     const nextNotes = upsertNoteBlock(globalNotes, header, noteDraft);
+    // Never enqueue a document the server guard will reject — an over-limit doc would deadlock
+    // the outbox at its head, stalling later answers. Mirror SessionScreen's overLimit gate.
+    if (nextNotes.length > MAX_GLOBAL_NOTES_LENGTH) {
+      setNoteDocOverLimit(true);
+      return;
+    }
+    setNoteDocOverLimit(false);
     setNoteSaveError(false);
     void saveInspection({ id, globalNotes: nextNotes }).then(
       () => {
@@ -363,7 +376,12 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
             className={`flex w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] focus-visible:ring-purple-400/50 ${FIELD_INPUT}`}
           />
           <div className="flex items-center justify-between text-xs text-blue-100/40">
-            {noteSaveError ? (
+            {noteDocOverLimit ? (
+              <span className="flex items-center gap-1 text-red-300">
+                <CircleAlert className="size-3 shrink-0" />
+                {M.globalNotes}
+              </span>
+            ) : noteSaveError ? (
               <span className="flex items-center gap-1 text-red-300">
                 <CircleAlert className="size-3 shrink-0" />
                 Could not save on this device.
