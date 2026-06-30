@@ -233,7 +233,10 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
   const atNoteCap = (noteDraft ?? "").length >= MAX_CONTEXTUAL_NOTE_LENGTH;
 
   return (
-    <div className="space-y-6">
+    // overflow-x-hidden masks the keyed card's slide-in translateX (~2rem) so it
+    // can't reveal the canvas at the right edge or induce horizontal page scroll
+    // (#3). Clip sits on this stable, non-sliding deck root — not the keyed div.
+    <div className="space-y-6 overflow-x-hidden">
       {/* Per-Part progress: current card / total (FR-015). */}
       <div className="flex items-center justify-between text-sm text-blue-100/60">
         <span>

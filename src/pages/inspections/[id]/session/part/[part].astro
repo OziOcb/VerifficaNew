@@ -91,7 +91,7 @@ const relevantTogglesMap = relevantTogglesByFuel();
 {
   part === "1" ? (
     <Layout title="Part 1 — Vehicle configuration">
-      <div class="bg-cosmic min-h-screen w-full">
+      <div class="bg-cosmic safe-area min-h-screen w-full">
         <main class="mx-auto max-w-3xl p-4 sm:p-8">
           <Part1Form client:only="react" inspection={inspection} relevantTogglesByFuel={relevantTogglesMap} />
         </main>
@@ -99,7 +99,7 @@ const relevantTogglesMap = relevantTogglesByFuel();
     </Layout>
   ) : (
     <Layout title={`Part ${part} — ${PART_TITLES[part]}`}>
-      <div class="bg-cosmic min-h-screen w-full">
+      <div class="bg-cosmic safe-area min-h-screen w-full">
         <main class="mx-auto max-w-3xl space-y-8 p-4 sm:p-8">
           <header>
             <a
