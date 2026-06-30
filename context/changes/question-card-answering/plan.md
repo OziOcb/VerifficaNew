@@ -478,16 +478,16 @@ The column is additive and owner-scoped via the inherited RLS policy.
 
 #### Automated
 
-- [x] 4.1 Test: note save produces expected document (insert + replace via `upsertNoteBlock`)
-- [x] 4.2 Test: education icon presence maps to explanation presence
-- [x] 4.3 Type check + lint pass: `npm run lint`
-- [x] 4.4 Full suite green: `npm test`
-- [x] 4.5 Production build succeeds: `npm run build`
+- [x] 4.1 Test: note save produces expected document (insert + replace via `upsertNoteBlock`) — 239a5c4
+- [x] 4.2 Test: education icon presence maps to explanation presence — 239a5c4
+- [x] 4.3 Type check + lint pass: `npm run lint` — 239a5c4
+- [x] 4.4 Full suite green: `npm test` — 239a5c4
+- [x] 4.5 Production build succeeds: `npm run build` — 239a5c4
 
 #### Manual
 
-- [x] 4.6 `i` icon only on questions with an explanation; popup text correct
-- [x] 4.7 Note appends a headed block to the global notes document
-- [x] 4.8 Re-noting replaces the block (no duplicate); clearing removes it
-- [x] 4.9 500-char note cap enforced; document respects 10,000-char cap
-- [x] 4.10 Offline notes survive reload and sync on reconnect
+- [x] 4.6 `i` icon only on questions with an explanation; popup text correct — 239a5c4
+- [x] 4.7 Note appends a headed block to the global notes document — 239a5c4
+- [x] 4.8 Re-noting replaces the block (no duplicate); clearing removes it — 239a5c4
+- [x] 4.9 500-char note cap enforced; document respects 10,000-char cap — 239a5c4
+- [x] 4.10 Offline notes survive reload and sync on reconnect — 239a5c4
