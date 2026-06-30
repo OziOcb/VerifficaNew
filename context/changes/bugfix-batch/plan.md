@@ -247,9 +247,9 @@ The dark-clamped cookie hook is forward-compatible: S-10 widens the resolver's a
 
 #### Automated
 
-- [x] 3.1 Linting passes: `npm run lint`
-- [x] 3.2 Production build succeeds: `npm run build`
-- [x] 3.3 Existing `QuestionCards`/session tests pass: `npm test`
+- [x] 3.1 Linting passes: `npm run lint` — 563f5bb
+- [x] 3.2 Production build succeeds: `npm run build` — 563f5bb
+- [x] 3.3 Existing `QuestionCards`/session tests pass: `npm test` — 563f5bb
 
 #### Manual
 
