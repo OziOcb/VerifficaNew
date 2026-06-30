@@ -41,6 +41,9 @@ function makeInspection(overrides: Partial<Inspection> = {}): Inspection {
     mechanicalCompressorEquipped: null,
     turboEquipped: null,
     importedFromEu: null,
+    // S-05 answers map: `not null default '{}'` in the DB, so a required key on the
+    // widened `Inspection` type — empty map is "no answers".
+    answers: {},
     synced: 0,
     ...overrides,
   };

@@ -69,10 +69,18 @@ const SESSION_FIELDS = [
   "importedFromEu",
 ] as const;
 
-// Every scalar data column the optimistic row carries (config + session). The
-// read-merge in `saveInspection` overlays only the caller-supplied subset of
+// The S-05 answers map (FR-015): a jsonb column, not a scalar, carrying the
+// Parts 2–5 answers keyed by opaque catalogue question IDs. It joins the
+// read-merge like any other data field — a sparse `saveInspection({ id, answers })`
+// persists the map while preserving every other column. Non-indexed, so no Dexie
+// `db.version` bump. Its KEYS must survive the sync round-trip verbatim, which is
+// why the sync endpoint excludes this field from deep key-casing (`stopPaths`).
+const JSONB_FIELDS = ["answers"] as const;
+
+// Every data column the optimistic row carries (config + session scalars + jsonb).
+// The read-merge in `saveInspection` overlays only the caller-supplied subset of
 // these onto the stored row.
-const DATA_FIELDS = [...CONFIG_FIELDS, ...SESSION_FIELDS] as const;
+const DATA_FIELDS = [...CONFIG_FIELDS, ...SESSION_FIELDS, ...JSONB_FIELDS] as const;
 
 type DataField = (typeof DATA_FIELDS)[number];
 
@@ -105,10 +113,19 @@ export async function saveInspection(input: SaveInput): Promise<void> {
     const existing = await db.inspections.get(input.id);
 
     // Overlay only the caller-supplied data keys; omitted keys keep the stored
-    // value (or `null` on a first write). Presence — not nullishness — decides,
-    // so an explicit `null`/`false`/`""` from the caller still writes through.
+    // value (or the field default on a first write). Presence — not nullishness —
+    // decides, so an explicit `null`/`false`/`""` from the caller still writes
+    // through. The default is `null` for scalar columns but `{}` for the jsonb
+    // `answers` map: that column is `not null default '{}'` in Postgres, and the
+    // outbox always sends every DATA_FIELD as a key, so a `null` default here would
+    // make a first-write save (e.g. `{ id, globalNotes }`) violate the constraint.
+    const jsonbFields = JSONB_FIELDS as readonly string[];
     const data = Object.fromEntries(
-      DATA_FIELDS.map((f) => [f, f in input ? (input[f] ?? null) : (existing?.[f] ?? null)]),
+      DATA_FIELDS.map((f) => {
+        const fallback = jsonbFields.includes(f) ? {} : null;
+        const merged = f in input ? input[f] : existing?.[f];
+        return [f, merged ?? fallback];
+      }),
     ) as Pick<Inspection, DataField>;
 
     const row: Inspection = {

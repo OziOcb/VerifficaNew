@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   activeFlagsFromInspection,
+  composeNoteHeader,
   FLAG_COLUMN_MAP,
   parseCatalogue,
   relevantFlags,
@@ -8,14 +9,19 @@ import {
   relevantTogglesByFuel,
   resolveExplanation,
   RUNTIME_FLAGS,
+  selectCardDeck,
   selectVisibleGroups,
   selectVisibleQuestionIds,
+  selectVisibleQuestions,
   sessionCounts,
+  sessionQuestionIds,
   visibleCountsByPart,
+  visibleQuestionIdsByPart,
+  type PartId,
   type RuntimeFlag,
   type VisibilityConfig,
 } from "@/lib/questions";
-import { countsForFlags, totalCount } from "@/lib/session-counts";
+import { countsForFlags, questionIdsForFlags, totalCount } from "@/lib/session-counts";
 import bankJson from "@/data/questions/question-bank.json";
 import mappingJson from "@/data/questions/question-mapping-config.json";
 // The authored originals the runtime copies under `src/data/questions/` are hand-copied
@@ -332,6 +338,88 @@ describe("explanation resolver", () => {
   });
 });
 
+describe("selectVisibleQuestions + selectCardDeck (S-05 card deck)", () => {
+  const PARTS: PartId[] = ["part2", "part3", "part4", "part5"];
+
+  /** Oracle: ordered visible question ids for ONE part, computed straight from the authored
+   *  catalogue (group.order then question.order) — never from the engine's own output. */
+  function expectedOrderedIds(config: VisibilityConfig, activeFlags: ReadonlySet<RuntimeFlag>, part: PartId): string[] {
+    const groupOrder = new Map(
+      mappingJson.questionGroups
+        .filter((g) => g.part === part && expectedGroupIds(config, activeFlags).includes(g.id))
+        .map((g) => [g.id, g.order]),
+    );
+    return bankJson.questions
+      .filter((q) => groupOrder.has(q.groupId))
+      .slice()
+      .sort((a, b) => (groupOrder.get(a.groupId) ?? 0) - (groupOrder.get(b.groupId) ?? 0) || a.order - b.order)
+      .map((q) => q.id);
+  }
+
+  it.each(PARTS)("%s: deck order equals the catalogue oracle (group order then question order)", (part) => {
+    const ids = selectVisibleQuestions(PETROL, NO_FLAGS, part).map((q) => q.id);
+    expect(ids).toEqual(expectedOrderedIds(PETROL, NO_FLAGS, part));
+  });
+
+  it("partitions the visible question ids across the four parts with no overlap or loss", () => {
+    // The union of the four per-part decks must equal the whole visible set, disjointly.
+    const all = selectVisibleQuestionIds(PETROL, NO_FLAGS);
+    const perPart = PARTS.flatMap((p) => selectVisibleQuestions(PETROL, NO_FLAGS, p).map((q) => q.id));
+    expect(new Set(perPart)).toEqual(all);
+    expect(perPart).toHaveLength(all.size); // disjoint → no id appears twice
+  });
+
+  it("a flag-gated question only enters its part's deck when the flag is active", () => {
+    const turboId = "q_p4_fuel_combustion_turbocharger_increased_oil_consumption_and_emissions";
+    const without = selectVisibleQuestions(PETROL, NO_FLAGS, "part4").map((q) => q.id);
+    const withTurbo = selectVisibleQuestions(PETROL, flags("turboEquipped"), "part4").map((q) => q.id);
+    expect(without).not.toContain(turboId);
+    expect(withTurbo).toContain(turboId);
+  });
+
+  it("resolves explanation text for questions that have a ref, and null otherwise", () => {
+    const deck = PARTS.flatMap((p) => selectCardDeck(PETROL, flags("turboEquipped", "importedFromEU"), p));
+    const bankById = new Map(bankJson.questions.map((q) => [q.id, q]));
+    for (const card of deck) {
+      const ref = bankById.get(card.id)?.explanationRef;
+      if (ref) {
+        expect(card.explanation).toBe(bankJson.explanations[ref as keyof typeof bankJson.explanations].text);
+      } else {
+        expect(card.explanation).toBeNull();
+      }
+    }
+    // sanity: the deck actually exercises both branches
+    expect(deck.some((c) => c.explanation !== null)).toBe(true);
+    expect(deck.some((c) => c.explanation === null)).toBe(true);
+  });
+
+  it("carries the display fields straight from the catalogue question", () => {
+    const card = selectCardDeck(PETROL, NO_FLAGS, "part2")[0];
+    const q = bankJson.questions.find((q) => q.id === card.id);
+    expect(card).toMatchObject({ id: q?.id, label: q?.label, section: q?.section, subsection: q?.subsection });
+  });
+});
+
+describe("composeNoteHeader (FR-018 note header)", () => {
+  it("joins section, subsection, and label with an em dash", () => {
+    expect(composeNoteHeader("Front suspension", "Suspension condition", "cracked rubber parts")).toBe(
+      "Front suspension — Suspension condition — cracked rubber parts",
+    );
+  });
+
+  it("omits a null subsection", () => {
+    expect(composeNoteHeader("Car Body", null, "Bonnet")).toBe("Car Body — Bonnet");
+  });
+
+  it("every catalogue question yields a non-empty, uniquely-keyed header", () => {
+    // The header keys a note block, so collisions would let two questions' notes overwrite
+    // each other. Reconcile against the authored bank: distinct headers for distinct questions.
+    const headers = bankJson.questions.map((q) => composeNoteHeader(q.section, q.subsection, q.label));
+    expect(headers.every((h) => h.length > 0)).toBe(true);
+    expect(new Set(headers).size).toBe(bankJson.questions.length);
+  });
+});
+
 describe("flag-binding symmetry (the importedFromEU↔importedFromEu guard)", () => {
   it("every runtime flag has a backing column entry and vice-versa", () => {
     const mapped = new Set(Object.values(FLAG_COLUMN_MAP));
@@ -479,6 +567,32 @@ describe("Phase 4: sessionCounts ⇄ countsForFlags equals the engine for any fl
       "evBatteryDocsAvailable",
       "importedFromEu",
     ]);
+  });
+});
+
+describe("sessionQuestionIds ⇄ questionIdsForFlags equals the engine for any flag subset", () => {
+  const PARTS: PartId[] = ["part2", "part3", "part4", "part5"];
+
+  it.each([
+    ["petrol", PETROL],
+    ["EV", EV],
+    ["hybrid", HYBRID],
+  ])("recomputes %s visible IDs client-side identically to visibleQuestionIdsByPart", (_name, cfg) => {
+    const payload = sessionQuestionIds(cfg);
+    const rel = [...relevantFlags(cfg)];
+    const subsets: RuntimeFlag[][] = [[], rel, ...rel.map((f) => [f])];
+    for (const sub of subsets) {
+      const active = new Set(sub);
+      const live = questionIdsForFlags(payload, active);
+      const expected = visibleQuestionIdsByPart(cfg, active);
+      // Compare as sets per Part — order is not part of the contract for the answered tally.
+      for (const part of PARTS) {
+        expect([...live[part]].sort()).toEqual([...expected[part]].sort());
+      }
+      // And the ID-count tracks the count payload exactly (numerator/denominator consistency).
+      const liveCounts = countsForFlags(sessionCounts(cfg), active);
+      for (const part of PARTS) expect(live[part].length).toBe(liveCounts[part]);
+    }
   });
 });
 

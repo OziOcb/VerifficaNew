@@ -37,6 +37,8 @@ export const M = {
   // Lives here (not in the React island) so the server guard can import it without
   // pulling in Dexie. Verbatim from the SessionScreen island it replaces.
   globalNotes: "Global notes cannot be longer than 10,000 characters.",
+  // FR-018 per-question contextual note (appended into the global-notes document).
+  contextualNote: "A note cannot be longer than 500 characters.",
 } as const;
 
 // Length caps shared by the client validators and the sync-boundary server guard,
@@ -44,6 +46,10 @@ export const M = {
 // literal that used to live in SessionScreen.tsx.
 export const MAX_PART1_NOTES_LENGTH = 1000;
 export const MAX_GLOBAL_NOTES_LENGTH = 10_000;
+// FR-018: a single contextual note on a question card is capped at 500 chars. The cap is
+// enforced client-side on the card; the composed global-notes document is still bounded by
+// MAX_GLOBAL_NOTES_LENGTH at the sync boundary.
+export const MAX_CONTEXTUAL_NOTE_LENGTH = 500;
 
 /**
  * CF-1 predicate: Electric cars must use Automatic transmission. Assumes BOTH fields are

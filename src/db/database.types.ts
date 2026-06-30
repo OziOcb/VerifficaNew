@@ -37,6 +37,7 @@ export type Database = {
       inspections: {
         Row: {
           address: string | null
+          answers: Json
           body_type: string | null
           charging_port_equipped: boolean | null
           color: string | null
@@ -66,6 +67,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          answers?: Json
           body_type?: string | null
           charging_port_equipped?: boolean | null
           color?: string | null
@@ -95,6 +97,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          answers?: Json
           body_type?: string | null
           charging_port_equipped?: boolean | null
           color?: string | null

@@ -44,8 +44,7 @@ export const POST: APIRoute = async (context) => {
 
   // Strip the local-only `synced` flag (no DB column). Stamp owner_id from the
   // session — RLS `with check (owner_id = auth.uid())` rejects anything else, so
-  // any client-sent ownerId is overwritten here. camel → snake at this boundary;
-  // scalar columns only (no jsonb yet), so the top-level transform is sufficient.
+  // any client-sent ownerId is overwritten here. camel → snake at this boundary.
   const { synced: _synced, ...row } = body.payload ?? {};
 
   // Server-trust guard: reject the oversized / cross-field-invalid bands the client
@@ -54,7 +53,13 @@ export const POST: APIRoute = async (context) => {
   const validation = validateSyncPayload(row);
   if (!validation.ok) return new Response(validation.message, { status: 400 });
 
-  const payload = snakecaseKeys({ ...row, ownerId: user.id });
+  // `shouldRecurse` is the outbound twin of the inbound `stopPaths: ["answers"]`: it stops
+  // map-obj from descending INTO the jsonb `answers` map, so its opaque `q_…` question-ID
+  // keys reach Postgres verbatim. (`exclude: ["answers"]` would NOT do this — it only spares
+  // the top-level key from conversion while still snake_casing the nested keys.) Safe today by
+  // key idempotency, but defense-in-depth against a future id that isn't already snake_case
+  // (lessons.md "Field casing": scope the transform to top-level keys, exclude jsonb contents).
+  const payload = snakecaseKeys({ ...row, ownerId: user.id }, { shouldRecurse: (key) => key !== "answers" });
 
   const { data, error } = await supabase
     .from("inspections")
@@ -64,5 +69,9 @@ export const POST: APIRoute = async (context) => {
 
   if (error) return new Response(error.message, { status: 400 });
   // snake → camel: hand the authoritative row (incl. server-stamped updatedAt) back.
-  return Response.json(camelcaseKeys(data, { deep: true }));
+  // `stopPaths: ["answers"]` excludes the jsonb answers map from the deep recursion so
+  // its opaque catalogue question-ID keys (e.g. `q_p2_base_car_body_corrosion_bonnet`)
+  // survive verbatim — a deep transform would mangle them (lessons.md "Field casing":
+  // scope the transform to top-level keys, exclude jsonb column contents).
+  return Response.json(camelcaseKeys(data, { deep: true, stopPaths: ["answers"] }));
 };

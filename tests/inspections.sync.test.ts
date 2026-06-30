@@ -132,6 +132,36 @@ describe("POST /api/inspections/sync", () => {
     expect(check.data?.turbo_equipped).toBe(true);
   });
 
+  it("round-trips the S-05 answers map with opaque question-ID keys unchanged (stopPaths exclusion)", async () => {
+    mockClient = aClient;
+    // Free a slot under the 2-per-owner cap so this row isn't rejected by the limit.
+    await aClient.from("inspections").delete().eq("owner_id", aId);
+    const id = crypto.randomUUID();
+    // Catalogue keys are snake_case-looking but OPAQUE — a deep camelcaseKeys would
+    // mangle them to `qP2BaseCarBodyCorrosionBonnet`. The endpoint's `stopPaths`
+    // must leave both the keys and the answer values verbatim.
+    const answers = {
+      q_p2_base_car_body_corrosion_bonnet: "yes",
+      q_p3_fuel_petrol_engine_cold_start: "dont_know",
+    };
+    const res = await POST(
+      makeContext({
+        user: { id: aId },
+        body: { op: "put", entityId: id, payload: { id, status: "draft", answers, synced: 0 } },
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    const saved = (await res.json()) as Record<string, unknown>;
+    // Keys (and values) come back exactly as sent — no camelCasing of the map.
+    expect(saved.answers).toEqual(answers);
+
+    // And the jsonb persisted with its original keys under A's owner_id.
+    const check = await aClient.from("inspections").select("answers").eq("id", id).single();
+    expect(check.error).toBeNull();
+    expect(check.data?.answers).toEqual(answers);
+  });
+
   it("delete is owner-scoped — removes the owner's row, returns 204", async () => {
     mockClient = aClient;
     const id = crypto.randomUUID();

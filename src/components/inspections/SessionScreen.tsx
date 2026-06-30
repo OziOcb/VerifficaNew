@@ -18,9 +18,16 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { saveInspection, flushQueue, startAutoSync } from "@/lib/sync";
-import { countsForFlags, totalCount, type SessionCounts } from "@/lib/session-counts";
+import {
+  countsForFlags,
+  questionIdsForFlags,
+  totalCount,
+  type SessionCounts,
+  type SessionQuestionIds,
+} from "@/lib/session-counts";
 import { MAX_GLOBAL_NOTES_LENGTH, M } from "@/lib/part1-config";
-import type { RelevantToggle, RuntimeFlag } from "@/lib/questions";
+import { answeredCount, type AnswersMap } from "@/lib/answers";
+import type { PartId, RelevantToggle, RuntimeFlag } from "@/lib/questions";
 
 // Cosmic glass palette — matches Part1Form / the dashboard shell.
 const PANEL = "border-white/10 bg-white/5 text-white backdrop-blur-xl";
@@ -56,6 +63,13 @@ interface Props {
   // The catalogue-derived count payload (base + per-relevant-flag deltas) computed
   // server-side; the island recomputes live counts from it as the persisted flags change.
   counts: SessionCounts;
+  // The ID-list analogue of `counts` — the per-Part visible question IDs (base + per-flag
+  // deltas), so the island can tally how many are ANSWERED per Part (FR-010) by intersecting
+  // with the live answers map. The 80 KB catalogue still never reaches the browser.
+  questionIds: SessionQuestionIds;
+  // The persisted answers map (SSR snapshot). The live Dexie row takes over once it hydrates,
+  // so an offline answer reflects in the per-Part progress without a server round-trip.
+  initialAnswers: AnswersMap;
   // The relevant flags' column↔flag bindings (catalogue-derived server-side). Not rendered
   // here — the toggles live in the Part 1 form; this is only how the screen reads the
   // persisted flag columns off the live row to recompute the personalized counts.
@@ -64,7 +78,14 @@ interface Props {
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
-export default function SessionScreen({ inspection, unlocked, counts, flagBindings }: Props) {
+export default function SessionScreen({
+  inspection,
+  unlocked,
+  counts,
+  questionIds,
+  initialAnswers,
+  flagBindings,
+}: Props) {
   // `draft` is the user's in-progress edit (null until they type). The displayed value
   // falls back to the locally-saved Dexie row, then the SSR prop — so an offline edit
   // not yet synced to the server is reflected (via `useLiveQuery`) without an effect
@@ -122,14 +143,22 @@ export default function SessionScreen({ inspection, unlocked, counts, flagBindin
   const liveCounts = countsForFlags(counts, activeFlags);
   const totalVisible = totalCount(liveCounts);
 
+  // The live answers (Dexie row, falling back to the SSR snapshot until it hydrates) and the
+  // live visible question IDs for the active flag set. Answered-per-Part = how many of a
+  // Part's visible IDs have an answer — intersecting with the visible set so an orphaned
+  // answer (a now-hidden question, pre-S-07) is never counted. jsonb keys stay verbatim.
+  const answers = (liveRow?.answers as AnswersMap | undefined) ?? initialAnswers;
+  const liveIds = questionIdsForFlags(questionIds, activeFlags);
+  const answeredByPart = (part: PartId) => answeredCount(liveIds[part], answers);
+
   // Part names + order are the PRD's five parts (prd.md:56) — the real-world physical
   // inspection order (Info → Standstill → Engine → Drive → Documents; prd.md:194).
   const parts = [
-    { n: 1, title: "Info", count: null as number | null },
-    { n: 2, title: "Standstill", count: liveCounts.part2 },
-    { n: 3, title: "Engine", count: liveCounts.part3 },
-    { n: 4, title: "Drive", count: liveCounts.part4 },
-    { n: 5, title: "Documents", count: liveCounts.part5 },
+    { n: 1, title: "Info", count: null as number | null, answered: 0 },
+    { n: 2, title: "Standstill", count: liveCounts.part2, answered: answeredByPart("part2") },
+    { n: 3, title: "Engine", count: liveCounts.part3, answered: answeredByPart("part3") },
+    { n: 4, title: "Drive", count: liveCounts.part4, answered: answeredByPart("part4") },
+    { n: 5, title: "Documents", count: liveCounts.part5, answered: answeredByPart("part5") },
   ];
 
   return (
@@ -203,10 +232,19 @@ export default function SessionScreen({ inspection, unlocked, counts, flagBindin
             // Part 1 (Info) is always reachable — it's where the config is made valid.
             // Parts 2–5 are locked (non-navigable) until the config is unlocked.
             const locked = p.n !== 1 && !unlocked;
-            const subtitle =
-              p.count === null
-                ? "Edit configuration"
-                : `${String(p.count)} ${p.count === 1 ? "question" : "questions"}`;
+            // Part 1 (count === null) is the config form; Parts 2–5 surface answered progress.
+            const isConfig = p.count === null;
+            const total = p.count ?? 0;
+            // A Part is complete once every visible question is answered (FR-010 / #2).
+            const completed = !isConfig && total > 0 && p.answered === total;
+            const subtitle = isConfig
+              ? "Edit configuration"
+              : total === 0
+                ? "No questions for this car"
+                : p.answered > 0
+                  ? // Started (#1): show answered / total rather than the bare total.
+                    `${String(p.answered)} of ${String(total)} answered`
+                  : `${String(total)} ${total === 1 ? "question" : "questions"}`;
 
             if (locked) {
               return (
@@ -223,7 +261,14 @@ export default function SessionScreen({ inspection, unlocked, counts, flagBindin
                 href={`/inspections/${inspection.id}/session/part/${String(p.n)}`}
                 className="rounded-lg border border-white/15 bg-white/10 p-4 transition-colors hover:border-white/30 hover:bg-white/15"
               >
-                <p className="text-xs tracking-wider text-blue-100/40 uppercase">Part {p.n}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs tracking-wider text-blue-100/40 uppercase">Part {p.n}</p>
+                  {completed && (
+                    <span className="rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-200">
+                      Completed
+                    </span>
+                  )}
+                </div>
                 <p className="mt-1 font-medium text-white">{p.title}</p>
                 <p className="mt-2 text-sm text-blue-100/60">{subtitle}</p>
               </a>

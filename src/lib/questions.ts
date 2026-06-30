@@ -23,7 +23,7 @@
 // via an EXPLICIT column↔flag map — see FLAG_COLUMN_MAP below.
 import { z } from "zod";
 import type { Part1Config } from "@/lib/part1-config";
-import type { PartCounts, SessionCounts } from "@/lib/session-counts";
+import type { PartCounts, PartQuestionIds, SessionCounts, SessionQuestionIds } from "@/lib/session-counts";
 import bankJson from "@/data/questions/question-bank.json";
 import mappingJson from "@/data/questions/question-mapping-config.json";
 
@@ -249,9 +249,84 @@ export function visibleCountsByPart(config: VisibilityConfig, flags: ReadonlySet
   return counts;
 }
 
+/** Per-Part visible question IDs (the ID-list analogue of {@link visibleCountsByPart}). */
+export function visibleQuestionIdsByPart(config: VisibilityConfig, flags: ReadonlySet<RuntimeFlag>): PartQuestionIds {
+  const visibleGroupIds = new Set(selectVisibleGroups(config, flags).map((g) => g.id));
+  const ids: PartQuestionIds = { part2: [], part3: [], part4: [], part5: [] };
+  for (const q of CATALOGUE.questions) if (visibleGroupIds.has(q.groupId)) ids[q.part].push(q.id);
+  return ids;
+}
+
 /** `explanationRef` → explanation text (for S-05; S-04 only wires it). */
 export function resolveExplanation(ref: string): string | null {
   return CATALOGUE.explanations[ref]?.text ?? null;
+}
+
+// --- The card deck (S-05) -------------------------------------------------
+//
+// The route asks the engine for ONE Part's ordered, personalized cards and ships the
+// result to the `client:only` island. The 80 KB catalogue and `resolveExplanation` stay
+// server-side: the island receives only the filtered `QuestionCard[]` — never the bank.
+
+/**
+ * One question as the card island consumes it: the stable `id` (answer-map key), the
+ * display fields, the resolved `explanation` text (`null` when the question has no
+ * `explanationRef`), and the FR-018 note `header` that keys its contextual-note block.
+ */
+export interface QuestionCard {
+  id: string;
+  header: string;
+  label: string;
+  section: string;
+  subsection: string | null;
+  explanation: string | null;
+}
+
+/**
+ * The FR-018 contextual-note header for a question: its `section`, `subsection` (when
+ * present), and `label` joined with " — ", so the note block reads naturally in the
+ * global notes document (e.g. "Front suspension — Suspension condition — cracked rubber
+ * parts"). Exported for direct unit reconciliation against the catalogue.
+ */
+export function composeNoteHeader(section: string, subsection: string | null, label: string): string {
+  return [section, subsection, label].filter((p): p is string => p != null && p !== "").join(" — ");
+}
+
+/**
+ * The visible questions for ONE Part, ordered by group `order` then question `order` —
+ * the exact sequence the buyer swipes through. Built from {@link selectVisibleGroups}, so
+ * it shares the single visibility predicate S-07 will re-run and diff.
+ */
+export function selectVisibleQuestions(
+  config: VisibilityConfig,
+  flags: ReadonlySet<RuntimeFlag>,
+  part: PartId,
+): Question[] {
+  const visibleGroups = selectVisibleGroups(config, flags).filter((g) => g.part === part);
+  const groupOrder = new Map(visibleGroups.map((g) => [g.id, g.order]));
+  return CATALOGUE.questions
+    .filter((q) => groupOrder.has(q.groupId))
+    .sort((a, b) => (groupOrder.get(a.groupId) ?? 0) - (groupOrder.get(b.groupId) ?? 0) || a.order - b.order);
+}
+
+/**
+ * The ordered card payload for ONE Part: {@link selectVisibleQuestions} with each question
+ * mapped to a {@link QuestionCard} (display fields + resolved explanation + note header).
+ * This is the single call the Part route makes to hand the island its deck.
+ */
+export function selectCardDeck(
+  config: VisibilityConfig,
+  flags: ReadonlySet<RuntimeFlag>,
+  part: PartId,
+): QuestionCard[] {
+  return selectVisibleQuestions(config, flags, part).map((q) => ({
+    id: q.id,
+    header: composeNoteHeader(q.section, q.subsection, q.label),
+    label: q.label,
+    section: q.section,
+    subsection: q.subsection,
+    explanation: q.explanationRef ? resolveExplanation(q.explanationRef) : null,
+  }));
 }
 
 /**
@@ -329,6 +404,30 @@ export function sessionCounts(config: VisibilityConfig): SessionCounts {
       part3: withFlag.part3 - base.part3,
       part4: withFlag.part4 - base.part4,
       part5: withFlag.part5 - base.part5,
+    };
+  }
+  return { base, flagDeltas };
+}
+
+/**
+ * The ID-list analogue of {@link sessionCounts}: the per-Part base visible question IDs plus,
+ * for each config-relevant flag, the IDs that flag reveals (its delta over the base). The
+ * session island unions the base with the active flags' deltas (`questionIdsForFlags`) to get
+ * the live visible set, then counts how many are answered (FR-010). The additive model
+ * guarantees `|base| + Σ|delta|` equals `visibleQuestionIdsByPart(config, activeFlags)`.
+ */
+export function sessionQuestionIds(config: VisibilityConfig): SessionQuestionIds {
+  const base = visibleQuestionIdsByPart(config, new Set<RuntimeFlag>());
+  const flagDeltas: Partial<Record<RuntimeFlag, PartQuestionIds>> = {};
+  for (const flag of relevantFlags(config)) {
+    const withFlag = visibleQuestionIdsByPart(config, new Set<RuntimeFlag>([flag]));
+    // The flag's delta = its visible IDs not already in the base (additive model: withFlag ⊇ base).
+    const notInBase = (part: PartId) => withFlag[part].filter((id) => !base[part].includes(id));
+    flagDeltas[flag] = {
+      part2: notInBase("part2"),
+      part3: notInBase("part3"),
+      part4: notInBase("part4"),
+      part5: notInBase("part5"),
     };
   }
   return { base, flagDeltas };
