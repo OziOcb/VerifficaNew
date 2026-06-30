@@ -239,9 +239,9 @@ The dark-clamped cookie hook is forward-compatible: S-10 widens the resolver's a
 
 #### Manual
 
-- [ ] 2.3 Top and bottom iOS strips are dark on the real iPhone (no white bars)
-- [ ] 2.4 Content not obscured by notch/home-indicator
-- [ ] 2.5 No regression on rotation (if applicable)
+- [x] 2.3 Top and bottom iOS strips are dark on the real iPhone (no white bars) — 615a501
+- [x] 2.4 Content not obscured by notch/home-indicator — 615a501
+- [x] 2.5 No regression on rotation (if applicable) — 615a501
 
 ### Phase 3: Bug 2 finish — transition overflow containment
 
@@ -253,6 +253,6 @@ The dark-clamped cookie hook is forward-compatible: S-10 widens the resolver's a
 
 #### Manual
 
-- [ ] 3.4 No white bar on right edge during forward slide on real iPhone
-- [ ] 3.5 No horizontal scroll during/after transition
-- [ ] 3.6 Back navigation (left slide) is clean
+- [x] 3.4 No white bar on right edge during forward slide on real iPhone — 615a501
+- [x] 3.5 No horizontal scroll during/after transition — 615a501
+- [x] 3.6 Back navigation (left slide) is clean — 615a501
