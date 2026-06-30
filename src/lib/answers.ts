@@ -60,31 +60,37 @@ export function distribution(
 // --- FR-018 contextual-note blocks ----------------------------------------
 //
 // The global notes document (FR-010, one 10,000-char doc per inspection) is a free-form
-// textarea. FR-018 appends a per-question note to it under the question's header. To make
-// re-noting REPLACE rather than duplicate, each contextual note is stored as a delimited
-// "block": a header line `### <header>` followed by the note body. Blocks (and any free
-// user text) are separated by a blank line, so a block reads naturally in the textarea and
-// parses back deterministically.
+// textarea. FR-018 appends a per-question note to it as a delimited "block": a header line
+// — the question's part + identity, e.g. `Part 2 — Standstill: Front suspension — cracked
+// rubber parts` — followed by the note body, with every body line quoted as a markdown
+// blockquote (`> …`). The blockquote IS the machine-readable marker that lets a block parse
+// back for in-place replace / pre-fill (so re-noting REPLACES rather than duplicates).
+// Blocks (and any free user text) are separated by a blank line, so a block reads naturally
+// in the textarea and parses back deterministically.
 //
-// Documented constraint of this model: a note body must not itself contain a blank line
-// (`\n\n`) or a line beginning with `### ` — either would be mis-parsed as a block boundary.
-// The 500-char card cap keeps notes short; the card UI is the place to discourage these.
+// Documented constraint of this model: a note body must not contain a blank line (`\n\n`),
+// which would be mis-read as a block boundary. The 500-char card cap keeps notes short; the
+// card UI is the place to discourage these.
 
-const NOTE_HEADER_PREFIX = "### ";
+const BODY_QUOTE = "> ";
 const SEGMENT_SEPARATOR = "\n\n";
 
 interface Segment {
-  /** The block header when this segment is a note block, else `null` (free user text). */
+  /** The block header line when this segment is a note block, else `null` (free user text). */
   header: string | null;
-  /** The note body (block) or the verbatim free text (non-block). */
+  /** The de-quoted note body (block) or the verbatim free text (non-block). */
   body: string;
 }
 
 function parseSegment(segment: string): Segment {
   const nl = segment.indexOf("\n");
-  const firstLine = nl === -1 ? segment : segment.slice(0, nl);
-  if (firstLine.startsWith(NOTE_HEADER_PREFIX)) {
-    return { header: firstLine.slice(NOTE_HEADER_PREFIX.length), body: nl === -1 ? "" : segment.slice(nl + 1) };
+  if (nl === -1) return { header: null, body: segment };
+  const firstLine = segment.slice(0, nl);
+  const restLines = segment.slice(nl + 1).split("\n");
+  // A note block: a header line followed by one or more `>`-quoted body lines. The blockquote
+  // on every following line is what distinguishes a block from incidental free user text.
+  if (restLines.every((l) => l.startsWith(">"))) {
+    return { header: firstLine, body: restLines.map((l) => l.replace(/^>\s?/, "")).join("\n") };
   }
   return { header: null, body: segment };
 }
@@ -117,7 +123,11 @@ export function readNoteBlock(globalNotes: string, header: string): string | nul
  */
 export function upsertNoteBlock(globalNotes: string, header: string, note: string): string {
   const isEmpty = note.trim() === "";
-  const newBlock = `${NOTE_HEADER_PREFIX}${header}\n${note}`;
+  const quotedBody = note
+    .split("\n")
+    .map((l) => `${BODY_QUOTE}${l}`)
+    .join("\n");
+  const newBlock = `${header}\n${quotedBody}`;
 
   let replaced = false;
   const segments: string[] = [];

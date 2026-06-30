@@ -60,36 +60,36 @@ describe("upsertNoteBlock", () => {
   const H1 = "Car Body — Bonnet";
   const H2 = "Front suspension — cracked rubber parts";
 
-  it("inserts a headed block into an empty document", () => {
-    expect(upsertNoteBlock("", H1, "rust spot")).toBe("### Car Body — Bonnet\nrust spot");
+  it("inserts a headed block (header line + blockquoted body) into an empty document", () => {
+    expect(upsertNoteBlock("", H1, "rust spot")).toBe("Car Body — Bonnet\n> rust spot");
   });
 
   it("appends a new block after existing free text, separated by a blank line", () => {
     expect(upsertNoteBlock("seller seems honest", H1, "rust spot")).toBe(
-      "seller seems honest\n\n### Car Body — Bonnet\nrust spot",
+      "seller seems honest\n\nCar Body — Bonnet\n> rust spot",
     );
   });
 
   it("replaces an existing block in place without duplicating its header", () => {
     const doc = upsertNoteBlock("", H1, "first");
     const updated = upsertNoteBlock(doc, H1, "second");
-    expect(updated).toBe("### Car Body — Bonnet\nsecond");
+    expect(updated).toBe("Car Body — Bonnet\n> second");
     // exactly one header line for the question
-    expect(updated.match(/### Car Body — Bonnet/g)).toHaveLength(1);
+    expect(updated.match(/Car Body — Bonnet/g)).toHaveLength(1);
   });
 
   it("preserves the order and content of other blocks when replacing one", () => {
     let doc = upsertNoteBlock("", H1, "a");
     doc = upsertNoteBlock(doc, H2, "b");
     const updated = upsertNoteBlock(doc, H1, "a2");
-    expect(updated).toBe("### Car Body — Bonnet\na2\n\n### Front suspension — cracked rubber parts\nb");
+    expect(updated).toBe("Car Body — Bonnet\n> a2\n\nFront suspension — cracked rubber parts\n> b");
   });
 
   it("removes the block when the note is empty or whitespace-only", () => {
     let doc = upsertNoteBlock("", H1, "a");
     doc = upsertNoteBlock(doc, H2, "b");
-    expect(upsertNoteBlock(doc, H1, "")).toBe("### Front suspension — cracked rubber parts\nb");
-    expect(upsertNoteBlock(doc, H1, "   ")).toBe("### Front suspension — cracked rubber parts\nb");
+    expect(upsertNoteBlock(doc, H1, "")).toBe("Front suspension — cracked rubber parts\n> b");
+    expect(upsertNoteBlock(doc, H1, "   ")).toBe("Front suspension — cracked rubber parts\n> b");
   });
 
   it("is a no-op when removing a block that does not exist", () => {
@@ -112,5 +112,11 @@ describe("readNoteBlock", () => {
   it("returns null for a header with no block", () => {
     expect(readNoteBlock("", "missing")).toBeNull();
     expect(readNoteBlock("just free text", "missing")).toBeNull();
+  });
+
+  it("round-trips a multi-line note (each line quoted, de-quoted on read)", () => {
+    const doc = upsertNoteBlock("", "H", "line one\nline two");
+    expect(doc).toBe("H\n> line one\n> line two");
+    expect(readNoteBlock(doc, "H")).toBe("line one\nline two");
   });
 });

@@ -1,7 +1,8 @@
 // The Parts 2–5 answering surface (S-05, FR-015): a full-screen card deck, one question
 // per screen, with mandatory answering, lossless Back, a per-Part progress indicator, and
-// an end-of-Part transition screen. (The FR-017 education popup and FR-018 contextual note
-// land in Phase 4; the card payload already carries `explanation` for that.)
+// an end-of-Part transition screen. Each card also carries the FR-017 education `i`-popup
+// (shown only when the card has a resolved `explanation`) and the FR-018 contextual note
+// (≤500 chars, stored as a headed block in the global-notes document via `upsertNoteBlock`).
 //
 // MUST be mounted `client:only="react"` — it imports @/lib/sync → @/lib/db (Dexie), which
 // has no global on the workerd SSR runtime. The SSR route runs the 80 KB catalogue
@@ -13,18 +14,29 @@
 // `flushQueue`. Each answer is persisted BEFORE the deck advances, which is what makes
 // Back lossless and a mid-Part reload resume correctly.
 import { useEffect, useState } from "react";
-import { CircleAlert } from "lucide-react";
+import { CircleAlert, Info, NotebookPen } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { db } from "@/lib/db";
 import { saveInspection, flushQueue, startAutoSync } from "@/lib/sync";
 import { back, canAdvance, initialIndex, isTransition, nextIndex } from "@/lib/card-nav";
-import type { Answer, AnswersMap } from "@/lib/answers";
+import { readNoteBlock, upsertNoteBlock, type Answer, type AnswersMap } from "@/lib/answers";
+import { MAX_CONTEXTUAL_NOTE_LENGTH, M } from "@/lib/part1-config";
 import type { QuestionCard } from "@/lib/questions";
 
 // Cosmic glass palette — matches Part1Form / SessionScreen / the dashboard shell.
 const PANEL = "border-white/10 bg-white/5 text-white backdrop-blur-xl";
+const FIELD_INPUT = "border-white/20 bg-white/10 text-white placeholder:text-white/40";
 
 // The three legal answers (FR-015), in the order the card presents them. Each carries the
 // accent it lights up in when selected; the value is the opaque catalogue token.
@@ -42,9 +54,15 @@ interface Props {
   // The persisted answers map (SSR-read with the question-ID keys kept verbatim). Seeds the
   // resume index and the first paint before the live Dexie row hydrates.
   initialAnswers: AnswersMap;
+  // The persisted global-notes document (SSR snapshot). FR-018 contextual notes are headed
+  // blocks inside it; seeds the note field before the live Dexie row hydrates.
+  initialGlobalNotes: string;
+  // The human Part label (e.g. "Part 2 — Standstill") prefixed onto each note's block header,
+  // so a note in the global doc reads with its part context (FR-018 header).
+  partLabel: string;
 }
 
-export default function QuestionCards({ id, cards, initialAnswers }: Props) {
+export default function QuestionCards({ id, cards, initialAnswers, initialGlobalNotes, partLabel }: Props) {
   const sessionHref = `/inspections/${id}/session`;
   const orderedIds = cards.map((c) => c.id);
   const length = orderedIds.length;
@@ -59,6 +77,17 @@ export default function QuestionCards({ id, cards, initialAnswers }: Props) {
   // by card id directly.
   const liveRow = useLiveQuery(() => db.inspections.get(id), [id]);
   const answers = (liveRow?.answers as AnswersMap | undefined) ?? initialAnswers;
+
+  // The global-notes document (FR-010) — same live-row-with-SSR-fallback pattern as the
+  // answers map, so an offline note reflects without a server round-trip. FR-018 stores each
+  // card's contextual note as a headed block inside it (keyed by the card's note header).
+  const globalNotes = liveRow?.globalNotes ?? initialGlobalNotes;
+
+  // The contextual-note editor is a modal: `noteDraft` is null while closed, and the card's
+  // existing block (parsed back from the document) once opened — so editing replaces in place
+  // rather than duplicating. `noteSaveError` surfaces a failed local write inline.
+  const [noteDraft, setNoteDraft] = useState<string | null>(null);
+  const [noteSaveError, setNoteSaveError] = useState(false);
 
   // The current card index. `navIndex` is null until the user navigates; until then the
   // index is DERIVED as the resume position from the freshest answers — so it "upgrades"
@@ -136,6 +165,30 @@ export default function QuestionCards({ id, cards, initialAnswers }: Props) {
     window.history.back();
   }
 
+  // Open the note editor for the current card, pre-filled from its existing block (or empty).
+  function openNote(header: string) {
+    setNoteSaveError(false);
+    setNoteDraft(readNoteBlock(globalNotes, header) ?? "");
+  }
+
+  // Persist the note as a headed block in the global-notes document (FR-018). `upsertNoteBlock`
+  // replaces this question's block in place — or removes it when the draft is empty — so
+  // re-noting never duplicates. Rides the same read-merge optimistic path as answers.
+  function saveNote(header: string) {
+    if (noteDraft === null) return;
+    const nextNotes = upsertNoteBlock(globalNotes, header, noteDraft);
+    setNoteSaveError(false);
+    void saveInspection({ id, globalNotes: nextNotes }).then(
+      () => {
+        setNoteDraft(null);
+        void flushQueue();
+      },
+      () => {
+        setNoteSaveError(true);
+      },
+    );
+  }
+
   // End-of-Part transition screen (FR-015): reached by advancing past the final card (or
   // resuming a fully-answered Part). `OK` returns to the session hub.
   if (isTransition(index, length)) {
@@ -158,6 +211,13 @@ export default function QuestionCards({ id, cards, initialAnswers }: Props) {
 
   const card = cards[index];
   const selected = answers[card.id];
+  // The block header keying this card's note in the global doc: the Part label + the card's
+  // composed question header (e.g. "Part 2 — Standstill: Front suspension — cracked rubber parts").
+  const noteHeader = `${partLabel}: ${card.header}`;
+  // Whether this card already has a contextual note — drives the note button's filled state.
+  const hasNote = readNoteBlock(globalNotes, noteHeader) !== null;
+  // The note draft sits at the 500-char cap (`maxLength` blocks overflow; this just warns).
+  const atNoteCap = (noteDraft ?? "").length >= MAX_CONTEXTUAL_NOTE_LENGTH;
 
   return (
     <div className="space-y-6">
@@ -184,11 +244,39 @@ export default function QuestionCards({ id, cards, initialAnswers }: Props) {
         }`}
       >
         <Card className={PANEL}>
-          <CardContent className="space-y-2 p-6">
-            {/* Section (bold) above subsection, on separate lines — the inspection hierarchy. */}
-            <p className="text-xs font-bold tracking-wider text-blue-100/60 uppercase">{card.section}</p>
-            {card.subsection && <p className="text-xs tracking-wider text-blue-100/40 uppercase">{card.subsection}</p>}
-            <p className="text-lg font-medium text-white">{card.label}</p>
+          <CardContent className="flex items-start justify-between gap-3 p-6">
+            <div className="space-y-2">
+              {/* Section (bold) above subsection, on separate lines — the inspection hierarchy. */}
+              <p className="text-xs font-bold tracking-wider text-blue-100/60 uppercase">{card.section}</p>
+              {card.subsection && (
+                <p className="text-xs tracking-wider text-blue-100/40 uppercase">{card.subsection}</p>
+              )}
+              <p className="text-lg font-medium text-white">{card.label}</p>
+            </div>
+
+            {/* FR-017 education popup: shown ONLY when the card carries a resolved explanation
+                (server-resolved; the 80 KB catalogue never reaches the client). */}
+            {card.explanation !== null && (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Why this matters"
+                    className="shrink-0 rounded-full p-1 text-blue-200/70 transition-colors hover:bg-white/10 hover:text-blue-100"
+                  >
+                    <Info className="size-5" />
+                  </button>
+                </DialogTrigger>
+                <DialogContent className={`${PANEL} py-9`}>
+                  <DialogHeader>
+                    <DialogTitle className="text-white">{card.label}</DialogTitle>
+                    <DialogDescription className="whitespace-pre-line text-blue-100/70">
+                      {card.explanation}
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+            )}
           </CardContent>
         </Card>
 
@@ -223,16 +311,94 @@ export default function QuestionCards({ id, cards, initialAnswers }: Props) {
         </p>
       )}
 
-      {/* Next appears only once the current card is answered — the mandatory-answer gate
-          (a fresh card has no forward affordance but answering). Tapping an answer
-          auto-advances; Next is for moving forward off a Back-visited, already-answered card. */}
-      <div className="flex justify-end">
+      {/* Bottom bar: the FR-018 contextual-note affordance (left) and the Next gate (right).
+          Next appears only once the current card is answered — the mandatory-answer gate (a
+          fresh card has no forward affordance but answering). Tapping an answer auto-advances;
+          Next is for moving forward off a Back-visited, already-answered card. */}
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => {
+            openNote(noteHeader);
+          }}
+          className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors ${
+            hasNote
+              ? "border-purple-400/40 bg-purple-500/15 text-purple-100"
+              : "border-white/15 bg-white/10 text-white hover:border-white/30 hover:bg-white/15"
+          }`}
+        >
+          <NotebookPen className="size-4 shrink-0" />
+          {hasNote ? "Edit note" : "Add note"}
+        </button>
+
         {canAdvance(index, orderedIds, answers) && (
           <Button onClick={handleNext} className="bg-purple-600 text-white hover:bg-purple-500">
             Next &rarr;
           </Button>
         )}
       </div>
+
+      {/* FR-018 note editor: a 500-char contextual note saved as a headed block in the global
+          notes document (replacing this question's prior block). Controlled open via `noteDraft`. */}
+      <Dialog
+        open={noteDraft !== null}
+        onOpenChange={(open) => {
+          if (!open) setNoteDraft(null);
+        }}
+      >
+        <DialogContent className={PANEL}>
+          <DialogHeader>
+            <DialogTitle className="text-white">Note</DialogTitle>
+            <DialogDescription className="text-blue-100/60">{card.header}</DialogDescription>
+          </DialogHeader>
+
+          <textarea
+            value={noteDraft ?? ""}
+            onChange={(e) => {
+              setNoteDraft(e.target.value);
+            }}
+            rows={5}
+            maxLength={MAX_CONTEXTUAL_NOTE_LENGTH}
+            placeholder="What did you notice about this?"
+            className={`flex w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] focus-visible:ring-purple-400/50 ${FIELD_INPUT}`}
+          />
+          <div className="flex items-center justify-between text-xs text-blue-100/40">
+            {noteSaveError ? (
+              <span className="flex items-center gap-1 text-red-300">
+                <CircleAlert className="size-3 shrink-0" />
+                Could not save on this device.
+              </span>
+            ) : atNoteCap ? (
+              <span className="text-amber-300">{M.contextualNote}</span>
+            ) : (
+              <span />
+            )}
+            <span className={atNoteCap ? "text-amber-300" : undefined}>
+              {(noteDraft ?? "").length} / {MAX_CONTEXTUAL_NOTE_LENGTH}
+            </span>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setNoteDraft(null);
+              }}
+              className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                saveNote(noteHeader);
+              }}
+              className="bg-purple-600 text-white hover:bg-purple-500"
+            >
+              Save note
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

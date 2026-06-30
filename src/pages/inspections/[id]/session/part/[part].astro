@@ -39,7 +39,7 @@ const { data: row } = supabase
   ? await supabase
       .from("inspections")
       .select(
-        "id,name,status,created_at,price,make,model,year,registration_number,vin,mileage,fuel_type,transmission,drive,color,body_type,door_count,address,notes,charging_port_equipped,ev_battery_docs_available,turbo_equipped,mechanical_compressor_equipped,imported_from_eu,answers",
+        "id,name,status,created_at,price,make,model,year,registration_number,vin,mileage,fuel_type,transmission,drive,color,body_type,door_count,address,notes,global_notes,charging_port_equipped,ev_battery_docs_available,turbo_equipped,mechanical_compressor_equipped,imported_from_eu,answers",
       )
       .eq("id", id ?? "")
       .maybeSingle()
@@ -115,7 +115,14 @@ const relevantTogglesMap = relevantTogglesByFuel();
             </p>
           </header>
 
-          <QuestionCards client:only="react" id={id ?? ""} cards={cards} initialAnswers={initialAnswers} />
+          <QuestionCards
+            client:only="react"
+            id={id ?? ""}
+            cards={cards}
+            initialAnswers={initialAnswers}
+            initialGlobalNotes={inspection.globalNotes ?? ""}
+            partLabel={`Part ${part} — ${PART_TITLES[part]}`}
+          />
         </main>
       </div>
     </Layout>
