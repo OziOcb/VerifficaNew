@@ -1,10 +1,10 @@
 ---
 change_id: question-card-answering
 title: Answer Parts 2–5 as swipeable cards with education pop-ups and notes
-status: impl_reviewed
+status: archived
 created: 2026-06-28
 updated: 2026-06-30
-archived_at: null
+archived_at: 2026-06-30T14:03:44Z
 ---
 
 ## Notes
