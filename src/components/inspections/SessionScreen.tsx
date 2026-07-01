@@ -29,9 +29,9 @@ import { MAX_GLOBAL_NOTES_LENGTH, M } from "@/lib/part1-config";
 import { answeredCount, type AnswersMap } from "@/lib/answers";
 import type { PartId, RelevantToggle, RuntimeFlag } from "@/lib/questions";
 
-// Cosmic glass palette — matches Part1Form / the dashboard shell.
-const PANEL = "border-white/10 bg-white/5 text-white backdrop-blur-xl";
-const FIELD_INPUT = "border-white/20 bg-white/10 text-white placeholder:text-white/40";
+// Caffeine token palette — matches Part1Form / the dashboard shell.
+const PANEL = "border bg-card text-card-foreground";
+const FIELD_INPUT = "border-input bg-background text-foreground placeholder:text-muted-foreground";
 
 // FR-010: the global notes document is a distinct 10,000-char inspection-level doc
 // (separate from the 1,000-char Part 1 `notes`). The cap + message now live in
@@ -164,14 +164,11 @@ export default function SessionScreen({
   return (
     <div className="space-y-8">
       <header>
-        <a
-          href="/dashboard"
-          className="text-sm text-purple-300 transition-colors hover:text-purple-100 hover:underline"
-        >
+        <a href="/dashboard" className="text-primary hover:text-primary/80 text-sm transition-colors hover:underline">
           &larr; Back to dashboard
         </a>
-        <h1 className="mt-4 text-2xl font-bold text-white">{inspection.name ?? "Inspection"}</h1>
-        <p className="mt-1 text-blue-100/60">
+        <h1 className="text-foreground mt-4 text-2xl font-bold">{inspection.name ?? "Inspection"}</h1>
+        <p className="text-muted-foreground mt-1">
           Your inspection session — pick a part to work on, or jot global notes below.
         </p>
       </header>
@@ -185,34 +182,34 @@ export default function SessionScreen({
         >
           <Card className={PANEL}>
             <CardHeader>
-              <CardTitle className="text-white">Total Score</CardTitle>
+              <CardTitle className="text-foreground">Total Score</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-white">0%</p>
+              <p className="text-foreground text-3xl font-bold">0%</p>
               <div className="mt-3 flex gap-4 text-sm">
-                <span className="text-emerald-300">Yes 0</span>
-                <span className="text-red-300">No 0</span>
-                <span className="text-blue-100/60">Don&apos;t know 0</span>
+                <span className="text-emerald-600 dark:text-emerald-400">Yes 0</span>
+                <span className="text-red-600 dark:text-red-400">No 0</span>
+                <span className="text-muted-foreground">Don&apos;t know 0</span>
               </div>
             </CardContent>
           </Card>
 
           <Card className={PANEL}>
             <CardHeader>
-              <CardTitle className="text-white">Completion</CardTitle>
+              <CardTitle className="text-foreground">Completion</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-white">
-                0 <span className="text-base font-normal text-blue-100/50">of {totalVisible}</span>
+              <p className="text-foreground text-3xl font-bold">
+                0 <span className="text-muted-foreground text-base font-normal">of {totalVisible}</span>
               </p>
-              <p className="mt-3 text-sm text-blue-100/60">questions answered for this car</p>
+              <p className="text-muted-foreground mt-3 text-sm">questions answered for this car</p>
             </CardContent>
           </Card>
         </div>
         {!unlocked && (
           <div className="absolute inset-0 flex items-center justify-center p-4">
-            <div className="flex items-center gap-2 rounded-lg border border-white/15 bg-black/40 px-4 py-3 text-center text-sm text-blue-100/80 backdrop-blur-sm">
-              <Lock className="size-4 shrink-0 text-blue-100/60" />
+            <div className="border-border bg-card text-foreground flex items-center gap-2 rounded-lg border px-4 py-3 text-center text-sm">
+              <Lock className="text-muted-foreground size-4 shrink-0" />
               Complete Part 1 (Info) to reveal the Total Score and Completion.
             </div>
           </div>
@@ -221,11 +218,13 @@ export default function SessionScreen({
 
       <section className={`rounded-xl border p-5 ${PANEL}`}>
         <div className="mb-3 flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-white">Parts</h2>
-          {!unlocked && <Lock className="size-4 text-blue-100/50" />}
+          <h2 className="text-foreground text-lg font-semibold">Parts</h2>
+          {!unlocked && <Lock className="text-muted-foreground size-4" />}
         </div>
         {!unlocked && (
-          <p className="mb-4 text-sm text-blue-100/60">Complete Part 1 (Info) to unlock the personalized Parts 2–5.</p>
+          <p className="text-muted-foreground mb-4 text-sm">
+            Complete Part 1 (Info) to unlock the personalized Parts 2–5.
+          </p>
         )}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {parts.map((p) => {
@@ -248,10 +247,10 @@ export default function SessionScreen({
 
             if (locked) {
               return (
-                <div key={p.n} aria-disabled className="rounded-lg border border-white/10 bg-white/5 p-4 opacity-50">
-                  <p className="text-xs tracking-wider text-blue-100/40 uppercase">Part {p.n}</p>
-                  <p className="mt-1 font-medium text-white">{p.title}</p>
-                  <p className="mt-2 text-sm text-blue-100/60">Locked</p>
+                <div key={p.n} aria-disabled className="border-border bg-muted rounded-lg border p-4 opacity-50">
+                  <p className="text-muted-foreground text-xs tracking-wider uppercase">Part {p.n}</p>
+                  <p className="text-foreground mt-1 font-medium">{p.title}</p>
+                  <p className="text-muted-foreground mt-2 text-sm">Locked</p>
                 </div>
               );
             }
@@ -259,18 +258,18 @@ export default function SessionScreen({
               <a
                 key={p.n}
                 href={`/inspections/${inspection.id}/session/part/${String(p.n)}`}
-                className="rounded-lg border border-white/15 bg-white/10 p-4 transition-colors hover:border-white/30 hover:bg-white/15"
+                className="border-border bg-muted hover:bg-accent rounded-lg border p-4 transition-colors"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs tracking-wider text-blue-100/40 uppercase">Part {p.n}</p>
+                  <p className="text-muted-foreground text-xs tracking-wider uppercase">Part {p.n}</p>
                   {completed && (
-                    <span className="rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-200">
+                    <span className="rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
                       Completed
                     </span>
                   )}
                 </div>
-                <p className="mt-1 font-medium text-white">{p.title}</p>
-                <p className="mt-2 text-sm text-blue-100/60">{subtitle}</p>
+                <p className="text-foreground mt-1 font-medium">{p.title}</p>
+                <p className="text-muted-foreground mt-2 text-sm">{subtitle}</p>
               </a>
             );
           })}
@@ -279,7 +278,7 @@ export default function SessionScreen({
 
       <Card className={PANEL}>
         <CardHeader>
-          <CardTitle className="text-white">Global notes</CardTitle>
+          <CardTitle className="text-foreground">Global notes</CardTitle>
         </CardHeader>
         <CardContent>
           <textarea
@@ -291,22 +290,22 @@ export default function SessionScreen({
             rows={8}
             aria-invalid={overLimit ? true : undefined}
             placeholder="Notes about the whole inspection…"
-            className={`flex w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] focus-visible:ring-purple-400/50 ${FIELD_INPUT}`}
+            className={`focus-visible:ring-ring/50 flex w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] ${FIELD_INPUT}`}
           />
           <div className="mt-1 flex items-center justify-between text-xs">
             {overLimit ? (
-              <span className="flex items-center gap-1 text-red-300">
+              <span className="text-destructive flex items-center gap-1">
                 <CircleAlert className="size-3 shrink-0" />
                 {NOTES_TOO_LONG}
               </span>
             ) : (
-              <span className="text-blue-100/40">
+              <span className="text-muted-foreground">
                 {saveStatus === "saving" && "Saving…"}
                 {saveStatus === "saved" && "Saved."}
-                {saveStatus === "error" && <span className="text-red-300">Could not save on this device.</span>}
+                {saveStatus === "error" && <span className="text-destructive">Could not save on this device.</span>}
               </span>
             )}
-            <span className={overLimit ? "text-red-300" : "text-blue-100/40"}>
+            <span className={overLimit ? "text-destructive" : "text-muted-foreground"}>
               {notes.length.toLocaleString()} / {MAX_NOTES.toLocaleString()}
             </span>
           </div>

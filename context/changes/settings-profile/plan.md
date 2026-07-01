@@ -337,33 +337,33 @@ No data migration — preferences are cookies/localStorage. Existing users with 
 
 #### Automated
 
-- [x] 2.1 `npx astro sync` succeeds
-- [x] 2.2 Lint/type check passes: `npm run lint`
-- [x] 2.3 Build succeeds: `npm run build`
-- [x] 2.4 Startup-toggle flag unit test passes: `npm test`
+- [x] 2.1 `npx astro sync` succeeds — 3896017
+- [x] 2.2 Lint/type check passes: `npm run lint` — 3896017
+- [x] 2.3 Build succeeds: `npm run build` — 3896017
+- [x] 2.4 Startup-toggle flag unit test passes: `npm test` — 3896017
 
 #### Manual
 
-- [ ] 2.5 Dropdown opens; Settings navigates; quick toggle flips theme; Sign out wipes store + ends session
-- [ ] 2.6 `/settings` redirects to sign-in when logged out
-- [ ] 2.7 Profile shows correct email + member-since
-- [ ] 2.8 Theme/font/startup controls take effect and reflect current state
-- [ ] 2.9 Re-enabling startup guide makes the pop-up reappear
+- [x] 2.5 Dropdown opens; Settings navigates; quick toggle flips theme; Sign out wipes store + ends session — 3896017
+- [x] 2.6 `/settings` redirects to sign-in when logged out — 3896017
+- [x] 2.7 Profile shows correct email + member-since — 3896017
+- [x] 2.8 Theme/font/startup controls take effect and reflect current state — 3896017
+- [x] 2.9 Re-enabling startup guide makes the pop-up reappear — 3896017
 
 ### Phase 3: Full re-skin to Caffeine tokens
 
 #### Automated
 
-- [ ] 3.1 Lint/type check passes: `npm run lint`
-- [ ] 3.2 Build succeeds: `npm run build`
-- [ ] 3.3 Cosmic-literal grep returns only intentional cases
+- [x] 3.1 Lint/type check passes: `npm run lint`
+- [x] 3.2 Build succeeds: `npm run build`
+- [x] 3.3 Cosmic-literal grep returns only intentional cases
 
 #### Manual
 
-- [ ] 3.4 Every screen legible/correct in light mode
-- [ ] 3.5 Every screen legible/correct in dark mode
-- [ ] 3.6 No cosmic remnants; no white-on-white / black-on-black
-- [ ] 3.7 iOS safe-area root background correct per-mode
+- [x] 3.4 Every screen legible/correct in light mode
+- [x] 3.5 Every screen legible/correct in dark mode
+- [x] 3.6 No cosmic remnants; no white-on-white / black-on-black
+- [x] 3.7 iOS safe-area root background correct per-mode
 
 ### Phase 4: Tests & verification
 

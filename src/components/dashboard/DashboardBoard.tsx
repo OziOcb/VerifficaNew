@@ -39,13 +39,12 @@ import { StartupInstructions } from "@/components/dashboard/StartupInstructions"
 
 const LIMIT = 2;
 
-// Cosmic glass palette shared with the public home page (Home.astro). The shadcn
-// primitives are light-themed by default; these className overrides recolor them
-// for the dark cosmic shell (tailwind-merge lets the later utilities win).
-const GLASS_PANEL = "border-white/10 bg-white/5 text-white backdrop-blur-xl";
-const DIALOG_PANEL = "border-white/10 bg-slate-900/95 text-white backdrop-blur-xl";
-const PRIMARY_BTN = "bg-purple-600 text-white hover:bg-purple-500";
-const OUTLINE_BTN = "border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white";
+// Caffeine token palette (S-10). tailwind-merge lets these later utilities win over
+// the shadcn primitive defaults; flipping the `.dark` class recolors them per-mode.
+const GLASS_PANEL = "border bg-card text-card-foreground";
+const DIALOG_PANEL = "border bg-popover text-popover-foreground";
+const PRIMARY_BTN = "bg-primary text-primary-foreground hover:bg-primary/90";
+const OUTLINE_BTN = "border bg-background hover:bg-accent hover:text-accent-foreground";
 
 // DB widens status to string; narrow it for grouping, defaulting unknown to draft.
 function statusOf(value: string): InspectionStatus {
@@ -124,7 +123,7 @@ export default function DashboardBoard({ inspections: initial, userId }: Props) 
   return (
     <div className="mx-auto max-w-3xl">
       <header className="mb-6 flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-white">Your inspections</h1>
+        <h1 className="text-foreground text-2xl font-bold">Your inspections</h1>
         <Button type="button" onClick={handleStart} disabled={busy} className={PRIMARY_BTN}>
           <Plus className="size-4" />
           Start new inspection
@@ -132,8 +131,8 @@ export default function DashboardBoard({ inspections: initial, userId }: Props) 
       </header>
 
       {inspections.length === 0 ? (
-        <div className={`rounded-xl border border-dashed border-white/15 p-10 text-center ${GLASS_PANEL}`}>
-          <p className="mb-4 text-blue-100/70">
+        <div className={`rounded-xl border border-dashed p-10 text-center ${GLASS_PANEL}`}>
+          <p className="text-muted-foreground mb-4">
             You have no inspections yet. Start your first one to assess a used car step by step.
           </p>
           <Button type="button" onClick={handleStart} disabled={busy} className={PRIMARY_BTN}>
@@ -166,17 +165,17 @@ export default function DashboardBoard({ inspections: initial, userId }: Props) 
       <Dialog open={showStartup} onOpenChange={setShowStartup}>
         <DialogContent className={DIALOG_PANEL}>
           <DialogHeader>
-            <DialogTitle className="text-white">How to use the Veriffica</DialogTitle>
+            <DialogTitle className="text-foreground">How to use the Veriffica</DialogTitle>
           </DialogHeader>
           <StartupInstructions />
-          <label className="flex items-center gap-2 text-sm text-blue-100/80">
+          <label className="text-muted-foreground flex items-center gap-2 text-sm">
             <input
               type="checkbox"
               checked={dontShowAgain}
               onChange={(e) => {
                 setDontShowAgain(e.target.checked);
               }}
-              className="size-4 rounded border-white/20 bg-white/5"
+              className="border-input bg-background size-4 rounded"
             />
             Don&apos;t show this again
           </label>
@@ -203,8 +202,8 @@ export default function DashboardBoard({ inspections: initial, userId }: Props) 
       <Dialog open={showLimit} onOpenChange={setShowLimit}>
         <DialogContent className={DIALOG_PANEL}>
           <DialogHeader>
-            <DialogTitle className="text-white">Inspection limit reached</DialogTitle>
-            <DialogDescription className="text-blue-100/60">
+            <DialogTitle className="text-foreground">Inspection limit reached</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               You can keep up to {LIMIT} inspections at a time. Delete one to start a new inspection.
             </DialogDescription>
           </DialogHeader>
@@ -231,14 +230,14 @@ export default function DashboardBoard({ inspections: initial, userId }: Props) 
       >
         <AlertDialogContent className={DIALOG_PANEL}>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Delete this inspection?</AlertDialogTitle>
-            <AlertDialogDescription className="text-blue-100/60">
+            <AlertDialogTitle className="text-foreground">Delete this inspection?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
               This permanently deletes “{pendingDelete?.name ?? "this inspection"}”. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className={OUTLINE_BTN}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void confirmDelete()} className="bg-red-600 text-white hover:bg-red-500">
+            <AlertDialogAction variant="destructive" onClick={() => void confirmDelete()}>
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -259,16 +258,16 @@ function InspectionGroup({ title, rows, onResume, onDelete }: GroupProps) {
   if (rows.length === 0) return null;
   return (
     <section>
-      <h2 className="mb-3 text-xs font-medium tracking-wider text-blue-100/40 uppercase">
+      <h2 className="text-muted-foreground mb-3 text-xs font-medium tracking-wider uppercase">
         {title} ({rows.length})
       </h2>
       <div className="grid gap-4 sm:grid-cols-2">
         {rows.map((row) => (
           <Card key={row.id} className={GLASS_PANEL}>
             <CardHeader>
-              <CardTitle className="truncate text-white">{row.name ?? "Untitled inspection"}</CardTitle>
+              <CardTitle className="text-foreground truncate">{row.name ?? "Untitled inspection"}</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-blue-100/60">Started {formatDate(row.createdAt)}</CardContent>
+            <CardContent className="text-muted-foreground text-sm">Started {formatDate(row.createdAt)}</CardContent>
             <CardFooter className="gap-2">
               <Button
                 type="button"
@@ -289,7 +288,7 @@ function InspectionGroup({ title, rows, onResume, onDelete }: GroupProps) {
                 onClick={() => {
                   onDelete(row);
                 }}
-                className="text-red-300 hover:bg-white/10 hover:text-red-200"
+                className="text-destructive hover:bg-accent hover:text-destructive"
               >
                 <Trash2 className="size-4" />
                 Delete

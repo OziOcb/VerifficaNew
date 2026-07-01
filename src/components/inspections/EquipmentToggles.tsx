@@ -24,9 +24,9 @@ export default function EquipmentToggles({ toggles, active, onToggle }: Props) {
   if (toggles.length === 0) return null;
 
   return (
-    <section className="rounded-xl border border-white/10 bg-white/5 p-5 text-white backdrop-blur-xl">
-      <h2 className="text-lg font-semibold text-white">Equipment</h2>
-      <p className="mt-1 mb-4 text-sm text-blue-100/60">
+    <section className="border-border bg-card text-card-foreground rounded-xl border p-5">
+      <h2 className="text-foreground text-lg font-semibold">Equipment</h2>
+      <p className="text-muted-foreground mt-1 mb-4 text-sm">
         Confirm what this car has — relevant questions appear in the parts above.
       </p>
       <ul className="space-y-2">
@@ -41,17 +41,17 @@ export default function EquipmentToggles({ toggles, active, onToggle }: Props) {
                 onClick={() => {
                   onToggle(t.column, !on);
                 }}
-                className="flex w-full items-center justify-between gap-3 rounded-lg border border-white/15 bg-white/10 px-4 py-3 text-left text-sm text-white transition-colors hover:border-white/30 hover:bg-white/15"
+                className="border-border bg-muted text-foreground hover:bg-accent flex w-full items-center justify-between gap-3 rounded-lg border px-4 py-3 text-left text-sm transition-colors"
               >
                 <span>{FLAG_LABELS[t.column]}</span>
                 <span
                   aria-hidden
                   className={`relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors ${
-                    on ? "bg-purple-500" : "bg-white/20"
+                    on ? "bg-primary" : "bg-muted-foreground/30"
                   }`}
                 >
                   <span
-                    className={`absolute top-0.5 size-5 rounded-full bg-white transition-transform ${
+                    className={`bg-background absolute top-0.5 size-5 rounded-full transition-transform ${
                       on ? "translate-x-5" : "translate-x-0.5"
                     }`}
                   />

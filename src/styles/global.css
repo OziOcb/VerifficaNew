@@ -145,14 +145,11 @@
   --tracking-widest: calc(var(--tracking-normal) + 0.1em);
 }
 
-@utility bg-cosmic {
-  background-image: linear-gradient(to bottom, #0a0e1a, #0f1529, #0a0e1a);
-}
-
 /* Inset content by the iOS safe-area insets so headers/buttons clear the notch
    and home-indicator once `viewport-fit=cover` lets the page fill the screen.
-   Apply to a full-bleed bg-cosmic wrapper: the dark gradient still paints edge
-   to edge (background covers the padding box) while content shifts inward. */
+   Apply to a full-bleed `bg-background` wrapper: the themed background still
+   paints edge to edge (background covers the padding box) while content shifts
+   inward. */
 @utility safe-area {
   padding-top: env(safe-area-inset-top);
   padding-right: env(safe-area-inset-right);
