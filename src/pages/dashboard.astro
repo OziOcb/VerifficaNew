@@ -2,7 +2,7 @@
 import camelcaseKeys from "camelcase-keys";
 import Layout from "@/layouts/Layout.astro";
 import DashboardBoard from "@/components/dashboard/DashboardBoard";
-import SignOutButton from "@/components/dashboard/SignOutButton";
+import AccountMenu from "@/components/dashboard/AccountMenu";
 import { createClient } from "@/lib/supabase";
 import type { Inspection } from "@/lib/inspections";
 
@@ -48,9 +48,9 @@ if (supabase) {
       {
         configured ? (
           <div class="mx-auto max-w-3xl">
-            <div class="mb-4 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 backdrop-blur-xl">
-              <span class="text-blue-100/70">{user?.email}</span>
-              <SignOutButton client:only="react" />
+            <div class="mb-4 flex items-center justify-between px-1">
+              <span class="text-lg font-semibold text-white">Veriffica</span>
+              <AccountMenu client:only="react" userEmail={user?.email} />
             </div>
             <DashboardBoard client:load inspections={inspections} userId={user?.id ?? ""} />
           </div>

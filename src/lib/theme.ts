@@ -87,12 +87,20 @@ export function applyFontScale(): void {
   document.documentElement.setAttribute("data-font-scale", getFontScale());
 }
 
+// Guard so repeated `initSystemFollow()` calls (Layout registers it once per page;
+// the settings control re-arms it when System is picked) never stack duplicate
+// listeners. One listener suffices — it re-reads the choice at change time.
+let systemFollowArmed = false;
+
 /**
  * Register a `matchMedia` listener that live-re-applies the theme when the OS
  * scheme changes — but only while the stored choice is `system`. A no-op for
- * explicit light/dark overrides. Safe to call on every page.
+ * explicit light/dark overrides. Idempotent: safe to call on every page and again
+ * from the settings control.
  */
 export function initSystemFollow(): void {
+  if (systemFollowArmed) return;
+  systemFollowArmed = true;
   const mql = window.matchMedia("(prefers-color-scheme: dark)");
   mql.addEventListener("change", () => {
     if (getThemeChoice() === "system") applyTheme();
