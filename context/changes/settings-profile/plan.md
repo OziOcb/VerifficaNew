@@ -354,25 +354,25 @@ No data migration — preferences are cookies/localStorage. Existing users with 
 
 #### Automated
 
-- [x] 3.1 Lint/type check passes: `npm run lint`
-- [x] 3.2 Build succeeds: `npm run build`
-- [x] 3.3 Cosmic-literal grep returns only intentional cases
+- [x] 3.1 Lint/type check passes: `npm run lint` — 3ae4015
+- [x] 3.2 Build succeeds: `npm run build` — 3ae4015
+- [x] 3.3 Cosmic-literal grep returns only intentional cases — 3ae4015
 
 #### Manual
 
-- [x] 3.4 Every screen legible/correct in light mode
-- [x] 3.5 Every screen legible/correct in dark mode
-- [x] 3.6 No cosmic remnants; no white-on-white / black-on-black
-- [x] 3.7 iOS safe-area root background correct per-mode
+- [x] 3.4 Every screen legible/correct in light mode — 3ae4015
+- [x] 3.5 Every screen legible/correct in dark mode — 3ae4015
+- [x] 3.6 No cosmic remnants; no white-on-white / black-on-black — 3ae4015
+- [x] 3.7 iOS safe-area root background correct per-mode — 3ae4015
 
 ### Phase 4: Tests & verification
 
 #### Automated
 
-- [ ] 4.1 Unit tests pass: `npm test`
-- [ ] 4.2 E2e passes: `npm run test:e2e`
-- [ ] 4.3 Full lint + build green: `npm run lint && npm run build`
+- [x] 4.1 Unit tests pass: `npm test`
+- [x] 4.2 E2e passes: `npm run test:e2e`
+- [x] 4.3 Full lint + build green: `npm run lint && npm run build`
 
 #### Manual
 
-- [ ] 4.4 Final walkthrough: switch theme + font from dropdown and settings, reload, navigate — persists and correct in both modes
+- [x] 4.4 Final walkthrough: switch theme + font from dropdown and settings, reload, navigate — persists and correct in both modes
