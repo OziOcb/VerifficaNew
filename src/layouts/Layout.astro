@@ -2,6 +2,7 @@
 import "../styles/global.css";
 import Banner from "@/components/Banner.astro";
 import { missingConfigs } from "@/lib/config-status";
+import { resolveTheme, normalizeFontScale } from "@/lib/theme";
 
 interface Props {
   title?: string;
@@ -9,18 +10,17 @@ interface Props {
 
 const { title = "Veriffica" } = Astro.props;
 
-// Theme resolver — dark-clamped hook for the future S-10 settings-profile slice.
-// Today every value (or no value) resolves to "dark"; S-10 will widen the allowed
-// set to {light, dark, system} and add the toggle that writes the `theme` cookie.
-function resolveTheme(_value: string | undefined): "dark" {
-  return "dark";
-}
-
-const theme = resolveTheme(Astro.cookies.get("theme")?.value);
+// Device-local preferences (S-10 / FR-022). Both are cookies the client writes and
+// the server only reads. `resolveTheme` returns "light"/"dark" for explicit choices
+// and null for `system` (or absent/legacy) — the server can't read the OS scheme, so
+// the inline <head> script below resolves `system` via matchMedia before first paint.
+// The font scale is fully server-resolvable from its cookie.
+const themeClass = resolveTheme(Astro.cookies.get("theme")?.value);
+const fontScale = normalizeFontScale(Astro.cookies.get("fontScale")?.value);
 ---
 
 <!doctype html>
-<html lang="en" class:list={theme}>
+<html lang="en" class:list={themeClass === "dark" ? "dark" : []} data-font-scale={fontScale}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -28,12 +28,28 @@ const theme = resolveTheme(Astro.cookies.get("theme")?.value);
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#0a0e1a" />
     <script is:inline>
-      // Forward-compatible FOUC guard for S-10's client theme toggle. Mirrors the
-      // server-side dark-clamp so server and client never disagree. Must stay a
-      // blocking inline script in <head> (not type="module"/deferred) so it runs
-      // before <body> paints. Today it just re-asserts "dark".
+      // No-flash guard for the device-local theme + font-scale cookies (S-10).
+      // Must stay a blocking inline <head> script (not type="module"/deferred) so it
+      // runs before <body> paints. It resolves `system` (and absent/legacy values)
+      // via matchMedia — the server cannot — and applies both preferences. The
+      // resolution rules here are duplicated verbatim from `@/lib/theme`; keep them
+      // in sync (see the note in that module) or SSR and first paint will disagree.
       (function () {
-        document.documentElement.classList.add("dark");
+        try {
+          var read = function (name) {
+            var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+            return m ? decodeURIComponent(m[1]) : undefined;
+          };
+          var choice = read("theme");
+          var isDark =
+            choice === "dark" || (choice !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.toggle("dark", isDark);
+          var scale = read("fontScale");
+          if (scale !== "sm" && scale !== "lg") scale = "base";
+          document.documentElement.setAttribute("data-font-scale", scale);
+        } catch (e) {
+          /* cookies/matchMedia unavailable — fall back to server-rendered class */
+        }
       })();
     </script>
     <title>{title}</title>
@@ -56,6 +72,14 @@ const theme = resolveTheme(Astro.cookies.get("theme")?.value);
       ))
     }
     <slot />
+    <script>
+      // Live-follow the OS color scheme while the theme choice is `system` (S-10).
+      // initSystemFollow() is a no-op for explicit light/dark overrides, so it is
+      // safe to register on every page. The no-flash inline <head> script already
+      // applied the correct class for first paint; this only handles later changes.
+      import { initSystemFollow } from "@/lib/theme";
+      initSystemFollow();
+    </script>
     <script>
       // Register the @vite-pwa/astro service worker. It is only emitted by the
       // production build, so guard on PROD to avoid a 404 during `astro dev`.

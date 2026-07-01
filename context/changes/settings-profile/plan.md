@@ -321,17 +321,17 @@ No data migration — preferences are cookies/localStorage. Existing users with 
 
 #### Automated
 
-- [ ] 1.1 `npx astro sync` succeeds
-- [ ] 1.2 Type checking passes: `npm run lint`
-- [ ] 1.3 Unit tests pass for resolver + font mapping: `npm test`
-- [ ] 1.4 Production build succeeds: `npm run build`
+- [x] 1.1 `npx astro sync` succeeds
+- [x] 1.2 Type checking passes: `npm run lint`
+- [x] 1.3 Unit tests pass for resolver + font mapping: `npm test`
+- [x] 1.4 Production build succeeds: `npm run build`
 
 #### Manual
 
-- [ ] 1.5 No-cookie load follows OS light/dark with no flash
-- [ ] 1.6 `theme` cookie light/dark renders server-side with no flash
-- [ ] 1.7 System mode live-switches on OS theme change
-- [ ] 1.8 `fontScale` cookie scales text app-wide at sm/base/lg
+- [x] 1.5 No-cookie load follows OS light/dark with no flash
+- [x] 1.6 `theme` cookie light/dark renders server-side with no flash
+- [x] 1.7 System mode live-switches on OS theme change
+- [x] 1.8 `fontScale` cookie scales text app-wide at sm/base/lg
 
 ### Phase 2: Account dropdown + settings page
 
