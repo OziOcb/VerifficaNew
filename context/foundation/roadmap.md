@@ -55,7 +55,7 @@ is the _complete, reliable_ loop, not a partial demo.
 | S-07 | config-change-smart-pruning     | change config and keep valid answers while orphans are pruned (recompute)     | S-04, S-05    | FR-016, US-02                          | proposed    |
 | S-08 | offline-inspection-survival     | lose/regain connectivity mid-inspection with no loss and no logout            | F-02, S-05    | FR-023, US-03                          | proposed    |
 | S-09 | account-recovery-deletion       | reset a forgotten password and permanently delete their account               | F-01          | FR-001, FR-002, FR-003, FR-004, FR-025 | proposed    |
-| S-10 | settings-profile                | view their profile and control font size and theme                            | —             | FR-022                                 | ready       |
+| S-10 | settings-profile                | view their profile and control font size and theme                            | —             | FR-022                                 | in progress |
 
 ## Streams
 
@@ -225,15 +225,16 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 ### S-10: Settings & profile
 
-- **Outcome:** user can view a profile page and control font size and theme (dark/light, following the device system setting by default until overridden).
+- **Outcome:** user can view a profile page and control font size and theme (dark/light, following the device system setting by default until overridden), and re-enable the startup instruction pop-up they previously dismissed via "Don't show again".
 - **Change ID:** settings-profile
-- **PRD refs:** FR-022
+- **PRD refs:** FR-022, FR-009 (re-enable the startup instruction pop-up)
+- **Added scope:** a Settings control to reset the startup-instruction "Don't show again" choice. The preference is a device-local `localStorage` flag (`veriffica:hideStartupInstructions:<userId>`, `hideStartupKey()` in `src/lib/inspections.ts`); re-enabling clears it. Kept device-local to match the existing FR-009 scoping — not promoted to a DB-backed profile setting.
 - **Prerequisites:** —
 - **Parallel with:** F-01, F-02, S-01, S-09
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** No data dependency and off the core loop; ready anytime but deprioritized behind reliability and the north star per the quality goal.
-- **Status:** ready
+- **Status:** in progress (branch `feat/settings-profile`)
 
 ## Backlog Handoff
 
@@ -250,7 +251,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 | S-07       | config-change-smart-pruning     | Smart Pruning on config change                     | no                    | Needs S-04, S-05                                                      |
 | S-08       | offline-inspection-survival     | Offline inspection survival end-to-end             | no                    | Needs F-02, S-05                                                      |
 | S-09       | account-recovery-deletion       | Password reset + account deletion                  | no                    | Needs F-01                                                            |
-| S-10       | settings-profile                | Settings & profile (font size, theme)              | yes                   | Run `/10x-plan settings-profile`                                      |
+| S-10       | settings-profile                | Settings & profile (font size, theme)              | in progress           | Branch `feat/settings-profile`; run `/10x-plan settings-profile`      |
 
 ## Open Roadmap Questions
 
