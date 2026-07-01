@@ -369,10 +369,10 @@ No data migration — preferences are cookies/localStorage. Existing users with 
 
 #### Automated
 
-- [x] 4.1 Unit tests pass: `npm test`
-- [x] 4.2 E2e passes: `npm run test:e2e`
-- [x] 4.3 Full lint + build green: `npm run lint && npm run build`
+- [x] 4.1 Unit tests pass: `npm test` — ebd16f0
+- [x] 4.2 E2e passes: `npm run test:e2e` — ebd16f0
+- [x] 4.3 Full lint + build green: `npm run lint && npm run build` — ebd16f0
 
 #### Manual
 
-- [x] 4.4 Final walkthrough: switch theme + font from dropdown and settings, reload, navigate — persists and correct in both modes
+- [x] 4.4 Final walkthrough: switch theme + font from dropdown and settings, reload, navigate — persists and correct in both modes — ebd16f0
