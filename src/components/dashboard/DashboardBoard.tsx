@@ -32,6 +32,8 @@ import {
   createInspection,
   deleteInspection,
   hideStartupKey,
+  isStartupGuideEnabled,
+  startupFlagFor,
   type Inspection,
   type InspectionStatus,
 } from "@/lib/inspections";
@@ -98,7 +100,7 @@ export default function DashboardBoard({ inspections: initial, userId }: Props) 
       setShowLimit(true);
       return;
     }
-    const hidden = localStorage.getItem(startupKey) === "1";
+    const hidden = !isStartupGuideEnabled(localStorage.getItem(startupKey));
     if (hidden) {
       void create();
     } else {
@@ -108,7 +110,7 @@ export default function DashboardBoard({ inspections: initial, userId }: Props) 
   }
 
   function confirmStartup() {
-    if (dontShowAgain) localStorage.setItem(startupKey, "1");
+    if (dontShowAgain) localStorage.setItem(startupKey, startupFlagFor(false));
     void create();
   }
 
