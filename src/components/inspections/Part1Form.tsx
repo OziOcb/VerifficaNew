@@ -24,12 +24,12 @@ import { validatePart1, normalizeFieldOnBlur, type Part1Field } from "@/lib/part
 import { saveInspection, flushQueue, startAutoSync } from "@/lib/sync";
 import type { FlagColumn, RelevantTogglesByFuel, RuntimeFlag } from "@/lib/questions";
 
-// Cosmic glass palette — matches the dashboard/home shell. The shadcn primitives
-// are light-themed by default; these className overrides recolor them for the dark
-// shell (tailwind-merge lets the later utilities win).
-const PANEL = "border-white/10 bg-white/5 text-white backdrop-blur-xl";
-const FIELD_INPUT = "border-white/20 bg-white/10 text-white placeholder:text-white/40";
-const PRIMARY_BTN = "bg-purple-600 text-white hover:bg-purple-500";
+// Caffeine token palette — matches the dashboard/home shell. tailwind-merge lets
+// these later utilities win over the shadcn primitive defaults; the `.dark` class
+// recolors them per-mode.
+const PANEL = "border bg-card text-card-foreground";
+const FIELD_INPUT = "border-input bg-background text-foreground placeholder:text-muted-foreground";
+const PRIMARY_BTN = "bg-primary text-primary-foreground hover:bg-primary/90";
 
 // Field order drives the first-invalid scroll/focus scan (UX-2/UX-3) and render
 // order. Matches the rules doc §4 table.
@@ -346,19 +346,19 @@ export default function Part1Form({ inspection, relevantTogglesByFuel }: Props) 
       <header>
         <a
           href={`/inspections/${inspection.id}/session`}
-          className="text-sm text-purple-300 transition-colors hover:text-purple-100 hover:underline"
+          className="text-primary hover:text-primary/80 text-sm transition-colors hover:underline"
         >
           &larr; Back to session
         </a>
-        <h1 className="mt-4 text-2xl font-bold text-white">{name ?? "Inspection"}</h1>
-        <p className="mt-1 text-blue-100/60">
+        <h1 className="text-foreground mt-4 text-2xl font-bold">{name ?? "Inspection"}</h1>
+        <p className="text-muted-foreground mt-1">
           Info about the car — fill in the required fields, then save to continue.
         </p>
       </header>
 
       <Card className={PANEL}>
         <CardHeader>
-          <CardTitle className="text-white">Part 1 — Vehicle configuration</CardTitle>
+          <CardTitle className="text-foreground">Part 1 — Vehicle configuration</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-5 sm:grid-cols-2">
@@ -439,7 +439,7 @@ export default function Part1Form({ inspection, relevantTogglesByFuel }: Props) 
             <Button type="button" onClick={() => void handleSave()} disabled={saving} className={PRIMARY_BTN}>
               {saving ? "Saving…" : "Save Part 1"}
             </Button>
-            {justSaved && <span className="text-sm text-emerald-300">Saved.</span>}
+            {justSaved && <span className="text-sm text-emerald-600 dark:text-emerald-400">Saved.</span>}
           </div>
           {saveError && (
             <div className="mt-4">
@@ -477,9 +477,9 @@ function TextFieldRow({
 }: TextRowProps) {
   return (
     <div className={multiline ? "sm:col-span-2" : undefined}>
-      <Label htmlFor={field} className="mb-1 text-blue-100/80">
+      <Label htmlFor={field} className="text-muted-foreground mb-1">
         {LABELS[field]}
-        {required && <span className="text-red-300"> *</span>}
+        {required && <span className="text-destructive"> *</span>}
       </Label>
       {multiline ? (
         <textarea
@@ -494,7 +494,7 @@ function TextFieldRow({
           onBlur={onBlur}
           rows={3}
           aria-invalid={error ? true : undefined}
-          className={`flex w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] focus-visible:ring-purple-400/50 ${FIELD_INPUT}`}
+          className={`focus-visible:ring-ring/50 flex w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] ${FIELD_INPUT}`}
         />
       ) : (
         <Input
@@ -530,9 +530,9 @@ interface EnumRowProps {
 function EnumFieldRow({ field, value, error, required, options, onChange, registerRef }: EnumRowProps) {
   return (
     <div>
-      <Label htmlFor={field} className="mb-1 text-blue-100/80">
+      <Label htmlFor={field} className="text-muted-foreground mb-1">
         {LABELS[field]}
-        {required && <span className="text-red-300"> *</span>}
+        {required && <span className="text-destructive"> *</span>}
       </Label>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger
@@ -560,7 +560,7 @@ function EnumFieldRow({ field, value, error, required, options, onChange, regist
 
 function FieldError({ message }: { message: string }) {
   return (
-    <p className="mt-1 flex items-center gap-1 text-xs text-red-300">
+    <p className="text-destructive mt-1 flex items-center gap-1 text-xs">
       <CircleAlert className="size-3 shrink-0" />
       {message}
     </p>

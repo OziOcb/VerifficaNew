@@ -27,9 +27,9 @@ every observation during the visit. Today the inspection is ad-hoc and
 unstructured, so observations are forgotten, red flags are missed, and the purchase
 decision is made on incomplete information.
 
-The insight: a checklist personalized to *this specific car* (fuel type,
+The insight: a checklist personalized to _this specific car_ (fuel type,
 transmission, drive, body type, plus equipment exceptions) and ordered to match the
-*physical inspection itself* (standstill → starting the engine → test drive →
+_physical inspection itself_ (standstill → starting the engine → test drive →
 documents) turns an expert's mental model into a step-by-step guide a layperson can
 follow — while recording every answer and contextual note so nothing is lost when
 the decision is made. Veriffica is explicitly a helper tool and does not replace a
@@ -40,7 +40,7 @@ professional technical inspection.
 **Primary persona:** an individual used-car buyer — a non-expert evaluating a
 specific car they intend to buy for themselves. They reach for Veriffica the moment
 they arrive to inspect a car and want to be sure they don't miss anything that
-matters for *this* vehicle.
+matters for _this_ vehicle.
 
 ### Secondary persona
 
@@ -51,6 +51,7 @@ difference from the primary persona.
 ## Success Criteria
 
 ### Primary
+
 - **Inspection completion rate ≥ 75%** — at least 75% of started inspections reach
   `Completed` status, manually set by the user after passing through all five parts
   (Info, Standstill, Engine, Drive, Documents).
@@ -58,6 +59,7 @@ difference from the primary persona.
   Change Queue while offline syncs correctly once connectivity is restored.
 
 ### Secondary
+
 - **Part 1 unlock rate** — share of inspections where the user completes Part 1
   correctly and unlocks Parts 2–5.
 - **Summary reach rate** — share of started inspections that reach the Summary page.
@@ -71,6 +73,7 @@ difference from the primary persona.
   usefulness signal.
 
 ### Guardrails
+
 - **No data loss on connectivity change** — losing or regaining network never loses
   local inspection state, answers, or notes, and never logs the user out or
   interrupts an inspection mid-flow.
@@ -89,6 +92,7 @@ difference from the primary persona.
 - **Then** they reach the Summary page showing the `Yes`/`No`/`Don't know` distribution and can manually finalize the inspection to `Completed`
 
 #### Acceptance Criteria
+
 - Parts 2–5 remain locked until the six required Part 1 fields are saved and valid
 - The question set shown matches the car's configuration (fuel / transmission / drive / body + any active equipment flags)
 - Every question must be answered (`Yes`/`No`/`Don't know`) before advancing; back-navigation preserves prior answers
@@ -102,6 +106,7 @@ difference from the primary persona.
 - **Then** the user is warned, still-valid answers are kept, orphaned answers are removed, and progress and Total Score are recomputed immediately
 
 #### Acceptance Criteria
+
 - The warning appears before answers are discarded
 - Answers to questions that remain visible are never lost
 - Progress and Total Score never show stale values after a config change
@@ -113,6 +118,7 @@ difference from the primary persona.
 - **Then** they are never logged out or interrupted, and all offline changes sync automatically from the Change Queue
 
 #### Acceptance Criteria
+
 - The app remains fully usable offline after first load (PWA)
 - No local state, answer, or note is lost on connectivity loss or restore
 - Queued changes reconcile using Last-Write-Wins / Client-Wins on reconnect
@@ -120,15 +126,18 @@ difference from the primary persona.
 ## Functional Requirements
 
 ### Account & Access
+
 - FR-001: User can register with an email address and password. Priority: must-have
 - FR-002: User can verify their email before gaining full access to the app. Priority: must-have
 - FR-003: User can log in and log out. Priority: must-have
 - FR-004: User can permanently and irreversibly delete their profile and all associated data after explicit confirmation. Priority: must-have
 
 ### Public surface
+
 - FR-005: A visitor can view a public home page describing the product (the 5-part inspection) with log in / register actions. Priority: must-have
 
 ### Dashboard & inspection lifecycle
+
 - FR-006: User can view a tiled dashboard of their inspections, grouped by `Draft` vs `Completed`, auto-named from `Make`/`Model` (and optionally `Year of production` / `Registration number`), resume any inspection from its tile, and see an empty state with a CTA when none exist. Priority: must-have
 - FR-007: User is limited to a maximum of 2 inspections per account (any status), and sees a pop-up explaining the limit when it is reached. Priority: must-have
   > Socrates: Counter-argument considered: "a hard 2-inspection cap frustrates power users and the limit-hit metric only fires if people try." Resolution: kept at 2 — the cap is a deliberate demand signal for a future paid tier and bounds v1 storage/scope; the frustration is exactly what `Limit hit frequency` measures.
@@ -136,14 +145,17 @@ difference from the primary persona.
 - FR-009: On starting a new inspection, the user sees a startup instruction pop-up (content from `idea/veriffica-instruction.md`, communicating the helper-tool disclaimer) with a `Don't show again` option. Priority: must-have
 
 ### Session screen
+
 - FR-010: User can open a session screen showing the session name, navigation buttons to Parts 1–5 (free choice of next part), the current Total Score, a completion indicator, and one global editable notes document (10,000-character limit). Priority: must-have
 
 ### Part 1 — car configuration
+
 - FR-011: User can fill the Part 1 configuration form with vehicle data (Price, Make, Model, Year, Registration number, VIN, Mileage, Fuel type, Transmission, Drive, Color, Body type, No. of doors, Address, Notes). Priority: must-have
 - FR-012: System enforces strict field-by-field validation, data normalization, and cross-field blocks (e.g. Electric + Manual) per `idea/veriffica-part-1-validation-rules.md`, with English error messages. Priority: must-have
 - FR-013: `Make`, `Model`, `Fuel type`, `Transmission`, `Drive`, and `Body type` are required, and Parts 2–5 unlock only after they are saved correctly. Priority: must-have
 
 ### Question engine
+
 - FR-014: System generates a personalized question set using an additive visibility model (`Base + fuelType + transmission + drive + bodyType`) plus runtime equipment flags (`chargingPortEquipped`, `evBatteryDocsAvailable`, `turboEquipped`, `mechanicalCompressorEquipped`, `importedFromEU`), driven by stable group/question/explanation identifiers. Runtime flags are a layer separate from Part 1 config — used only where the declared configuration cannot decide group visibility (per `idea/veriffica-questions-list/list-of-questions.md`, "Normalized visibility model"); they are determined at runtime, not as Part 1 fields. Priority: must-have
 - FR-015: User can answer questions in Parts 2–5 as full-screen swipeable cards (one question per screen) with `Yes`/`No`/`Don't know`, cannot advance without answering, can navigate back (gesture or `Back`) without losing answers, sees a per-Part progress indicator (current / total), and sees a transition screen with `OK` after each Part returning to the session screen. Priority: must-have
   > Socrates: Counter-argument considered: "forced answering pushes users to spam `Don't know` or abandon, hurting the ≥75% completion target." Resolution: kept hard gating — `Don't know` is a legitimate answer and the built-in escape valve, so no one is truly stuck; mandatory answers guarantee complete checklist data, which is the point.
@@ -151,10 +163,12 @@ difference from the primary persona.
   > Socrates: Counter-argument considered: "partial-answer reconciliation is subtle, bug-prone logic for a rare edge case; locking config or wiping answers would be simpler." Resolution: kept full Smart Pruning — users do mis-enter config and must be able to correct it without losing all prior work; preserving still-valid answers is core UX.
 
 ### Education & notes
+
 - FR-017: User can open an educational pop-up (via an `i` icon) on questions that have a linked explanation, showing content from the shared `explanations` dictionary. Priority: must-have
 - FR-018: User can add a contextual note (500-character limit) on any question card, which is appended to the global notes document with the question text as a header. Priority: must-have
 
 ### Summary & scoring
+
 - FR-019: User can view a Summary page with a chart per Part and a global chart, each showing only the `Yes`/`No`/`Don't know` answer distribution (equal weighting, no single quality score), plus a Total Score expressed as that distribution across the whole inspection. Priority: must-have
   > Socrates: Counter-argument considered: "a layperson wants a buy/don't-buy verdict; a flat unweighted distribution may feel like data without an answer." Resolution: kept pure distribution — severity weighting and deal-breakers imply false precision and liability the helper-tool framing must avoid; weighted scoring and deal-breakers are explicit non-goals.
 - FR-020: User can edit answers inline on the Summary page (without returning to card view), with charts, progress, and Total Score updating immediately. Priority: must-have
@@ -162,7 +176,8 @@ difference from the primary persona.
   > Socrates: Counter-argument considered: "reopen friction and manual-finalize could depress the ≥75% completion metric and confuse users fixing a typo." Resolution: kept — `Completed` must mean a status the user consciously asserted, and the friction protects a final report from accidental edits.
 
 ### Settings, profile & platform
-- FR-022: User can view a profile page with basic account information, and control font size and theme (dark/light) in settings (theme follows the device system setting by default until manually overridden). Priority: must-have
+
+- FR-022: User can view a profile page with basic account information, and control font size and theme (dark/light) in settings (theme follows the device system setting by default until manually overridden). Settings also lets the user re-enable the FR-009 startup instruction pop-up after having dismissed it via `Don't show again` (device-local, per the FR-009 preference scope). Priority: must-have
 - FR-023: User can use the app offline after it has loaded once (PWA): all domain data (Part 1, answers, contextual notes, global notes document, status, progress, Change Queue) is stored locally on-device, offline changes enter a Change Queue and sync automatically in the background once connectivity returns using a Last-Write-Wins / Client-Wins conflict strategy, and connectivity loss never logs the user out or interrupts the inspection. Priority: must-have
   > Socrates: Counter-argument considered: "this is the single largest engineering item; an online-first 'save locally as you go' model might give 90% of the value at 20% of the cost." Resolution: kept full offline-first — used-car lots often have poor signal and the buyer must trust nothing is lost; this is a core differentiator, and the longer-timeline cost was explicitly accepted.
 - FR-024: The entire interface is presented in English only. Priority: must-have
@@ -194,7 +209,7 @@ compressor). From these it produces a tailored set of questions — drawn from a
 catalogue and arranged in the real-world order of a physical inspection (standstill
 → starting the engine → test drive → documents) — that excludes questions
 irrelevant to this car. The buyer encounters the rule as a checklist that "already
-knows" what to ask about *their* car, and never as a wall of generic questions.
+knows" what to ask about _their_ car, and never as a wall of generic questions.
 
 As the buyer answers, the rule classifies and aggregates: each answer is `Yes`,
 `No`, or `Don't know`, every question counts equally (no severity weighting, no
@@ -205,7 +220,7 @@ are kept, answers to now-irrelevant questions are dropped, and the distribution 
 re-derived (Smart Pruning).
 
 > The deliberate absence of weighting, a single quality score, and deal-breaker
-> logic is what keeps Veriffica an honest *helper tool* rather than an authority
+> logic is what keeps Veriffica an honest _helper tool_ rather than an authority
 > that implies false precision — and it bounds liability. Weighted scoring and
 > deal-breakers are explicit non-goals.
 
@@ -234,6 +249,7 @@ password only.
 ## Non-Goals
 
 **Functional non-goals:**
+
 - No interface languages other than English — a single-language UI keeps copy and the question catalogue tractable.
 - No photo system — no taking, uploading, or galleries of inspection photos.
 - No export or sharing — no PDF generation, no sending reports to others by link.
@@ -248,6 +264,7 @@ password only.
 - No in-app support / help desk — no live chat or ticketing; user help is limited to the static startup instruction and educational pop-ups.
 
 **Non-functional non-goals:**
+
 - No advanced error monitoring in the first MVP phase.
 - No multi-device sync guarantee — offline-first sync covers a single device reconciling with the central copy; a seamless real-time experience across multiple devices is not promised for v1.
 

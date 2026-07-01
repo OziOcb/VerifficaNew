@@ -2,7 +2,7 @@
 import camelcaseKeys from "camelcase-keys";
 import Layout from "@/layouts/Layout.astro";
 import DashboardBoard from "@/components/dashboard/DashboardBoard";
-import SignOutButton from "@/components/dashboard/SignOutButton";
+import AccountMenu from "@/components/dashboard/AccountMenu";
 import { createClient } from "@/lib/supabase";
 import type { Inspection } from "@/lib/inspections";
 
@@ -28,34 +28,20 @@ if (supabase) {
 ---
 
 <Layout title="Dashboard">
-  {/* Cosmic shell — matches the public home page (Home.astro). */}
-  <div class="bg-cosmic safe-area relative min-h-screen w-full overflow-hidden">
-    <div
-      class="pointer-events-none absolute top-1/4 -left-24 h-[350px] w-[350px] rounded-full bg-purple-500/20 blur-[120px]"
-    >
-    </div>
-    <div
-      class="pointer-events-none absolute top-2/3 -right-16 h-[250px] w-[250px] rounded-full bg-blue-500/15 blur-[100px]"
-    >
-    </div>
-    <div
-      class="pointer-events-none absolute inset-0"
-      style="background-image: radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px), radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 200px 200px, 150px 150px; background-position: 0 0, 40px 60px;"
-    >
-    </div>
-
+  {/* Themed shell — matches the public home page (Home.astro). */}
+  <div class="bg-background safe-area relative min-h-screen w-full">
     <div class="relative z-10 p-4 sm:p-8">
       {
         configured ? (
           <div class="mx-auto max-w-3xl">
-            <div class="mb-4 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 backdrop-blur-xl">
-              <span class="text-blue-100/70">{user?.email}</span>
-              <SignOutButton client:only="react" />
+            <div class="mb-4 flex items-center justify-between px-1">
+              <span class="text-foreground text-lg font-semibold">Veriffica</span>
+              <AccountMenu client:only="react" userEmail={user?.email} />
             </div>
             <DashboardBoard client:load inspections={inspections} userId={user?.id ?? ""} />
           </div>
         ) : (
-          <div class="mx-auto max-w-3xl rounded-xl border border-white/10 bg-white/5 p-6 text-center text-blue-100/70 backdrop-blur-xl">
+          <div class="border-border bg-card text-muted-foreground mx-auto max-w-3xl rounded-xl border p-6 text-center">
             Supabase is not configured. Set SUPABASE_URL / SUPABASE_KEY to continue.
           </div>
         )

@@ -29,6 +29,22 @@ export function hideStartupKey(userId: string): string {
   return `veriffica:hideStartupInstructions:${userId}`;
 }
 
+// The startup guide is "hidden" only when the flag is exactly "1" (what
+// DashboardBoard.handleStart() checks). Any other value — absent, "0", legacy —
+// means the guide still shows. The settings toggle is expressed as "guide
+// enabled" (on = shows), so these two helpers translate between that boolean and
+// the stored flag without duplicating the "=== '1'" magic string across callers.
+export function isStartupGuideEnabled(flag: string | null | undefined): boolean {
+  return flag !== "1";
+}
+
+// The localStorage value to persist for a given enabled state. Enabling writes
+// "0" (rather than removing the key) so the choice is an explicit, inspectable
+// device-local record; disabling writes "1" to match the FR-009 dismiss path.
+export function startupFlagFor(enabled: boolean): string {
+  return enabled ? "0" : "1";
+}
+
 // Distinctive, stable message the `enforce_inspection_limit` trigger RAISEs when
 // the 2-per-owner cap is hit. The create endpoint matches on it to map the
 // rejection to 409 (match on message, not SQLSTATE — see the migration). Shared

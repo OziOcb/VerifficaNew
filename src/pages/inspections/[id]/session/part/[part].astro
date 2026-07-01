@@ -91,7 +91,7 @@ const relevantTogglesMap = relevantTogglesByFuel();
 {
   part === "1" ? (
     <Layout title="Part 1 — Vehicle configuration">
-      <div class="bg-cosmic safe-area min-h-screen w-full">
+      <div class="bg-background safe-area min-h-screen w-full">
         <main class="mx-auto max-w-3xl p-4 sm:p-8">
           <Part1Form client:only="react" inspection={inspection} relevantTogglesByFuel={relevantTogglesMap} />
         </main>
@@ -99,18 +99,18 @@ const relevantTogglesMap = relevantTogglesByFuel();
     </Layout>
   ) : (
     <Layout title={`Part ${part} — ${PART_TITLES[part]}`}>
-      <div class="bg-cosmic safe-area min-h-screen w-full">
+      <div class="bg-background safe-area min-h-screen w-full">
         <main class="mx-auto max-w-3xl space-y-8 p-4 sm:p-8">
           <header>
             <a
               href={`/inspections/${id ?? ""}/session`}
-              class="text-sm text-purple-300 transition-colors hover:text-purple-100 hover:underline"
+              class="text-primary hover:text-primary/80 text-sm transition-colors hover:underline"
             >
               &larr; Back to session
             </a>
-            <p class="mt-4 text-xs tracking-wider text-blue-100/40 uppercase">Part {part}</p>
-            <h1 class="mt-1 text-2xl font-bold text-white">{PART_TITLES[part]}</h1>
-            <p class="mt-1 text-blue-100/60">
+            <p class="text-muted-foreground mt-4 text-xs tracking-wider uppercase">Part {part}</p>
+            <h1 class="text-foreground mt-1 text-2xl font-bold">{PART_TITLES[part]}</h1>
+            <p class="text-muted-foreground mt-1">
               {`${visibleCount} ${visibleCount === 1 ? "question" : "questions"} for this car.`}
             </p>
           </header>

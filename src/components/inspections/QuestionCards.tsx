@@ -34,16 +34,26 @@ import { readNoteBlock, upsertNoteBlock, type Answer, type AnswersMap } from "@/
 import { MAX_CONTEXTUAL_NOTE_LENGTH, MAX_GLOBAL_NOTES_LENGTH, M } from "@/lib/part1-config";
 import type { QuestionCard } from "@/lib/questions";
 
-// Cosmic glass palette — matches Part1Form / SessionScreen / the dashboard shell.
-const PANEL = "border-white/10 bg-white/5 text-white backdrop-blur-xl";
-const FIELD_INPUT = "border-white/20 bg-white/10 text-white placeholder:text-white/40";
+// Caffeine token palette — matches Part1Form / SessionScreen / the dashboard shell.
+const PANEL = "border bg-card text-card-foreground";
+const FIELD_INPUT = "border-input bg-background text-foreground placeholder:text-muted-foreground";
 
 // The three legal answers (FR-015), in the order the card presents them. Each carries the
-// accent it lights up in when selected; the value is the opaque catalogue token.
+// accent it lights up in when selected; the value is the opaque catalogue token. The
+// semantic status hues stay (green=present, red=absent, blue=unknown) but are tuned to
+// read in both Caffeine light and dark modes.
 const ANSWER_OPTIONS: { value: Answer; label: string; selected: string }[] = [
-  { value: "yes", label: "Yes", selected: "border-emerald-400 bg-emerald-500/20 text-emerald-100" },
-  { value: "no", label: "No", selected: "border-red-400 bg-red-500/20 text-red-100" },
-  { value: "dont_know", label: "Don't know", selected: "border-blue-300 bg-blue-400/15 text-blue-100" },
+  {
+    value: "yes",
+    label: "Yes",
+    selected: "border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-200",
+  },
+  { value: "no", label: "No", selected: "border-red-500 bg-red-500/15 text-red-700 dark:text-red-200" },
+  {
+    value: "dont_know",
+    label: "Don't know",
+    selected: "border-blue-500 bg-blue-500/15 text-blue-700 dark:text-blue-200",
+  },
 ];
 
 interface Props {
@@ -208,14 +218,14 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
     return (
       <div className={`flex flex-col items-center gap-6 rounded-xl border p-10 text-center ${PANEL}`}>
         <div>
-          <h2 className="text-xl font-semibold text-white">Part complete</h2>
-          <p className="mt-2 text-blue-100/60">
+          <h2 className="text-foreground text-xl font-semibold">Part complete</h2>
+          <p className="text-muted-foreground mt-2">
             {length === 0
               ? "No questions apply to this car for this part."
               : "You've answered every question in this part."}
           </p>
         </div>
-        <Button asChild className="bg-purple-600 text-white hover:bg-purple-500">
+        <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
           <a href={sessionHref}>OK</a>
         </Button>
       </div>
@@ -238,14 +248,14 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
     // (#3). Clip sits on this stable, non-sliding deck root — not the keyed div.
     <div className="space-y-6 overflow-x-hidden">
       {/* Per-Part progress: current card / total (FR-015). */}
-      <div className="flex items-center justify-between text-sm text-blue-100/60">
+      <div className="text-muted-foreground flex items-center justify-between text-sm">
         <span>
           Question {index + 1} of {length}
         </span>
         <button
           type="button"
           onClick={handleBack}
-          className="text-purple-300 transition-colors hover:text-purple-100 hover:underline"
+          className="text-primary hover:text-primary/80 transition-colors hover:underline"
         >
           &larr; Back
         </button>
@@ -263,11 +273,11 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
           <CardContent className="flex items-start justify-between gap-3 p-6">
             <div className="space-y-2">
               {/* Section (bold) above subsection, on separate lines — the inspection hierarchy. */}
-              <p className="text-xs font-bold tracking-wider text-blue-100/60 uppercase">{card.section}</p>
+              <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">{card.section}</p>
               {card.subsection && (
-                <p className="text-xs tracking-wider text-blue-100/40 uppercase">{card.subsection}</p>
+                <p className="text-muted-foreground text-xs tracking-wider uppercase">{card.subsection}</p>
               )}
-              <p className="text-lg font-medium text-white">{card.label}</p>
+              <p className="text-foreground text-lg font-medium">{card.label}</p>
             </div>
 
             {/* FR-017 education popup: shown ONLY when the card carries a resolved explanation
@@ -278,15 +288,15 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
                   <button
                     type="button"
                     aria-label="Why this matters"
-                    className="shrink-0 rounded-full p-1 text-blue-200/70 transition-colors hover:bg-white/10 hover:text-blue-100"
+                    className="text-muted-foreground hover:bg-accent hover:text-foreground shrink-0 rounded-full p-1 transition-colors"
                   >
                     <Info className="size-5" />
                   </button>
                 </DialogTrigger>
                 <DialogContent className={`${PANEL} py-9`}>
                   <DialogHeader>
-                    <DialogTitle className="text-white">{card.label}</DialogTitle>
-                    <DialogDescription className="whitespace-pre-line text-blue-100/70">
+                    <DialogTitle className="text-foreground">{card.label}</DialogTitle>
+                    <DialogDescription className="text-muted-foreground whitespace-pre-line">
                       {card.explanation}
                     </DialogDescription>
                   </DialogHeader>
@@ -308,9 +318,7 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
                 }}
                 aria-pressed={isSelected}
                 className={`rounded-lg border px-4 py-3 text-center font-medium transition-colors ${
-                  isSelected
-                    ? opt.selected
-                    : "border-white/15 bg-white/10 text-white hover:border-white/30 hover:bg-white/15"
+                  isSelected ? opt.selected : "border-border bg-muted text-foreground hover:bg-accent"
                 }`}
               >
                 {opt.label}
@@ -321,7 +329,7 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
       </div>
 
       {saveError && (
-        <p className="flex items-center gap-1 text-sm text-red-300">
+        <p className="text-destructive flex items-center gap-1 text-sm">
           <CircleAlert className="size-4 shrink-0" />
           Could not save on this device. Please try again.
         </p>
@@ -339,8 +347,8 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
           }}
           className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors ${
             hasNote
-              ? "border-purple-400/40 bg-purple-500/15 text-purple-100"
-              : "border-white/15 bg-white/10 text-white hover:border-white/30 hover:bg-white/15"
+              ? "border-primary/40 bg-primary/10 text-primary"
+              : "border-border bg-muted text-foreground hover:bg-accent"
           }`}
         >
           <NotebookPen className="size-4 shrink-0" />
@@ -348,7 +356,7 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
         </button>
 
         {canAdvance(index, orderedIds, answers) && (
-          <Button onClick={handleNext} className="bg-purple-600 text-white hover:bg-purple-500">
+          <Button onClick={handleNext} className="bg-primary text-primary-foreground hover:bg-primary/90">
             Next &rarr;
           </Button>
         )}
@@ -364,8 +372,8 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
       >
         <DialogContent className={PANEL}>
           <DialogHeader>
-            <DialogTitle className="text-white">Note</DialogTitle>
-            <DialogDescription className="text-blue-100/60">{card.header}</DialogDescription>
+            <DialogTitle className="text-foreground">Note</DialogTitle>
+            <DialogDescription className="text-muted-foreground">{card.header}</DialogDescription>
           </DialogHeader>
 
           <textarea
@@ -376,25 +384,25 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
             rows={5}
             maxLength={MAX_CONTEXTUAL_NOTE_LENGTH}
             placeholder="What did you notice about this?"
-            className={`flex w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] focus-visible:ring-purple-400/50 ${FIELD_INPUT}`}
+            className={`focus-visible:ring-ring/50 flex w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] ${FIELD_INPUT}`}
           />
-          <div className="flex items-center justify-between text-xs text-blue-100/40">
+          <div className="text-muted-foreground flex items-center justify-between text-xs">
             {noteDocOverLimit ? (
-              <span className="flex items-center gap-1 text-red-300">
+              <span className="text-destructive flex items-center gap-1">
                 <CircleAlert className="size-3 shrink-0" />
                 {M.globalNotes}
               </span>
             ) : noteSaveError ? (
-              <span className="flex items-center gap-1 text-red-300">
+              <span className="text-destructive flex items-center gap-1">
                 <CircleAlert className="size-3 shrink-0" />
                 Could not save on this device.
               </span>
             ) : atNoteCap ? (
-              <span className="text-amber-300">{M.contextualNote}</span>
+              <span className="text-amber-600 dark:text-amber-400">{M.contextualNote}</span>
             ) : (
               <span />
             )}
-            <span className={atNoteCap ? "text-amber-300" : undefined}>
+            <span className={atNoteCap ? "text-amber-600 dark:text-amber-400" : undefined}>
               {(noteDraft ?? "").length} / {MAX_CONTEXTUAL_NOTE_LENGTH}
             </span>
           </div>
@@ -405,7 +413,7 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
               onClick={() => {
                 setNoteDraft(null);
               }}
-              className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
+              className="hover:bg-accent hover:text-accent-foreground border bg-transparent"
             >
               Cancel
             </Button>
@@ -413,7 +421,7 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
               onClick={() => {
                 saveNote(noteHeader);
               }}
-              className="bg-purple-600 text-white hover:bg-purple-500"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Save note
             </Button>

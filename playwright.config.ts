@@ -61,10 +61,13 @@ export default defineConfig({
         // project deletes that user after the run.
         {
           name: "setup",
-          testMatch: /auth\.setup\.ts/,
+          // Anchor to the path tail so this does NOT also match the smoke variant
+          // `deployed-auth.setup.ts` (unanchored, it would — and that setup throws
+          // on a local Supabase URL, breaking the local run).
+          testMatch: /(?:^|\/)auth\.setup\.ts$/,
           teardown: "teardown",
         },
-        { name: "teardown", testMatch: /auth\.teardown\.ts/ },
+        { name: "teardown", testMatch: /(?:^|\/)auth\.teardown\.ts$/ },
         {
           name: "chromium",
           // The deployed-smoke spec targets the LIVE Worker; never run it against

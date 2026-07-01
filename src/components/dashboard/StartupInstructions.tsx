@@ -5,7 +5,7 @@
 // and apostrophes avoid react/no-unescaped-entities escaping noise.
 export function StartupInstructions() {
   return (
-    <div className="max-h-[55vh] space-y-4 overflow-y-auto pr-1 text-sm text-blue-100/70 [&_strong]:text-white">
+    <div className="text-muted-foreground [&_strong]:text-foreground max-h-[55vh] space-y-4 overflow-y-auto pr-1 text-sm">
       <p>
         Veriffica is a checklist designed to help people without experience in buying a good used car. It lets you check
         all the most important elements of the vehicle before deciding to buy it.
@@ -46,7 +46,7 @@ export function StartupInstructions() {
         </li>
       </ul>
 
-      <p className="rounded-md border border-white/10 bg-white/5 p-3">
+      <p className="border-border bg-muted rounded-md border p-3">
         <strong>Example:</strong> if you notice molding curves and body lines, then in the &ldquo;Body&rdquo; category,
         under &ldquo;Repair / wear traces&rdquo;, in the &ldquo;Molding curves and body lines&rdquo; sub-item, select{" "}
         <strong>Yes</strong>.
