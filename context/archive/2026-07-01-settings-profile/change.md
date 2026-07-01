@@ -1,10 +1,10 @@
 ---
 change_id: settings-profile
 title: Settings & profile — view profile, control font size and theme
-status: implemented
+status: archived
 created: 2026-07-01
 updated: 2026-07-01
-archived_at: null
+archived_at: 2026-07-01T20:11:43Z
 ---
 
 ## Notes

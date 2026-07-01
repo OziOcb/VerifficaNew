@@ -3,7 +3,7 @@ project: Veriffica
 version: 1
 status: draft
 created: 2026-06-09
-updated: 2026-06-30
+updated: 2026-07-01
 prd_version: 1
 main_goal: quality
 top_blocker: skills
@@ -55,7 +55,7 @@ is the _complete, reliable_ loop, not a partial demo.
 | S-07 | config-change-smart-pruning     | change config and keep valid answers while orphans are pruned (recompute)     | S-04, S-05    | FR-016, US-02                          | proposed    |
 | S-08 | offline-inspection-survival     | lose/regain connectivity mid-inspection with no loss and no logout            | F-02, S-05    | FR-023, US-03                          | proposed    |
 | S-09 | account-recovery-deletion       | reset a forgotten password and permanently delete their account               | F-01          | FR-001, FR-002, FR-003, FR-004, FR-025 | proposed    |
-| S-10 | settings-profile                | view their profile and control font size and theme                            | —             | FR-022                                 | in progress |
+| S-10 | settings-profile                | view their profile and control font size and theme                            | —             | FR-022                                 | implemented |
 
 ## Streams
 
@@ -234,7 +234,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** No data dependency and off the core loop; ready anytime but deprioritized behind reliability and the north star per the quality goal.
-- **Status:** in progress (branch `feat/settings-profile`)
+- **Status:** implemented
 
 ## Backlog Handoff
 
@@ -251,7 +251,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 | S-07       | config-change-smart-pruning     | Smart Pruning on config change                     | no                    | Needs S-04, S-05                                                      |
 | S-08       | offline-inspection-survival     | Offline inspection survival end-to-end             | no                    | Needs F-02, S-05                                                      |
 | S-09       | account-recovery-deletion       | Password reset + account deletion                  | no                    | Needs F-01                                                            |
-| S-10       | settings-profile                | Settings & profile (font size, theme)              | in progress           | Branch `feat/settings-profile`; run `/10x-plan settings-profile`      |
+| S-10       | settings-profile                | Settings & profile (font size, theme)              | implemented           | Archived → `context/archive/2026-07-01-settings-profile/`             |
 
 ## Open Roadmap Questions
 
@@ -287,3 +287,4 @@ and lives in S-04, not here.
 - **S-03: fill & validate Part 1 config and unlock Parts 2–5** — Archived 2026-06-15 → `context/archive/2026-06-14-part-1-config-validation/`. Lesson: —.
 - **S-04: open the session screen and see questions personalized to their car** — Archived 2026-06-19 → `context/archive/2026-06-15-personalized-question-engine/`. Lesson: —.
 - **S-05: answer Parts 2–5 as full-screen swipeable cards (Yes/No/Don't know) with mandatory answers, lossless back-navigation, per-Part progress, education pop-ups, and per-question contextual notes.** — Archived 2026-06-30 → `context/archive/2026-06-28-question-card-answering/`. Lesson: —.
+- **S-10: user can view a profile page and control font size and theme (dark/light, following the device system setting by default until overridden), and re-enable the startup instruction pop-up they previously dismissed via "Don't show again".** — Archived 2026-07-01 → `context/archive/2026-07-01-settings-profile/`. Lesson: —.
