@@ -457,31 +457,31 @@ both modes.
 
 #### Automated
 
-- [x] 1.1 `npx astro sync` succeeds
-- [x] 1.2 `npm run lint` passes
-- [x] 1.3 `npm run build` passes
-- [x] 1.4 No `--primary`/`--ring` palette token has chroma `0.000` (grep `global.css`)
+- [x] 1.1 `npx astro sync` succeeds — 6f0d2b2
+- [x] 1.2 `npm run lint` passes — 6f0d2b2
+- [x] 1.3 `npm run build` passes — 6f0d2b2
+- [x] 1.4 No `--primary`/`--ring` palette token has chroma `0.000` (grep `global.css`) — 6f0d2b2
 
 #### Manual
 
-- [x] 1.5 Light and dark show the blue identity on CTAs, links, focus rings
-- [x] 1.6 Text/background and foreground/primary contrast pass AA in both modes
-- [x] 1.7 Shadow ladder reads as increasing depth; `2xl` is strongest
-- [x] 1.8 No screen regressed to an unreadable/clashing color combination
+- [x] 1.5 Light and dark show the blue identity on CTAs, links, focus rings — 6f0d2b2
+- [x] 1.6 Text/background and foreground/primary contrast pass AA in both modes — 6f0d2b2
+- [x] 1.7 Shadow ladder reads as increasing depth; `2xl` is strongest — 6f0d2b2
+- [x] 1.8 No screen regressed to an unreadable/clashing color combination — 6f0d2b2
 
 ### Phase 2: Typography
 
 #### Automated
 
-- [ ] 2.1 `npm run build` emits the font `.woff2` and the precache manifest references it
-- [ ] 2.2 `npm run lint` passes
-- [ ] 2.3 `npx astro sync` succeeds
+- [x] 2.1 `npm run build` emits the font `.woff2` and the precache manifest references it
+- [x] 2.2 `npm run lint` passes
+- [x] 2.3 `npx astro sync` succeeds
 
 #### Manual
 
-- [ ] 2.4 New typeface renders across screens with no layout breakage
-- [ ] 2.5 No jarring FOUT/reflow on first load
-- [ ] 2.6 Font renders offline via `npm run build && npx wrangler dev` with network cut
+- [x] 2.4 New typeface renders across screens with no layout breakage
+- [x] 2.5 No jarring FOUT/reflow on first load
+- [x] 2.6 Font renders offline via `npm run build && npx wrangler dev` with network cut
 
 ### Phase 3: Brand Assets + Shared App Header
 

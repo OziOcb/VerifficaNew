@@ -32,7 +32,8 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         // Only static client assets exist to precache (pages are server-rendered).
-        globPatterns: ["**/*.{js,css,svg,png,ico,webmanifest}"],
+        // `woff2` included so the self-hosted brand font caches for offline use.
+        globPatterns: ["**/*.{js,css,svg,png,ico,webmanifest,woff2}"],
         // SSR has no static app-shell HTML, so the default navigateFallback ("/")
         // points at a non-precached URL and would break the SW at startup. Disable
         // it and serve navigations from a runtime cache instead.

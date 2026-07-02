@@ -1,5 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* Self-hosted brand typeface (offline-safe — no CDN). Normal-weight variable only
+   (200–800, `font-display: swap`); all subsets, no italic. The woff2 files are
+   precached for offline via `woff2` in astro.config.mjs globPatterns. */
+@import "@fontsource-variable/plus-jakarta-sans/wght.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -40,11 +44,14 @@
   --sidebar-border: oklch(0.9401 0.005 251);
   --sidebar-ring: oklch(0.5028 0.1448 251.87);
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji";
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  --tracking-normal: 0em;
+  /* Plus Jakarta Sans reads a touch airy at 0; a slight negative tightens display
+     sizing without hurting body legibility. Derived tracking tokens track this. */
+  --tracking-normal: -0.01em;
   --shadow-2xs: 0 1px 2px 0px hsl(220 45% 15% / 0.04);
   --shadow-xs: 0 1px 3px 0px hsl(220 45% 15% / 0.06), 0 1px 2px -1px hsl(220 45% 15% / 0.06);
   --shadow-sm: 0 2px 4px -1px hsl(220 45% 15% / 0.08), 0 1px 2px -1px hsl(220 45% 15% / 0.06);
