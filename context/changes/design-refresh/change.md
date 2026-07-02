@@ -1,9 +1,9 @@
 ---
 change_id: design-refresh
 title: Improve overall design and visual polish across the app
-status: preparing
+status: plan_reviewed
 created: 2026-07-01
-updated: 2026-07-01
+updated: 2026-07-02
 archived_at: null
 ---
 
