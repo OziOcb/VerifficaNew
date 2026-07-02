@@ -457,17 +457,17 @@ both modes.
 
 #### Automated
 
-- [ ] 1.1 `npx astro sync` succeeds
-- [ ] 1.2 `npm run lint` passes
-- [ ] 1.3 `npm run build` passes
-- [ ] 1.4 No `--primary`/`--ring` palette token has chroma `0.000` (grep `global.css`)
+- [x] 1.1 `npx astro sync` succeeds
+- [x] 1.2 `npm run lint` passes
+- [x] 1.3 `npm run build` passes
+- [x] 1.4 No `--primary`/`--ring` palette token has chroma `0.000` (grep `global.css`)
 
 #### Manual
 
-- [ ] 1.5 Light and dark show the blue identity on CTAs, links, focus rings
-- [ ] 1.6 Text/background and foreground/primary contrast pass AA in both modes
-- [ ] 1.7 Shadow ladder reads as increasing depth; `2xl` is strongest
-- [ ] 1.8 No screen regressed to an unreadable/clashing color combination
+- [x] 1.5 Light and dark show the blue identity on CTAs, links, focus rings
+- [x] 1.6 Text/background and foreground/primary contrast pass AA in both modes
+- [x] 1.7 Shadow ladder reads as increasing depth; `2xl` is strongest
+- [x] 1.8 No screen regressed to an unreadable/clashing color combination
 
 ### Phase 2: Typography
 
