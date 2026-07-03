@@ -511,7 +511,7 @@ both modes.
 
 - [x] 4.4 Action bar is pinned to the bottom on tall and short content — fec8996
 - [x] 4.5 Add note + Next sit above the Yes/No/Don't-know row — fec8996
-- [ ] 4.6 On iOS the bar clears the home indicator and never overlaps content
+- [x] 4.6 On iOS the bar clears the home indicator and never overlaps content — confirmed on device
 - [x] 4.7 Answering auto-advances; Back and the Next gate still behave as before — fec8996
 - [x] 4.8 Note editor and save-error message remain reachable/visible — fec8996
 
