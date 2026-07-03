@@ -23,8 +23,13 @@ export default defineConfig({
         short_name: "Veriffica",
         start_url: "/",
         display: "standalone",
-        background_color: "#ffffff",
-        theme_color: "#ffffff",
+        background_color: "#f8f9fb",
+        theme_color: "#f8f9fb",
+        icons: [
+          { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
+          { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
+          { src: "/maskable-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+        ],
       },
       workbox: {
         // Take control of open clients as soon as the new SW activates, so the

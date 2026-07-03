@@ -1,6 +1,7 @@
 ---
 import camelcaseKeys from "camelcase-keys";
 import Layout from "@/layouts/Layout.astro";
+import AppHeader from "@/components/AppHeader.astro";
 import Part1Form from "@/components/inspections/Part1Form";
 import QuestionCards from "@/components/inspections/QuestionCards";
 import { createClient } from "@/lib/supabase";
@@ -93,6 +94,7 @@ const relevantTogglesMap = relevantTogglesByFuel();
     <Layout title="Part 1 — Vehicle configuration">
       <div class="bg-background safe-area min-h-screen w-full">
         <main class="mx-auto max-w-3xl p-4 sm:p-8">
+          <AppHeader userEmail={Astro.locals.user?.email} />
           <Part1Form client:only="react" inspection={inspection} relevantTogglesByFuel={relevantTogglesMap} />
         </main>
       </div>
@@ -101,6 +103,7 @@ const relevantTogglesMap = relevantTogglesByFuel();
     <Layout title={`Part ${part} — ${PART_TITLES[part]}`}>
       <div class="bg-background safe-area min-h-screen w-full">
         <main class="mx-auto max-w-3xl space-y-8 p-4 sm:p-8">
+          <AppHeader userEmail={Astro.locals.user?.email} />
           <header>
             <a
               href={`/inspections/${id ?? ""}/session`}

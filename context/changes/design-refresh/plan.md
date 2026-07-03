@@ -473,31 +473,31 @@ both modes.
 
 #### Automated
 
-- [x] 2.1 `npm run build` emits the font `.woff2` and the precache manifest references it
-- [x] 2.2 `npm run lint` passes
-- [x] 2.3 `npx astro sync` succeeds
+- [x] 2.1 `npm run build` emits the font `.woff2` and the precache manifest references it — 15a0827
+- [x] 2.2 `npm run lint` passes — 15a0827
+- [x] 2.3 `npx astro sync` succeeds — 15a0827
 
 #### Manual
 
-- [x] 2.4 New typeface renders across screens with no layout breakage
-- [x] 2.5 No jarring FOUT/reflow on first load
-- [x] 2.6 Font renders offline via `npm run build && npx wrangler dev` with network cut
+- [x] 2.4 New typeface renders across screens with no layout breakage — 15a0827
+- [x] 2.5 No jarring FOUT/reflow on first load — 15a0827
+- [x] 2.6 Font renders offline via `npm run build && npx wrangler dev` with network cut — 15a0827
 
 ### Phase 3: Brand Assets + Shared App Header
 
 #### Automated
 
-- [ ] 3.1 `npm run build` passes and favicon/icon files exist in the build output
-- [ ] 3.2 `npm run lint` passes
-- [ ] 3.3 Each authenticated page renders `AppHeader` (grep); homepage/auth pages do not
+- [x] 3.1 `npm run build` passes and favicon/icon files exist in the build output
+- [x] 3.2 `npm run lint` passes
+- [x] 3.3 Each authenticated page renders `AppHeader` (grep); homepage/auth pages do not
 
 #### Manual
 
-- [ ] 3.4 Shared header shows on dashboard, settings, all inspection screens; not homepage/auth
-- [ ] 3.5 Clicking the logo navigates to the homepage from every page
-- [ ] 3.6 Account dropdown (Settings / theme toggle / Sign out) works from the shared header
-- [ ] 3.7 Veriffica favicon shows in the tab; logo legible in light and dark
-- [ ] 3.8 Mobile theme-color matches the app background in both modes
+- [x] 3.4 Shared header shows on dashboard, settings, all inspection screens; not homepage/auth
+- [x] 3.5 Clicking the logo navigates to the homepage from every page
+- [x] 3.6 Account dropdown (Settings / theme toggle / Sign out) works from the shared header
+- [x] 3.7 Veriffica favicon shows in the tab; logo legible in light and dark
+- [x] 3.8 Mobile theme-color matches the app background in both modes
 
 ### Phase 4: QuestionCards Fixed Bottom Action Bar
 

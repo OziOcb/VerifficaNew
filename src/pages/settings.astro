@@ -1,5 +1,6 @@
 ---
 import Layout from "@/layouts/Layout.astro";
+import AppHeader from "@/components/AppHeader.astro";
 import SettingsControls from "@/components/settings/SettingsControls";
 
 // Protected surface (see PROTECTED_ROUTES in middleware.ts): the middleware
@@ -35,6 +36,7 @@ function memberSince(iso: string | undefined): string {
 <Layout title="Settings">
   <div class="bg-background text-foreground min-h-screen w-full">
     <div class="mx-auto max-w-2xl p-4 sm:p-8">
+      <AppHeader userEmail={user?.email} />
       <a
         href="/dashboard"
         class="text-muted-foreground hover:text-foreground mb-6 inline-flex items-center gap-2 text-sm"

@@ -2,7 +2,7 @@
 import camelcaseKeys from "camelcase-keys";
 import Layout from "@/layouts/Layout.astro";
 import DashboardBoard from "@/components/dashboard/DashboardBoard";
-import AccountMenu from "@/components/dashboard/AccountMenu";
+import AppHeader from "@/components/AppHeader.astro";
 import { createClient } from "@/lib/supabase";
 import type { Inspection } from "@/lib/inspections";
 
@@ -34,10 +34,7 @@ if (supabase) {
       {
         configured ? (
           <div class="mx-auto max-w-3xl">
-            <div class="mb-4 flex items-center justify-between px-1">
-              <span class="text-foreground text-lg font-semibold">Veriffica</span>
-              <AccountMenu client:only="react" userEmail={user?.email} />
-            </div>
+            <AppHeader userEmail={user?.email} />
             <DashboardBoard client:load inspections={inspections} userId={user?.id ?? ""} />
           </div>
         ) : (
