@@ -22,7 +22,7 @@ interface Props {
 const { userEmail } = Astro.props;
 ---
 
-<header class="mb-4 flex items-center justify-between px-1">
+<header class="border-border bg-card mb-4 flex items-center justify-between rounded-xl border px-4 py-2">
   <a
     href="/"
     aria-label="Veriffica — home"
@@ -41,5 +41,13 @@ const { userEmail } = Astro.props;
       <MarkWhite class="hidden h-7 w-auto dark:block" aria-hidden="true" />
     </span>
   </a>
-  <AccountMenu client:only="react" userEmail={userEmail} />
+  {
+    /* Reserve the icon's box server-side. AccountMenu is `client:only` (Dexie has no
+      SSR global), so it renders nothing until hydration — without this fixed-size
+      wrapper the header would paint short, then grow when the icon appears, flickering
+      the layout on load. The wrapper is SSR'd at its final size so the height is stable. */
+  }
+  <div class="flex size-10 shrink-0 items-center justify-center">
+    <AccountMenu client:only="react" userEmail={userEmail} />
+  </div>
 </header>

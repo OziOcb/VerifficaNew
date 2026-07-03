@@ -1,15 +1,20 @@
 ---
 import Topbar from "@/components/Topbar.astro";
+import WordmarkBrand from "@/assets/brand/veriffica-wordmark--brand.svg";
+import WordmarkWhite from "@/assets/brand/veriffica-wordmark--white.svg";
 
 const { user } = Astro.locals;
 ---
 
-<div class="bg-background safe-area relative min-h-screen w-full overflow-hidden">
+<div class="app-gradient safe-area relative min-h-screen w-full overflow-hidden">
   <div class="relative z-10 p-4 sm:p-8">
     <Topbar />
 
     <!-- Hero section -->
     <div class="mx-auto flex max-w-4xl flex-col items-center justify-center px-4 py-24 text-center sm:py-32 lg:py-40">
+      {/* Brand logotype — single-fill SVGs, swapped by color scheme (brand-blue on light, white on dark). */}
+      <WordmarkBrand class="mb-8 h-10 w-auto sm:h-12 dark:hidden" aria-label="Veriffica" />
+      <WordmarkWhite class="mb-8 hidden h-10 w-auto sm:h-12 dark:block" aria-label="Veriffica" />
       <span
         class="border-border bg-card text-muted-foreground mb-6 inline-flex items-center rounded-full border px-4 py-1.5 text-sm"
       >

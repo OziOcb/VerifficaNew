@@ -126,9 +126,15 @@ export default function DashboardBoard({ inspections: initial, userId }: Props) 
     <div className="mx-auto max-w-3xl">
       <header className="mb-6 flex items-center justify-between gap-4">
         <h1 className="text-foreground text-2xl font-bold">Your inspections</h1>
-        <Button type="button" onClick={handleStart} disabled={busy} className={PRIMARY_BTN}>
+        <Button
+          type="button"
+          onClick={handleStart}
+          disabled={busy}
+          aria-label="Start new inspection"
+          className={PRIMARY_BTN}
+        >
           <Plus className="size-4" />
-          Start new inspection
+          <span className="hidden sm:inline">Start new inspection</span>
         </Button>
       </header>
 

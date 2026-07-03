@@ -249,18 +249,10 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
     // pb-40 reserves space for the fixed bottom action bar (Phase 4) so the last
     // content and the save-error message are never hidden behind it.
     <div className="space-y-6 overflow-x-hidden pb-40">
-      {/* Per-Part progress: current card / total (FR-015). */}
-      <div className="text-muted-foreground flex items-center justify-between text-sm">
-        <span>
-          Question {index + 1} of {length}
-        </span>
-        <button
-          type="button"
-          onClick={handleBack}
-          className="text-primary hover:text-primary/80 transition-colors hover:underline"
-        >
-          &larr; Back
-        </button>
+      {/* Per-Part progress: current card / total (FR-015). Back moved into the fixed
+          action bar below (row order: Back · Add note · Next). */}
+      <div className="text-muted-foreground text-sm">
+        Question {index + 1} of {length}
       </div>
 
       {/* Keyed on `index` so each card change replays the enter animation — a slide from the
@@ -335,13 +327,26 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
           // page's `safe-area` wrapper can't reach a viewport-fixed element).
           style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
         >
-          <div className="flex items-center justify-between">
+          {/* Three equal columns so Add note stays dead-center whether or not Next is
+              rendered (Next is gated out on an unanswered card). Back pins left, Next
+              pins right; a flex/justify-between row would let Add note drift when Next
+              is absent. Row order left→right: Back · Add note · Next. */}
+          <div className="grid grid-cols-3 items-center gap-2">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="border-border bg-muted text-foreground hover:bg-accent focus-visible:ring-ring/50 flex items-center gap-1.5 justify-self-start rounded-lg border px-3 py-2 text-sm shadow-xs transition-all outline-none focus-visible:ring-[3px]"
+            >
+              <span aria-hidden="true">&larr;</span>
+              Back
+            </button>
+
             <button
               type="button"
               onClick={() => {
                 openNote(noteHeader);
               }}
-              className={`focus-visible:ring-ring/50 flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm shadow-xs transition-all outline-none focus-visible:ring-[3px] ${
+              className={`focus-visible:ring-ring/50 flex items-center gap-1.5 justify-self-center rounded-lg border px-3 py-2 text-sm shadow-xs transition-all outline-none focus-visible:ring-[3px] ${
                 hasNote
                   ? "border-primary/40 bg-primary/10 text-primary"
                   : "border-border bg-muted text-foreground hover:bg-accent"
@@ -351,11 +356,13 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
               {hasNote ? "Edit note" : "Add note"}
             </button>
 
-            {canAdvance(index, orderedIds, answers) && (
-              <Button onClick={handleNext} className="bg-primary text-primary-foreground hover:bg-primary/90">
-                Next &rarr;
-              </Button>
-            )}
+            <div className="justify-self-end">
+              {canAdvance(index, orderedIds, answers) && (
+                <Button onClick={handleNext} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  Next &rarr;
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
