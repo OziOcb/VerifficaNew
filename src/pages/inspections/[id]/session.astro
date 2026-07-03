@@ -1,6 +1,7 @@
 ---
 import camelcaseKeys from "camelcase-keys";
 import Layout from "@/layouts/Layout.astro";
+import AppHeader from "@/components/AppHeader.astro";
 import SessionScreen from "@/components/inspections/SessionScreen";
 import { createClient } from "@/lib/supabase";
 import { isConfigUnlocked, rowToInput } from "@/lib/part1-config";
@@ -62,8 +63,9 @@ const initialAnswers = (row.answers ?? {}) as AnswersMap;
 ---
 
 <Layout title="Inspection session">
-  <div class="bg-background safe-area min-h-screen w-full">
+  <div class="app-gradient safe-area min-h-screen w-full">
     <main class="mx-auto max-w-3xl p-4 sm:p-8">
+      <AppHeader userEmail={Astro.locals.user?.email} />
       <SessionScreen
         client:only="react"
         inspection={{

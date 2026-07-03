@@ -41,17 +41,17 @@ export default function EquipmentToggles({ toggles, active, onToggle }: Props) {
                 onClick={() => {
                   onToggle(t.column, !on);
                 }}
-                className="border-border bg-muted text-foreground hover:bg-accent flex w-full items-center justify-between gap-3 rounded-lg border px-4 py-3 text-left text-sm transition-colors"
+                className="border-border bg-muted text-foreground hover:bg-accent focus-visible:ring-ring/50 flex w-full items-center justify-between gap-3 rounded-lg border px-4 py-3 text-left text-sm shadow-xs transition-all outline-none focus-visible:ring-[3px]"
               >
                 <span>{FLAG_LABELS[t.column]}</span>
                 <span
                   aria-hidden
-                  className={`relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors ${
-                    on ? "bg-primary" : "bg-muted-foreground/30"
+                  className={`relative inline-flex h-6 w-11 shrink-0 rounded-full shadow-xs transition-colors ${
+                    on ? "bg-primary" : "bg-input"
                   }`}
                 >
                   <span
-                    className={`bg-background absolute top-0.5 size-5 rounded-full transition-transform ${
+                    className={`bg-background absolute top-0.5 size-5 rounded-full shadow-sm transition-transform ${
                       on ? "translate-x-5" : "translate-x-0.5"
                     }`}
                   />

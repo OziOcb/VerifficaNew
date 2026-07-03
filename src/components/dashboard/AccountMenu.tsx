@@ -56,7 +56,7 @@ export default function AccountMenu({ userEmail }: Props) {
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label="Account menu"
-          className="text-foreground hover:bg-accent focus-visible:ring-ring inline-flex size-9 items-center justify-center rounded-md outline-none focus-visible:ring-2"
+          className="text-foreground hover:bg-accent focus-visible:ring-ring inline-flex size-10 items-center justify-center rounded-md outline-none focus-visible:ring-2"
         >
           <CircleUser className="size-6" />
         </DropdownMenuTrigger>

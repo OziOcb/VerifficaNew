@@ -6,9 +6,13 @@ import { resolveTheme, normalizeFontScale } from "@/lib/theme";
 
 interface Props {
   title?: string;
+  // Fixed status-bar color for pages whose top edge isn't the page background — e.g.
+  // the homepage, whose always-dark hero reaches under the iOS status bar. When set,
+  // it replaces the per-scheme theme-color metas below with a single value.
+  themeColor?: string;
 }
 
-const { title = "Veriffica" } = Astro.props;
+const { title = "Veriffica", themeColor } = Astro.props;
 
 // Device-local preferences (S-10 / FR-022). Both are cookies the client writes and
 // the server only reads. `resolveTheme` returns "light"/"dark" for explicit choices
@@ -24,11 +28,25 @@ const fontScale = normalizeFontScale(Astro.cookies.get("fontScale")?.value);
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    {/* Per-scheme theme-color matching the Caffeine light/dark backgrounds (S-10). */}
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f7f7" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#111111" />
+    {
+      /* Per-scheme theme-color matching the retuned brand `--background` (design-refresh
+        Phase 1); recompute if that token changes. A page may pin a fixed color instead
+        (see `themeColor` prop) when its top edge isn't the page background. */
+    }
+    {
+      themeColor ? (
+        <meta name="theme-color" content={themeColor} />
+      ) : (
+        <>
+          <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8f9fb" />
+          <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1115" />
+        </>
+      )
+    }
     <script is:inline>
       // No-flash guard for the device-local theme + font-scale cookies (S-10).
       // Must stay a blocking inline <head> script (not type="module"/deferred) so it

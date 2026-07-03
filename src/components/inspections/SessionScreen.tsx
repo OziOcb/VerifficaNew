@@ -164,7 +164,10 @@ export default function SessionScreen({
   return (
     <div className="space-y-8">
       <header>
-        <a href="/dashboard" className="text-primary hover:text-primary/80 text-sm transition-colors hover:underline">
+        <a
+          href="/dashboard"
+          className="text-primary hover:text-primary/80 -ml-2 inline-flex items-center rounded-md px-2 py-1.5 text-sm transition-colors hover:underline"
+        >
           &larr; Back to dashboard
         </a>
         <h1 className="text-foreground mt-4 text-2xl font-bold">{inspection.name ?? "Inspection"}</h1>

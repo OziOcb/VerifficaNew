@@ -1,93 +1,108 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* Self-hosted brand typeface (offline-safe — no CDN). Normal-weight variable only
+   (200–800, `font-display: swap`); all subsets, no italic. The woff2 files are
+   precached for offline via `woff2` in astro.config.mjs globPatterns. */
+@import "@fontsource-variable/plus-jakarta-sans/wght.css";
 
 @custom-variant dark (&:is(.dark *));
 
 /* Caffeine theme (tweakcn) — warm-neutral light + warm dark palette. Flipping the
    `.dark` class on <html> recolors the whole app. See settings-profile / S-10. */
 :root {
-  --radius: 0.5rem;
-  --background: oklch(0.9821 0 0);
-  --foreground: oklch(0.2435 0 0);
-  --card: oklch(0.9911 0 0);
-  --card-foreground: oklch(0.2435 0 0);
-  --popover: oklch(0.9911 0 0);
-  --popover-foreground: oklch(0.2435 0 0);
-  --primary: oklch(0.4341 0.0392 41.9938);
+  --radius: 0.625rem;
+  --background: oklch(0.9821 0.003 251);
+  --foreground: oklch(0.2435 0.01 251);
+  --card: oklch(0.995 0.002 251);
+  --card-foreground: oklch(0.2435 0.01 251);
+  --popover: oklch(0.995 0.002 251);
+  --popover-foreground: oklch(0.2435 0.01 251);
+  --primary: oklch(0.5028 0.1448 251.87);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.92 0.0651 74.3695);
-  --secondary-foreground: oklch(0.3499 0.0685 40.8288);
-  --muted: oklch(0.9521 0 0);
-  --muted-foreground: oklch(0.5032 0 0);
-  --accent: oklch(0.931 0 0);
-  --accent-foreground: oklch(0.2435 0 0);
+  --secondary: oklch(0.94 0.02 251);
+  --secondary-foreground: oklch(0.35 0.08 251);
+  --muted: oklch(0.96 0.004 251);
+  --muted-foreground: oklch(0.5032 0.01 251);
+  --accent: oklch(0.93 0.03 251);
+  --accent-foreground: oklch(0.3 0.08 251);
   --destructive: oklch(0.6271 0.1936 33.339);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.8822 0 0);
-  --input: oklch(0.8822 0 0);
-  --ring: oklch(0.4341 0.0392 41.9938);
-  --chart-1: oklch(0.4341 0.0392 41.9938);
-  --chart-2: oklch(0.92 0.0651 74.3695);
-  --chart-3: oklch(0.931 0 0);
-  --chart-4: oklch(0.9367 0.0523 75.5009);
-  --chart-5: oklch(0.4338 0.0437 41.6746);
-  --sidebar: oklch(0.9881 0 0);
-  --sidebar-foreground: oklch(0.2645 0 0);
-  --sidebar-primary: oklch(0.325 0 0);
-  --sidebar-primary-foreground: oklch(0.9881 0 0);
-  --sidebar-accent: oklch(0.9761 0 0);
-  --sidebar-accent-foreground: oklch(0.325 0 0);
-  --sidebar-border: oklch(0.9401 0 0);
-  --sidebar-ring: oklch(0.7731 0 0);
+  --border: oklch(0.8822 0.006 251);
+  --input: oklch(0.8822 0.006 251);
+  --ring: oklch(0.5028 0.1448 251.87);
+  --chart-1: oklch(0.5028 0.1448 251.87);
+  --chart-2: oklch(0.62 0.12 240);
+  --chart-3: oklch(0.72 0.1 230);
+  --chart-4: oklch(0.55 0.13 265);
+  --chart-5: oklch(0.42 0.13 255);
+  --sidebar: oklch(0.9881 0.003 251);
+  --sidebar-foreground: oklch(0.2645 0.01 251);
+  --sidebar-primary: oklch(0.5028 0.1448 251.87);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.93 0.03 251);
+  --sidebar-accent-foreground: oklch(0.3 0.08 251);
+  --sidebar-border: oklch(0.9401 0.005 251);
+  --sidebar-ring: oklch(0.5028 0.1448 251.87);
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji";
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  --tracking-normal: 0em;
-  --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-  --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-  --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-  --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-  --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
-  --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-  --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
-  --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+  /* Plus Jakarta Sans reads a touch airy at 0; a slight negative tightens display
+     sizing without hurting body legibility. Derived tracking tokens track this. */
+  --tracking-normal: -0.01em;
+  --shadow-2xs: 0 1px 2px 0px hsl(220 45% 15% / 0.04);
+  --shadow-xs: 0 1px 3px 0px hsl(220 45% 15% / 0.06), 0 1px 2px -1px hsl(220 45% 15% / 0.06);
+  --shadow-sm: 0 2px 4px -1px hsl(220 45% 15% / 0.08), 0 1px 2px -1px hsl(220 45% 15% / 0.06);
+  --shadow: 0 4px 6px -1px hsl(220 45% 15% / 0.09), 0 2px 4px -2px hsl(220 45% 15% / 0.08);
+  --shadow-md: 0 6px 10px -2px hsl(220 45% 15% / 0.1), 0 3px 6px -3px hsl(220 45% 15% / 0.09);
+  --shadow-lg: 0 12px 18px -4px hsl(220 45% 15% / 0.12), 0 4px 8px -4px hsl(220 45% 15% / 0.1);
+  --shadow-xl: 0 20px 28px -6px hsl(220 45% 15% / 0.14), 0 8px 12px -6px hsl(220 45% 15% / 0.11);
+  --shadow-2xl: 0 28px 44px -8px hsl(220 45% 15% / 0.2);
 }
 
 .dark {
-  --background: oklch(0.1776 0 0);
-  --foreground: oklch(0.9491 0 0);
-  --card: oklch(0.2134 0 0);
-  --card-foreground: oklch(0.9491 0 0);
-  --popover: oklch(0.2134 0 0);
-  --popover-foreground: oklch(0.9491 0 0);
-  --primary: oklch(0.9247 0.0524 66.1732);
-  --primary-foreground: oklch(0.2029 0.024 200.1962);
-  --secondary: oklch(0.3163 0.019 63.6992);
-  --secondary-foreground: oklch(0.9247 0.0524 66.1732);
-  --muted: oklch(0.252 0 0);
-  --muted-foreground: oklch(0.7699 0 0);
-  --accent: oklch(0.285 0 0);
-  --accent-foreground: oklch(0.9491 0 0);
+  --background: oklch(0.1776 0.008 255);
+  --foreground: oklch(0.9491 0.004 255);
+  --card: oklch(0.2134 0.008 255);
+  --card-foreground: oklch(0.9491 0.004 255);
+  --popover: oklch(0.2134 0.008 255);
+  --popover-foreground: oklch(0.9491 0.004 255);
+  --primary: oklch(0.54 0.15 251);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.3 0.03 255);
+  --secondary-foreground: oklch(0.9 0.03 255);
+  --muted: oklch(0.252 0.006 255);
+  --muted-foreground: oklch(0.7699 0.006 255);
+  --accent: oklch(0.32 0.04 255);
+  --accent-foreground: oklch(0.95 0.01 255);
   --destructive: oklch(0.6271 0.1936 33.339);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.2351 0.0115 91.7467);
-  --input: oklch(0.4017 0 0);
-  --ring: oklch(0.9247 0.0524 66.1732);
-  --chart-1: oklch(0.9247 0.0524 66.1732);
-  --chart-2: oklch(0.3163 0.019 63.6992);
-  --chart-3: oklch(0.285 0 0);
-  --chart-4: oklch(0.3481 0.0219 67.0001);
-  --chart-5: oklch(0.9245 0.0533 67.0855);
-  --sidebar: oklch(0.2103 0.0059 285.8852);
-  --sidebar-foreground: oklch(0.9674 0.0013 286.3752);
-  --sidebar-primary: oklch(0.4882 0.2172 264.3763);
+  --border: oklch(0.28 0.01 255);
+  --input: oklch(0.4017 0.01 255);
+  --ring: oklch(0.66 0.14 251);
+  --chart-1: oklch(0.62 0.15 251);
+  --chart-2: oklch(0.7 0.12 235);
+  --chart-3: oklch(0.78 0.1 225);
+  --chart-4: oklch(0.6 0.14 265);
+  --chart-5: oklch(0.52 0.14 255);
+  --sidebar: oklch(0.2103 0.008 255);
+  --sidebar-foreground: oklch(0.9674 0.004 255);
+  --sidebar-primary: oklch(0.54 0.15 251);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.2739 0.0055 286.0326);
-  --sidebar-accent-foreground: oklch(0.9674 0.0013 286.3752);
-  --sidebar-border: oklch(0.2739 0.0055 286.0326);
-  --sidebar-ring: oklch(0.8711 0.0055 286.286);
+  --sidebar-accent: oklch(0.2739 0.01 255);
+  --sidebar-accent-foreground: oklch(0.9674 0.004 255);
+  --sidebar-border: oklch(0.2739 0.01 255);
+  --sidebar-ring: oklch(0.66 0.14 251);
+  --shadow-2xs: 0 1px 2px 0px hsl(220 60% 2% / 0.3);
+  --shadow-xs: 0 1px 3px 0px hsl(220 60% 2% / 0.35), 0 1px 2px -1px hsl(220 60% 2% / 0.35);
+  --shadow-sm: 0 2px 4px -1px hsl(220 60% 2% / 0.4), 0 1px 2px -1px hsl(220 60% 2% / 0.36);
+  --shadow: 0 4px 6px -1px hsl(220 60% 2% / 0.45), 0 2px 4px -2px hsl(220 60% 2% / 0.4);
+  --shadow-md: 0 6px 10px -2px hsl(220 60% 2% / 0.5), 0 3px 6px -3px hsl(220 60% 2% / 0.45);
+  --shadow-lg: 0 12px 18px -4px hsl(220 60% 2% / 0.55), 0 4px 8px -4px hsl(220 60% 2% / 0.5);
+  --shadow-xl: 0 20px 28px -6px hsl(220 60% 2% / 0.6), 0 8px 12px -6px hsl(220 60% 2% / 0.55);
+  --shadow-2xl: 0 28px 44px -8px hsl(220 60% 2% / 0.7);
 }
 
 @theme inline {
@@ -155,6 +170,221 @@
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
+}
+
+/* Brand mesh page background. Three soft, overlapping color blobs anchored near the
+   top — brand blue (left), violet (right), cyan (center) — from the chart tokens, so
+   the wash tunes itself per mode. Each blob is the token color at an alpha (mixed with
+   `transparent`, NOT toward `--background`) layered over the flat `--background`, which
+   is what makes it read as a real glow in BOTH light and dark (mixing toward the dark
+   bg just muddies to grey). Swap `bg-background` on a page's root wrapper for this to
+   give every screen the same identity. */
+@utility app-gradient {
+  background:
+    radial-gradient(900px 620px at 8% -8%, color-mix(in oklch, var(--chart-1) 34%, transparent), transparent 62%),
+    radial-gradient(820px 580px at 96% -2%, color-mix(in oklch, var(--chart-4) 30%, transparent), transparent 60%),
+    radial-gradient(760px 520px at 60% 240px, color-mix(in oklch, var(--chart-3) 20%, transparent), transparent 66%),
+    var(--background);
+}
+
+/* Animated brand bokeh for the homepage hero (Home.astro). Four layers of soft,
+   blurred brand-colored dots (blue/indigo/cyan/violet) drift and rotate over a deep
+   navy backdrop; `mix-blend-mode: screen` makes overlapping dots glow additively —
+   which is why the hero backdrop stays dark in BOTH site themes (screen over a light
+   bg would render the dots invisible). `isolation: isolate` keeps the blending inside
+   this layer. The dot fields are precomputed static `text-shadow` lists — the source
+   effect used SCSS `random()`, and this stack has no Sass compiler. */
+.hero-bokeh {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  isolation: isolate;
+  background: radial-gradient(120% 120% at 50% 0%, #10305a 0%, #081a34 55%, #050e1c 100%);
+}
+.hero-bokeh span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3em;
+  height: 3em;
+  font-size: 52px;
+}
+.hero-bokeh span::before {
+  content: ".";
+  display: block;
+  color: transparent;
+  mix-blend-mode: screen;
+  animation: hero-bokeh-move 44s infinite ease-in-out alternate;
+}
+.hero-bokeh span:nth-child(1)::before {
+  animation-duration: 44s;
+  animation-delay: -27s;
+  text-shadow:
+    1.63em 2.42em 7px hsla(218, 94%, 61%, 0.81),
+    2.1em 1.25em 7px hsla(218, 91%, 53%, 0.67),
+    1.51em -0.28em 7px hsla(212, 94%, 52%, 0.63),
+    1.82em 0.86em 7px hsla(262, 88%, 62%, 0.65),
+    0.95em 1.25em 7px hsla(205, 83%, 60%, 0.77),
+    1.37em 0.3em 7px hsla(205, 92%, 54%, 0.65),
+    1.36em 1.56em 7px hsla(212, 84%, 61%, 0.8),
+    0.26em -0.44em 7px hsla(205, 93%, 61%, 0.71),
+    0.92em 0.25em 7px hsla(218, 85%, 55%, 0.63),
+    0.84em 0.97em 7px hsla(262, 91%, 57%, 0.82),
+    1.97em 0.08em 7px hsla(262, 85%, 55%, 0.72),
+    1.9em 1.67em 7px hsla(205, 93%, 59%, 0.66),
+    0.34em 1.11em 7px hsla(218, 83%, 54%, 0.8),
+    2.12em -0.16em 7px hsla(205, 85%, 60%, 0.83),
+    0.23em 0.75em 7px hsla(205, 94%, 60%, 0.84),
+    2.13em 0.52em 7px hsla(218, 88%, 59%, 0.82),
+    -0.27em 0.04em 7px hsla(212, 86%, 55%, 0.67),
+    2.16em 1.83em 7px hsla(262, 89%, 62%, 0.65),
+    0.78em 1.22em 7px hsla(190, 83%, 54%, 0.8),
+    0.56em 1.34em 7px hsla(205, 88%, 64%, 0.63),
+    -0.04em -0.11em 7px hsla(212, 84%, 59%, 0.83),
+    0.4em 0.63em 7px hsla(218, 93%, 64%, 0.81),
+    1.47em 0.24em 7px hsla(205, 90%, 62%, 0.72),
+    1.9em 0.69em 7px hsla(205, 83%, 59%, 0.8),
+    0.85em 1.58em 7px hsla(190, 90%, 58%, 0.66),
+    1em 0.12em 7px hsla(205, 92%, 63%, 0.64),
+    1.04em 0.22em 7px hsla(218, 85%, 63%, 0.72),
+    2.19em 0.48em 7px hsla(212, 93%, 58%, 0.67);
+}
+.hero-bokeh span:nth-child(2)::before {
+  animation-duration: 43s;
+  animation-delay: -32s;
+  text-shadow:
+    -0.5em 0.98em 7px hsla(212, 89%, 63%, 0.7),
+    1.46em 1.07em 7px hsla(212, 91%, 55%, 0.72),
+    0.96em 0.07em 7px hsla(205, 92%, 55%, 0.79),
+    0.37em 1.79em 7px hsla(218, 94%, 53%, 0.75),
+    0.8em -0.09em 7px hsla(262, 86%, 53%, 0.65),
+    -0.47em -0.42em 7px hsla(205, 84%, 53%, 0.65),
+    -0.43em 1.24em 7px hsla(212, 90%, 60%, 0.65),
+    1.06em 1.09em 7px hsla(218, 94%, 57%, 0.75),
+    0.05em 1.76em 7px hsla(212, 94%, 57%, 0.73),
+    1.1em 1.87em 7px hsla(205, 89%, 59%, 0.66),
+    1.37em 0.57em 7px hsla(205, 85%, 57%, 0.64),
+    2.1em 1.54em 7px hsla(190, 85%, 63%, 0.71),
+    1.35em 2.14em 7px hsla(212, 90%, 62%, 0.75),
+    -0.28em 1.06em 7px hsla(190, 91%, 53%, 0.63),
+    0.21em 2.47em 7px hsla(205, 93%, 57%, 0.69),
+    2.3em 0.69em 7px hsla(218, 83%, 58%, 0.64),
+    -0.19em 1.12em 7px hsla(205, 90%, 58%, 0.74),
+    -0.18em 1.21em 7px hsla(205, 93%, 54%, 0.64),
+    -0.37em 0.13em 7px hsla(205, 93%, 58%, 0.73),
+    1.08em 1.42em 7px hsla(205, 92%, 59%, 0.84),
+    1.87em 0.87em 7px hsla(205, 85%, 64%, 0.83),
+    0.04em 1.34em 7px hsla(205, 87%, 55%, 0.71),
+    0.58em 1.08em 7px hsla(218, 83%, 64%, 0.7),
+    1.44em -0.41em 7px hsla(205, 93%, 61%, 0.62),
+    2.22em -0.29em 7px hsla(218, 92%, 57%, 0.7),
+    0.25em 0.84em 7px hsla(205, 83%, 52%, 0.69),
+    1.41em 2.16em 7px hsla(190, 92%, 57%, 0.65),
+    -0.23em 2.37em 7px hsla(205, 91%, 56%, 0.72);
+}
+.hero-bokeh span:nth-child(3)::before {
+  animation-duration: 42s;
+  animation-delay: -23s;
+  text-shadow:
+    2.29em -0.18em 7px hsla(218, 83%, 52%, 0.7),
+    -0.45em -0.21em 7px hsla(205, 88%, 60%, 0.76),
+    1.17em 1.52em 7px hsla(218, 88%, 53%, 0.74),
+    1.6em -0.12em 7px hsla(205, 83%, 55%, 0.64),
+    2.1em 2.22em 7px hsla(190, 83%, 58%, 0.83),
+    0.92em -0.33em 7px hsla(212, 86%, 56%, 0.61),
+    1.52em 2.29em 7px hsla(190, 89%, 62%, 0.69),
+    1.47em 0.16em 7px hsla(218, 86%, 55%, 0.74),
+    0.31em -0.2em 7px hsla(190, 93%, 57%, 0.62),
+    1.98em -0.05em 7px hsla(205, 94%, 53%, 0.73),
+    0.51em 1.24em 7px hsla(205, 92%, 55%, 0.74),
+    1.72em 0.81em 7px hsla(190, 88%, 61%, 0.61),
+    -0.08em 1.14em 7px hsla(218, 83%, 55%, 0.81),
+    0.68em 0.27em 7px hsla(262, 84%, 59%, 0.82),
+    1.94em 0.57em 7px hsla(205, 89%, 63%, 0.74),
+    -0.33em 2.32em 7px hsla(190, 88%, 60%, 0.8),
+    0.92em 0.69em 7px hsla(212, 90%, 57%, 0.67),
+    0.41em -0.34em 7px hsla(205, 82%, 61%, 0.64),
+    0.01em 0.77em 7px hsla(212, 91%, 55%, 0.64),
+    0.03em 0.1em 7px hsla(205, 83%, 57%, 0.72),
+    1.6em 0.55em 7px hsla(262, 87%, 55%, 0.82),
+    1.61em 1.74em 7px hsla(205, 90%, 62%, 0.73),
+    -0.47em 1.73em 7px hsla(205, 84%, 58%, 0.79),
+    1.43em 2.09em 7px hsla(205, 86%, 63%, 0.64),
+    1.92em 1.39em 7px hsla(205, 82%, 54%, 0.81),
+    2.09em 0.08em 7px hsla(212, 89%, 58%, 0.61),
+    0.19em 2.45em 7px hsla(262, 89%, 54%, 0.71),
+    2.36em 0.35em 7px hsla(218, 92%, 59%, 0.74);
+}
+.hero-bokeh span:nth-child(4)::before {
+  animation-duration: 41s;
+  animation-delay: -19s;
+  text-shadow:
+    1.16em 0.12em 7px hsla(205, 84%, 58%, 0.67),
+    1.61em 0.05em 7px hsla(262, 93%, 52%, 0.67),
+    0.82em 1.96em 7px hsla(190, 83%, 56%, 0.79),
+    1.77em 1.77em 7px hsla(218, 82%, 59%, 0.7),
+    1.68em 0em 7px hsla(218, 93%, 57%, 0.62),
+    1.62em 0.72em 7px hsla(262, 94%, 55%, 0.62),
+    0.94em 1.56em 7px hsla(212, 89%, 64%, 0.64),
+    1.5em 1.38em 7px hsla(262, 84%, 59%, 0.63),
+    -0.24em -0.11em 7px hsla(205, 89%, 60%, 0.6),
+    -0.23em 0.06em 7px hsla(190, 91%, 53%, 0.69),
+    -0.26em 1.72em 7px hsla(190, 88%, 61%, 0.72),
+    1.39em -0.17em 7px hsla(190, 94%, 61%, 0.72),
+    1.42em 1.8em 7px hsla(190, 92%, 54%, 0.65),
+    2.02em 1.48em 7px hsla(212, 92%, 58%, 0.69),
+    1.96em 0.64em 7px hsla(262, 90%, 59%, 0.8),
+    0.85em 1.21em 7px hsla(190, 85%, 55%, 0.81),
+    0.18em -0.38em 7px hsla(205, 92%, 54%, 0.76),
+    1.43em 1.88em 7px hsla(218, 84%, 53%, 0.68),
+    0.59em -0.46em 7px hsla(205, 83%, 52%, 0.67),
+    1.08em 1.79em 7px hsla(262, 89%, 58%, 0.69),
+    -0.01em 1.56em 7px hsla(262, 85%, 56%, 0.8),
+    1.26em 1.59em 7px hsla(205, 87%, 56%, 0.74),
+    0.33em 0.05em 7px hsla(218, 88%, 57%, 0.74),
+    2.16em 2.23em 7px hsla(190, 94%, 52%, 0.65),
+    -0.43em 1.1em 7px hsla(205, 86%, 63%, 0.61),
+    1.2em 0.67em 7px hsla(218, 90%, 54%, 0.68),
+    1.62em -0.02em 7px hsla(205, 92%, 55%, 0.75),
+    -0.25em 2.42em 7px hsla(262, 88%, 54%, 0.82);
+}
+
+@keyframes hero-bokeh-move {
+  from {
+    transform: rotate(0deg) scale(12) translateX(-20px);
+  }
+  to {
+    transform: rotate(360deg) scale(18) translateX(20px);
+  }
+}
+
+/* Respect reduced-motion: hold a single blended frame instead of drifting. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-bokeh span::before {
+    animation: none;
+    transform: scale(15);
+  }
+}
+
+/* Angled hero: skew the band's bottom edge so it cuts diagonally into the page below
+   (the clipped-away triangle reveals the page background). The vertical offset is
+   `tan(<angle>)` across the hero's OWN width via container units (cqw) — not the
+   viewport (vw) — so the slope is a true angle tied to the band; the outer wrapper is
+   the query container. Responsive: 3° on mobile, 2° on tablet, flat on desktop. The
+   hero content carries cqw-scaled bottom padding to clear the diagonal. */
+.hero-skew {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 100cqw * tan(3deg)), 0 100%);
+}
+@media (min-width: 768px) {
+  .hero-skew {
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 100cqw * tan(1.5deg)), 0 100%);
+  }
+}
+@media (min-width: 1024px) {
+  .hero-skew {
+    clip-path: none;
+  }
 }
 
 /* Device-local font scaling (S-10). The `data-font-scale` attribute is set on

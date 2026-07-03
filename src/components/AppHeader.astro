@@ -1,0 +1,53 @@
+---
+// Shared header for authenticated pages (design-refresh Phase 3). The Veriffica
+// logotype (linked to the homepage) on the left, the AccountMenu island on the right.
+//
+// The logotypes are single-fill SVGs (no `currentColor`), so we inline both the
+// brand-blue and white variants and swap them by color scheme with Tailwind's
+// `dark:` variants: brand-blue on the light background, white on the dark one —
+// both pass AA. The short mark stands in for the wordmark on narrow screens.
+//
+// AccountMenu MUST stay `client:only="react"` — it imports Dexie (@/lib/db), which
+// has no global on workerd/SSR (see AccountMenu.tsx).
+import AccountMenu from "@/components/dashboard/AccountMenu";
+import WordmarkBrand from "@/assets/brand/veriffica-wordmark--brand.svg";
+import WordmarkWhite from "@/assets/brand/veriffica-wordmark--white.svg";
+import MarkBrand from "@/assets/brand/veriffica-mark--brand.svg";
+import MarkWhite from "@/assets/brand/veriffica-mark--white.svg";
+
+interface Props {
+  userEmail?: string;
+}
+
+const { userEmail } = Astro.props;
+---
+
+<header class="border-border bg-card mb-4 flex items-center justify-between rounded-xl border px-4 py-2">
+  <a
+    href="/"
+    aria-label="Veriffica — home"
+    class="focus-visible:ring-ring inline-flex rounded-md outline-none focus-visible:ring-2"
+  >
+    {
+      /* Two axes kept independent: the outer span picks wordmark (>=sm) vs compact
+        mark (<sm); the inner SVGs pick brand-blue (light) vs white (dark). */
+    }
+    <span class="hidden sm:block">
+      <WordmarkBrand class="h-7 w-auto dark:hidden" aria-hidden="true" />
+      <WordmarkWhite class="hidden h-7 w-auto dark:block" aria-hidden="true" />
+    </span>
+    <span class="block sm:hidden">
+      <MarkBrand class="h-7 w-auto dark:hidden" aria-hidden="true" />
+      <MarkWhite class="hidden h-7 w-auto dark:block" aria-hidden="true" />
+    </span>
+  </a>
+  {
+    /* Reserve the icon's box server-side. AccountMenu is `client:only` (Dexie has no
+      SSR global), so it renders nothing until hydration — without this fixed-size
+      wrapper the header would paint short, then grow when the icon appears, flickering
+      the layout on load. The wrapper is SSR'd at its final size so the height is stable. */
+  }
+  <div class="flex size-10 shrink-0 items-center justify-center">
+    <AccountMenu client:only="react" userEmail={userEmail} />
+  </div>
+</header>

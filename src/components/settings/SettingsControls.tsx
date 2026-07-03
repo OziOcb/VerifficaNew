@@ -90,12 +90,12 @@ export default function SettingsControls({ userId }: Props) {
             onClick={() => {
               toggleGuide(!guideEnabled);
             }}
-            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-              guideEnabled ? "bg-primary" : "bg-muted"
+            className={`focus-visible:ring-ring/50 relative inline-flex h-6 w-11 shrink-0 items-center rounded-full shadow-xs transition-colors outline-none focus-visible:ring-[3px] ${
+              guideEnabled ? "bg-primary" : "bg-input"
             }`}
           >
             <span
-              className={`bg-background inline-block size-5 rounded-full shadow transition-transform ${
+              className={`bg-background inline-block size-5 rounded-full shadow-sm transition-transform ${
                 guideEnabled ? "translate-x-5" : "translate-x-0.5"
               }`}
             />
@@ -131,7 +131,7 @@ function Segmented<T extends string>({ label, options, value, onChange, hint }: 
               onClick={() => {
                 onChange(opt.value);
               }}
-              className={`min-w-12 rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+              className={`focus-visible:ring-ring/50 min-w-12 rounded-md px-4 py-1.5 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px] ${
                 active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               }`}
             >
