@@ -38,7 +38,7 @@ import type { QuestionCard } from "@/lib/questions";
 const PANEL = "border bg-card text-card-foreground";
 const FIELD_INPUT = "border-input bg-background text-foreground placeholder:text-muted-foreground";
 
-// The three legal answers (FR-015), in the order the card presents them. Each carries the
+// The three legal answers (FR-015), in the order the action bar presents them. Each carries the
 // accent it lights up in when selected; the value is the opaque catalogue token. The
 // semantic status hues stay (green=present, red=absent, blue=unknown) but are tuned to
 // read in both Caffeine light and dark modes.
@@ -246,7 +246,9 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
     // overflow-x-hidden masks the keyed card's slide-in translateX (~2rem) so it
     // can't reveal the canvas at the right edge or induce horizontal page scroll
     // (#3). Clip sits on this stable, non-sliding deck root — not the keyed div.
-    <div className="space-y-6 overflow-x-hidden">
+    // pb-40 reserves space for the fixed bottom action bar (Phase 4) so the last
+    // content and the save-error message are never hidden behind it.
+    <div className="space-y-6 overflow-x-hidden pb-40">
       {/* Per-Part progress: current card / total (FR-015). */}
       <div className="text-muted-foreground flex items-center justify-between text-sm">
         <span>
@@ -305,27 +307,6 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
             )}
           </CardContent>
         </Card>
-
-        <div className="grid gap-3 sm:grid-cols-3">
-          {ANSWER_OPTIONS.map((opt) => {
-            const isSelected = selected === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => {
-                  handleAnswer(opt.value);
-                }}
-                aria-pressed={isSelected}
-                className={`rounded-lg border px-4 py-3 text-center font-medium transition-colors ${
-                  isSelected ? opt.selected : "border-border bg-muted text-foreground hover:bg-accent"
-                }`}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {saveError && (
@@ -335,31 +316,69 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
         </p>
       )}
 
-      {/* Bottom bar: the FR-018 contextual-note affordance (left) and the Next gate (right).
-          Next appears only once the current card is answered — the mandatory-answer gate (a
-          fresh card has no forward affordance but answering). Tapping an answer auto-advances;
-          Next is for moving forward off a Back-visited, already-answered card. */}
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => {
-            openNote(noteHeader);
-          }}
-          className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors ${
-            hasNote
-              ? "border-primary/40 bg-primary/10 text-primary"
-              : "border-border bg-muted text-foreground hover:bg-accent"
-          }`}
-        >
-          <NotebookPen className="size-4 shrink-0" />
-          {hasNote ? "Edit note" : "Add note"}
-        </button>
+      {/* Fixed bottom action bar (Phase 4): the answer controls are pinned to the viewport
+          bottom so they stay reachable regardless of content height. `inset-x-0` spans the
+          viewport (position: fixed is viewport-relative); the inner `mx-auto max-w-3xl` wrapper
+          re-aligns the controls to the page's content column. The bar sits OUTSIDE the keyed,
+          sliding card, so it holds still while cards animate. Two stacked rows, top→bottom:
+          (Add note · Next), then (Yes · No · Don't know). The `pb-40` on the deck root above
+          reserves scroll space so nothing hides behind it.
 
-        {canAdvance(index, orderedIds, answers) && (
-          <Button onClick={handleNext} className="bg-primary text-primary-foreground hover:bg-primary/90">
-            Next &rarr;
-          </Button>
-        )}
+          Row 1 — the FR-018 contextual-note affordance (left) and the Next gate (right): Next
+          appears only once the current card is answered (the mandatory-answer gate). Tapping an
+          answer auto-advances; Next is for moving forward off a Back-visited, already-answered
+          card. Row 2 — the three legal answers (FR-015). */}
+      <div className="bg-background fixed inset-x-0 bottom-0 border-t shadow-lg">
+        <div
+          className="mx-auto max-w-3xl space-y-3 px-4 pt-3 sm:px-8"
+          // Pad past the iOS home indicator so the answer row clears the safe area (the
+          // page's `safe-area` wrapper can't reach a viewport-fixed element).
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
+        >
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => {
+                openNote(noteHeader);
+              }}
+              className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                hasNote
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border bg-muted text-foreground hover:bg-accent"
+              }`}
+            >
+              <NotebookPen className="size-4 shrink-0" />
+              {hasNote ? "Edit note" : "Add note"}
+            </button>
+
+            {canAdvance(index, orderedIds, answers) && (
+              <Button onClick={handleNext} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                Next &rarr;
+              </Button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {ANSWER_OPTIONS.map((opt) => {
+              const isSelected = selected === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    handleAnswer(opt.value);
+                  }}
+                  aria-pressed={isSelected}
+                  className={`rounded-lg border px-2 py-3 text-center font-medium transition-colors sm:px-4 ${
+                    isSelected ? opt.selected : "border-border bg-muted text-foreground hover:bg-accent"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* FR-018 note editor: a 500-char contextual note saved as a headed block in the global

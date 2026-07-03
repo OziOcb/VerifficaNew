@@ -487,33 +487,33 @@ both modes.
 
 #### Automated
 
-- [x] 3.1 `npm run build` passes and favicon/icon files exist in the build output
-- [x] 3.2 `npm run lint` passes
-- [x] 3.3 Each authenticated page renders `AppHeader` (grep); homepage/auth pages do not
+- [x] 3.1 `npm run build` passes and favicon/icon files exist in the build output — 07f3567
+- [x] 3.2 `npm run lint` passes — 07f3567
+- [x] 3.3 Each authenticated page renders `AppHeader` (grep); homepage/auth pages do not — 07f3567
 
 #### Manual
 
-- [x] 3.4 Shared header shows on dashboard, settings, all inspection screens; not homepage/auth
-- [x] 3.5 Clicking the logo navigates to the homepage from every page
-- [x] 3.6 Account dropdown (Settings / theme toggle / Sign out) works from the shared header
-- [x] 3.7 Veriffica favicon shows in the tab; logo legible in light and dark
-- [x] 3.8 Mobile theme-color matches the app background in both modes
+- [x] 3.4 Shared header shows on dashboard, settings, all inspection screens; not homepage/auth — 07f3567
+- [x] 3.5 Clicking the logo navigates to the homepage from every page — 07f3567
+- [x] 3.6 Account dropdown (Settings / theme toggle / Sign out) works from the shared header — 07f3567
+- [x] 3.7 Veriffica favicon shows in the tab; logo legible in light and dark — 07f3567
+- [x] 3.8 Mobile theme-color matches the app background in both modes — 07f3567
 
 ### Phase 4: QuestionCards Fixed Bottom Action Bar
 
 #### Automated
 
-- [ ] 4.1 `npm run lint` passes
-- [ ] 4.2 `npm run build` passes
-- [ ] 4.3 `npx astro sync` succeeds
+- [x] 4.1 `npm run lint` passes
+- [x] 4.2 `npm run build` passes
+- [x] 4.3 `npx astro sync` succeeds
 
 #### Manual
 
-- [ ] 4.4 Action bar is pinned to the bottom on tall and short content
-- [ ] 4.5 Add note + Next sit above the Yes/No/Don't-know row
+- [x] 4.4 Action bar is pinned to the bottom on tall and short content
+- [x] 4.5 Add note + Next sit above the Yes/No/Don't-know row
 - [ ] 4.6 On iOS the bar clears the home indicator and never overlaps content
-- [ ] 4.7 Answering auto-advances; Back and the Next gate still behave as before
-- [ ] 4.8 Note editor and save-error message remain reachable/visible
+- [x] 4.7 Answering auto-advances; Back and the Next gate still behave as before
+- [x] 4.8 Note editor and save-error message remain reachable/visible
 
 ### Phase 5: Hand-Rolled Controls + Holdouts
 
