@@ -519,11 +519,11 @@ both modes.
 
 #### Automated
 
-- [x] 5.1 `npm run lint` passes
-- [x] 5.2 `npm run build` passes
+- [x] 5.1 `npm run lint` passes — 9a8a4a6
+- [x] 5.2 `npm run build` passes — 9a8a4a6
 
 #### Manual
 
-- [x] 5.3 Settings toggles, equipment toggles, answer buttons look consistent with the refresh
-- [x] 5.4 Selected/active states use the brand blue and read clearly in light and dark
-- [x] 5.5 Banners (if migrated) remain legible in both modes — banner migration skipped (no-op)
+- [x] 5.3 Settings toggles, equipment toggles, answer buttons look consistent with the refresh — 9a8a4a6
+- [x] 5.4 Selected/active states use the brand blue and read clearly in light and dark — 9a8a4a6
+- [x] 5.5 Banners (if migrated) remain legible in both modes — banner migration skipped (no-op) — 9a8a4a6
