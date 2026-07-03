@@ -341,7 +341,7 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
               onClick={() => {
                 openNote(noteHeader);
               }}
-              className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors ${
+              className={`focus-visible:ring-ring/50 flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm shadow-xs transition-all outline-none focus-visible:ring-[3px] ${
                 hasNote
                   ? "border-primary/40 bg-primary/10 text-primary"
                   : "border-border bg-muted text-foreground hover:bg-accent"
@@ -369,8 +369,8 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
                     handleAnswer(opt.value);
                   }}
                   aria-pressed={isSelected}
-                  className={`rounded-lg border px-2 py-3 text-center font-medium transition-colors sm:px-4 ${
-                    isSelected ? opt.selected : "border-border bg-muted text-foreground hover:bg-accent"
+                  className={`focus-visible:ring-ring/50 rounded-lg border px-2 py-3 text-center font-medium shadow-xs transition-all outline-none focus-visible:ring-[3px] sm:px-4 ${
+                    isSelected ? `${opt.selected} shadow-sm` : "border-border bg-muted text-foreground hover:bg-accent"
                   }`}
                 >
                   {opt.label}

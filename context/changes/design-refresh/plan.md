@@ -503,27 +503,27 @@ both modes.
 
 #### Automated
 
-- [x] 4.1 `npm run lint` passes
-- [x] 4.2 `npm run build` passes
-- [x] 4.3 `npx astro sync` succeeds
+- [x] 4.1 `npm run lint` passes — fec8996
+- [x] 4.2 `npm run build` passes — fec8996
+- [x] 4.3 `npx astro sync` succeeds — fec8996
 
 #### Manual
 
-- [x] 4.4 Action bar is pinned to the bottom on tall and short content
-- [x] 4.5 Add note + Next sit above the Yes/No/Don't-know row
+- [x] 4.4 Action bar is pinned to the bottom on tall and short content — fec8996
+- [x] 4.5 Add note + Next sit above the Yes/No/Don't-know row — fec8996
 - [ ] 4.6 On iOS the bar clears the home indicator and never overlaps content
-- [x] 4.7 Answering auto-advances; Back and the Next gate still behave as before
-- [x] 4.8 Note editor and save-error message remain reachable/visible
+- [x] 4.7 Answering auto-advances; Back and the Next gate still behave as before — fec8996
+- [x] 4.8 Note editor and save-error message remain reachable/visible — fec8996
 
 ### Phase 5: Hand-Rolled Controls + Holdouts
 
 #### Automated
 
-- [ ] 5.1 `npm run lint` passes
-- [ ] 5.2 `npm run build` passes
+- [x] 5.1 `npm run lint` passes
+- [x] 5.2 `npm run build` passes
 
 #### Manual
 
-- [ ] 5.3 Settings toggles, equipment toggles, answer buttons look consistent with the refresh
-- [ ] 5.4 Selected/active states use the brand blue and read clearly in light and dark
-- [ ] 5.5 Banners (if migrated) remain legible in both modes
+- [x] 5.3 Settings toggles, equipment toggles, answer buttons look consistent with the refresh
+- [x] 5.4 Selected/active states use the brand blue and read clearly in light and dark
+- [x] 5.5 Banners (if migrated) remain legible in both modes — banner migration skipped (no-op)
