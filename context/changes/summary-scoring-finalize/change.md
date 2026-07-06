@@ -1,7 +1,7 @@
 ---
 change_id: summary-scoring-finalize
 title: Summary distribution, inline edit & finalize
-status: new
+status: planned
 created: 2026-07-06
 updated: 2026-07-06
 archived_at: null
