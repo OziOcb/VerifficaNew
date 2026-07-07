@@ -541,14 +541,14 @@ data migration.
 
 #### Automated
 
-- [x] 4.1 Type-checked lint passes: `npm run lint`
-- [x] 4.2 Production build passes: `npm run build`
-- [x] 4.3 Unit tests pass: `npm test`
-- [x] 4.4 E2E finalize/reopen round-trip passes: `npm run test:e2e`
+- [x] 4.1 Type-checked lint passes: `npm run lint` — c739d1d
+- [x] 4.2 Production build passes: `npm run build` — c739d1d
+- [x] 4.3 Unit tests pass: `npm test` — c739d1d
+- [x] 4.4 E2E finalize/reopen round-trip passes: `npm run test:e2e` — c739d1d
 
 #### Manual
 
-- [x] 4.5 Finalize flips to read-only report with no reload (notes locked, no modal Edit, no Finalize)
-- [x] 4.6 Dashboard opens the Completed inspection as the read-only report
-- [x] 4.7 Reopen requires explicit confirm, reverts to Draft, re-enables editing, requires re-finalization
-- [x] 4.8 Finalize then reopen works offline and reconciles on reconnect
+- [x] 4.5 Finalize flips to read-only report with no reload (notes locked, no modal Edit, no Finalize) — c739d1d
+- [x] 4.6 Dashboard opens the Completed inspection as the read-only report — c739d1d
+- [x] 4.7 Reopen requires explicit confirm, reverts to Draft, re-enables editing, requires re-finalization — c739d1d
+- [x] 4.8 Finalize then reopen works offline and reconciles on reconnect — c739d1d
