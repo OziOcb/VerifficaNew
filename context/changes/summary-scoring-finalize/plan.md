@@ -526,29 +526,29 @@ data migration.
 
 #### Automated
 
-- [x] 3.1 Type-checked lint passes: `npm run lint`
-- [x] 3.2 Production build passes: `npm run build`
-- [x] 3.3 Unit test: inline edit recomputes per-Part + global sentiment distributions correctly
+- [x] 3.1 Type-checked lint passes: `npm run lint` — 41711c3
+- [x] 3.2 Production build passes: `npm run build` — 41711c3
+- [x] 3.3 Unit test: inline edit recomputes per-Part + global sentiment distributions correctly — 41711c3
 
 #### Manual
 
-- [x] 3.4 Modal Edit button reveals per-question toggles; tapping saves with no Save button; charts move live
-- [x] 3.5 Closing/reopening the modal returns it to read-only
-- [x] 3.6 Offline edit reflects in charts without a round-trip and syncs on reconnect
-- [x] 3.7 Failed local save surfaces an inline error and doesn't drop the change
+- [x] 3.4 Modal Edit button reveals per-question toggles; tapping saves with no Save button; charts move live — 41711c3
+- [x] 3.5 Closing/reopening the modal returns it to read-only — 41711c3
+- [x] 3.6 Offline edit reflects in charts without a round-trip and syncs on reconnect — 41711c3
+- [x] 3.7 Failed local save surfaces an inline error and doesn't drop the change — 41711c3
 
 ### Phase 4: Finalize + reopen state machine
 
 #### Automated
 
-- [ ] 4.1 Type-checked lint passes: `npm run lint`
-- [ ] 4.2 Production build passes: `npm run build`
-- [ ] 4.3 Unit tests pass: `npm test`
-- [ ] 4.4 E2E finalize/reopen round-trip passes: `npm run test:e2e`
+- [x] 4.1 Type-checked lint passes: `npm run lint`
+- [x] 4.2 Production build passes: `npm run build`
+- [x] 4.3 Unit tests pass: `npm test`
+- [x] 4.4 E2E finalize/reopen round-trip passes: `npm run test:e2e`
 
 #### Manual
 
-- [ ] 4.5 Finalize flips to read-only report with no reload (notes locked, no modal Edit, no Finalize)
-- [ ] 4.6 Dashboard opens the Completed inspection as the read-only report
-- [ ] 4.7 Reopen requires explicit confirm, reverts to Draft, re-enables editing, requires re-finalization
-- [ ] 4.8 Finalize then reopen works offline and reconciles on reconnect
+- [x] 4.5 Finalize flips to read-only report with no reload (notes locked, no modal Edit, no Finalize)
+- [x] 4.6 Dashboard opens the Completed inspection as the read-only report
+- [x] 4.7 Reopen requires explicit confirm, reverts to Draft, re-enables editing, requires re-finalization
+- [x] 4.8 Finalize then reopen works offline and reconciles on reconnect

@@ -12,12 +12,24 @@
 //
 // Everything live derives from the Dexie row (with the SSR props as fallback until it hydrates),
 // exactly like SessionScreen — so an offline answer/notes edit reflects without a round-trip.
-// Phase 2 scope: charts + editable notes + READ-ONLY modal. Inline answer editing is Phase 3;
-// finalize/reopen + read-only-report enforcement is Phase 4.
+// The FR-021 lifecycle: Finalize writes `status: 'completed'` (optimistic) and the whole report
+// flips read-only off the LIVE status (notes locked, no modal Edit, no Finalize); Reopen — behind
+// a confirm — writes `status: 'draft'` and re-enables editing. No reload: `readOnly` is derived
+// from the live Dexie row, so the mode flips the instant the local write lands, offline included.
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, CircleAlert } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronRight, CircleAlert, Lock, RotateCcw } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { db } from "@/lib/db";
 import { saveInspection, flushQueue, startAutoSync } from "@/lib/sync";
@@ -56,7 +68,14 @@ const PART_NUMBERS: Record<PartId, number> = { part2: 2, part3: 3, part4: 4, par
 
 // Caffeine token palette — matches SessionScreen / the dashboard shell.
 const PANEL = "border bg-card text-card-foreground";
+const DIALOG_PANEL = "border bg-popover text-popover-foreground";
 const FIELD_INPUT = "border-input bg-background text-foreground placeholder:text-muted-foreground";
+
+// Lifecycle action buttons (Finalize / Reopen) — the SessionScreen "View Summary" anchor tokens.
+const PRIMARY_BTN =
+  "bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring/50 inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium shadow-xs transition-colors outline-none focus-visible:ring-[3px]";
+const OUTLINE_BTN =
+  "border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring/50 inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium shadow-xs transition-colors outline-none focus-visible:ring-[3px]";
 
 const MAX_NOTES = MAX_GLOBAL_NOTES_LENGTH;
 const NOTES_TOO_LONG = M.globalNotes;
@@ -158,6 +177,11 @@ export default function SummaryScreen({ inspection, counts, questionIds, initial
   const [editMode, setEditMode] = useState(false);
   const [answerSaveError, setAnswerSaveError] = useState(false);
 
+  // Finalize/reopen state (FR-021): `confirmReopen` gates the destructive-style confirm dialog;
+  // `lifecycleError` surfaces a failed optimistic status write inline (mirrors the answer path).
+  const [confirmReopen, setConfirmReopen] = useState(false);
+  const [lifecycleError, setLifecycleError] = useState(false);
+
   useEffect(() => startAutoSync(), []);
 
   const liveRow = useLiveQuery(() => db.inspections.get(inspection.id), [inspection.id]);
@@ -192,10 +216,13 @@ export default function SummaryScreen({ inspection, counts, questionIds, initial
   const activeFlags = new Set<RuntimeFlag>();
   for (const t of flagBindings) if (flagRow[t.column]) activeFlags.add(t.flag);
 
-  // The inspection lifecycle status, live (SSR fallback) — a Completed report is read-only, so the
-  // inline-edit affordance only appears while Draft. (Full finalize/reopen enforcement is Phase 4.)
+  // The inspection lifecycle status, live (SSR fallback). `readOnly` is the single flag gating the
+  // whole report: a Completed inspection locks the notes, hides the modal Edit button, and swaps
+  // Finalize for Reopen. Derived from the live row so an optimistic finalize/reopen flips the mode
+  // with no reload — and survives an offline reload (the status rides the same Dexie row). (FR-021.)
   const liveStatus = liveRow?.status ?? inspection.status;
-  const isDraft = liveStatus !== "completed";
+  const readOnly = liveStatus === "completed";
+  const isDraft = !readOnly;
 
   const liveCounts = countsForFlags(counts, activeFlags);
   const totalVisible = totalCount(liveCounts);
@@ -243,14 +270,68 @@ export default function SummaryScreen({ inspection, counts, questionIds, initial
     );
   }
 
+  // Finalize / reopen (FR-021) — optimistic status writes on the proven `saveInspection` path
+  // (`SaveInput.status`, sync.ts:93), identical in shape to the answer write. No confirm on
+  // finalize (it is reversible via Reopen); Reopen is confirmed below. A local write failure
+  // surfaces inline via `lifecycleError`.
+
+  // Finalize (Draft → Completed): persist the status optimistically, then return to the dashboard —
+  // where the finalized inspection lives as a Completed report, reopened by tapping it (→ read-only
+  // /summary). The redirect waits until the outbox has actually DRAINED, for two reasons: the
+  // dashboard is a static SSR render, so it only shows this row under Completed once the write is
+  // server-side; and `/dashboard` is not in the SW cache, so navigating there OFFLINE would hit the
+  // browser's error page. So: offline (or not-yet-drained) we stay on /summary, which has already
+  // flipped read-only in place (`readOnly` derives from the live row) — the optimistic state that
+  // reconciles + becomes reachable from the dashboard on reconnect.
+  function finalize() {
+    setLifecycleError(false);
+    void saveInspection({ id: inspection.id, status: "completed" }).then(
+      () => {
+        void redirectWhenSynced();
+      },
+      () => {
+        setLifecycleError(true);
+      },
+    );
+  }
+
+  // Drain the outbox, then redirect to the dashboard only once it is empty (the finalize synced).
+  // Polls briefly to ride out a concurrent autosync drain that made our `flushQueue` a no-op behind
+  // its in-flight guard; bails the instant we detect we're offline (stay on the read-only report).
+  async function redirectWhenSynced() {
+    for (let i = 0; i < 10; i++) {
+      await flushQueue();
+      if ((await db.changeQueue.count()) === 0) {
+        window.location.assign("/dashboard");
+        return;
+      }
+      if (!navigator.onLine) return;
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+  }
+
+  // Reopen (Completed → Draft): persist in place — `readOnly` derives from the live row, so the
+  // report re-enables editing the instant the local put lands, without leaving the page.
+  function reopen() {
+    setLifecycleError(false);
+    void saveInspection({ id: inspection.id, status: "draft" }).then(
+      () => {
+        void flushQueue();
+      },
+      () => {
+        setLifecycleError(true);
+      },
+    );
+  }
+
   return (
     <div className="space-y-8">
       <header>
         <a
-          href={`/inspections/${inspection.id}/session`}
+          href={readOnly ? "/dashboard" : `/inspections/${inspection.id}/session`}
           className="text-primary hover:text-primary/80 -ml-2 inline-flex items-center rounded-md px-2 py-1.5 text-sm transition-colors hover:underline"
         >
-          &larr; Back to session
+          &larr; {readOnly ? "Back to dashboard" : "Back to session"}
         </a>
         <h1 className="text-foreground mt-4 text-2xl font-bold">{inspection.name ?? "Inspection"} — Summary</h1>
         <p className="text-muted-foreground mt-1">
@@ -321,9 +402,12 @@ export default function SummaryScreen({ inspection, counts, questionIds, initial
               setDraft(e.target.value);
             }}
             rows={8}
+            readOnly={readOnly}
             aria-invalid={overLimit ? true : undefined}
-            placeholder="Notes about the whole inspection…"
-            className={`focus-visible:ring-ring/50 flex w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] ${FIELD_INPUT}`}
+            placeholder={readOnly ? "No notes were recorded." : "Notes about the whole inspection…"}
+            className={`focus-visible:ring-ring/50 flex w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] ${FIELD_INPUT} ${
+              readOnly ? "cursor-not-allowed opacity-70" : ""
+            }`}
           />
           <div className="mt-1 flex items-center justify-between text-xs">
             {overLimit ? (
@@ -344,6 +428,77 @@ export default function SummaryScreen({ inspection, counts, questionIds, initial
           </div>
         </CardContent>
       </Card>
+
+      {/* Finalize / Reopen lifecycle (FR-021). Draft → a Finalize button (no confirm — reversible).
+          Completed → a read-only banner + a Reopen button behind the confirm dialog below. */}
+      <Card className={PANEL}>
+        <CardHeader>
+          <CardTitle className="text-foreground flex items-center gap-2">
+            {readOnly && <Lock className="text-muted-foreground size-4 shrink-0" />}
+            {readOnly ? "Completed report" : "Finalize inspection"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-muted-foreground text-sm">
+            {readOnly
+              ? "This inspection is finalized and read-only. Reopen it to change answers or notes."
+              : "Close this inspection as a read-only report. You can reopen it later if you need to make changes."}
+          </p>
+          {readOnly ? (
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmReopen(true);
+              }}
+              className={OUTLINE_BTN}
+            >
+              <RotateCcw className="size-4 shrink-0" />
+              Reopen for editing
+            </button>
+          ) : (
+            <button type="button" onClick={finalize} className={PRIMARY_BTN}>
+              <CheckCircle2 className="size-4 shrink-0" />
+              Finalize inspection
+            </button>
+          )}
+          {lifecycleError && (
+            <p className="text-destructive flex items-center gap-1 text-xs">
+              <CircleAlert className="size-3 shrink-0" />
+              Could not save on this device.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Reopen confirm — the destructive-style AlertDialog pattern from DashboardBoard. Confirming
+          reverts to Draft, re-enabling inline editing + Finalize (re-finalization required). */}
+      <AlertDialog
+        open={confirmReopen}
+        onOpenChange={(open) => {
+          if (!open) setConfirmReopen(false);
+        }}
+      >
+        <AlertDialogContent className={DIALOG_PANEL}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">Reopen this inspection?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              This returns the inspection to Draft so you can change answers and notes. You&apos;ll need to finalize it
+              again to close it as a report.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className={OUTLINE_BTN}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmReopen(false);
+                reopen();
+              }}
+            >
+              Reopen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Per-Part question/answer modal. Read-only by default; the Edit toggle (Draft only) reveals
           per-question answer controls (FR-020). Controlled open via `openPart`. */}
