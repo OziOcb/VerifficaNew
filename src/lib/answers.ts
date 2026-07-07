@@ -11,6 +11,10 @@
 // The answers MAP keys are opaque `q_…` question IDs and likewise stay verbatim (the
 // sync boundary excludes the `answers` jsonb from deep key-casing — see Phase 1).
 
+// Type-only import (erased at build), so this module stays catalogue-free and server-safe —
+// the same discipline `@/lib/session-counts` uses to import `PartId` without shipping the bank.
+import type { PartId } from "@/lib/questions";
+
 /** A single answer to a question card. Mirrors the catalogue's `allowedAnswers`. */
 export type Answer = "yes" | "no" | "dont_know";
 
@@ -42,7 +46,7 @@ export function firstUnansweredIndex(orderedIds: readonly string[], answers: Ans
   return orderedIds.length;
 }
 
-/** The Yes / No / Don't-know distribution across `ids` (equal weighting, FR-019). */
+/** The raw Yes / No / Don't-know tally across `ids` (equal weighting, FR-019). */
 export function distribution(
   ids: readonly string[],
   answers: AnswersMap,
@@ -55,6 +59,76 @@ export function distribution(
     else if (a === "dont_know") dist.dontKnow++;
   }
   return dist;
+}
+
+// --- Answer polarity / sentiment (S-06, FR-019) ---------------------------
+//
+// The SENTIMENT of a raw answer depends on the Part (idea/veriffica-instruction.md:25-27,
+// reconciled with FR-019). Parts 2–4 are defect/symptom checks — every question asks "is this
+// fault present?", so `No` is the POSITIVE (good) answer and `Yes` the negative. Part 5 is
+// presence/validity — every question asks "is this document/mark present & valid?", so `Yes`
+// is positive and `No` negative. `dont_know` is `unknown` everywhere. This is an equal-weight
+// INTERPRETATION rule (every question still counts once) — NOT severity weighting, which stays
+// an FR-019 non-goal. The Summary/Total-Score charts render this sentiment; the raw
+// `distribution()` above is kept for any need of the literal yes/no tally.
+
+/** A per-answer sentiment tally: positive (good) / negative (bad) / unknown (Don't know). */
+export interface Sentiment {
+  positive: number;
+  negative: number;
+  unknown: number;
+}
+
+/**
+ * The raw answer that counts as POSITIVE (good) for a Part: `no` for the condition Parts (2–4),
+ * `yes` for the documents Part (5). `PartId` is imported as a type only, so this stays
+ * catalogue-free and server-safe. The per-Part rule is uniform (no per-question overrides).
+ */
+export function positiveAnswer(part: PartId): Answer {
+  return part === "part5" ? "yes" : "no";
+}
+
+/**
+ * Classify each answered id in `ids` into positive/negative/unknown by the given polarity
+ * (`positive` = which raw answer is good for this Part). Unanswered ids are skipped; `dont_know`
+ * is always `unknown`. Pass one Part's ids + `positiveAnswer(part)` so the correct polarity
+ * applies — sentiment is inherently per-Part, so a flat all-parts call would mix polarities.
+ */
+export function sentimentDistribution(ids: readonly string[], answers: AnswersMap, positive: Answer): Sentiment {
+  const s: Sentiment = { positive: 0, negative: 0, unknown: 0 };
+  for (const id of ids) {
+    const a = answers[id];
+    if (a === undefined) continue;
+    if (a === "dont_know") s.unknown++;
+    else if (a === positive) s.positive++;
+    else s.negative++;
+  }
+  return s;
+}
+
+/**
+ * The sentiment of a SINGLE answer under a Part's polarity — the per-question coloring the
+ * Summary's per-Part modal uses. `"unanswered"` is distinct from `"unknown"` (`dont_know`): an
+ * unanswered row reads muted, a Don't-know row reads blue. Pass `positiveAnswer(part)` as
+ * `positive` so the same raw `no` reads positive in a condition Part and negative in Part 5.
+ */
+export type AnswerSentiment = "positive" | "negative" | "unknown" | "unanswered";
+
+export function answerSentiment(answer: Answer | undefined, positive: Answer): AnswerSentiment {
+  if (answer === undefined) return "unanswered";
+  if (answer === "dont_know") return "unknown";
+  return answer === positive ? "positive" : "negative";
+}
+
+/** Add up several per-Part sentiment tallies into the global (Total Score) sentiment. */
+export function sumSentiments(parts: readonly Sentiment[]): Sentiment {
+  const total: Sentiment = { positive: 0, negative: 0, unknown: 0 };
+  for (const p of parts) {
+    total.positive += p.positive;
+    total.negative += p.negative;
+    total.unknown += p.unknown;
+  }
+  return total;
 }
 
 // --- FR-018 contextual-note blocks ----------------------------------------

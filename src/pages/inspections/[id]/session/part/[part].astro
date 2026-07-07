@@ -13,7 +13,7 @@ import {
   selectCardDeck,
   visibleCountsByPart,
 } from "@/lib/questions";
-import type { AnswersMap } from "@/lib/answers";
+import { positiveAnswer, type Answer, type AnswersMap } from "@/lib/answers";
 import { isValidPart, resolvePartScreen } from "@/lib/session-routes";
 
 // Per-Part screens under the session hub (S-04). Part 1 IS the Part 1 config form
@@ -71,11 +71,16 @@ if ("redirect" in screen) {
 let visibleCount = 0;
 let cards: ReturnType<typeof selectCardDeck> = [];
 let initialAnswers: AnswersMap = {};
+// The Part's sentiment polarity (Parts 2–4: No = good; Part 5: Yes = good) — passed to the deck
+// so a selected answer lights emerald/red by whether it's good/bad for this Part (default inert
+// for Part 1, which has no answer buttons).
+let positive: Answer = "no";
 if (part !== "1") {
   const config = configFromInspection(inspection);
   const flags = activeFlagsFromInspection(inspection);
   visibleCount = visibleCountsByPart(config, flags)[`part${part}`];
   cards = selectCardDeck(config, flags, `part${part}`);
+  positive = positiveAnswer(`part${part}`);
   // Read the answers off the RAW snake_case `row`, not the camelized `inspection`: `answers`
   // is jsonb typed `Json`, and forcing the deep camel transform to instantiate over Json's
   // recursive union blows the type checker up (ts2589). `answers` is a single word, so casing
@@ -125,6 +130,7 @@ const relevantTogglesMap = relevantTogglesByFuel();
             initialAnswers={initialAnswers}
             initialGlobalNotes={inspection.globalNotes ?? ""}
             partLabel={`Part ${part} — ${PART_TITLES[part]}`}
+            positive={positive}
           />
         </main>
       </div>

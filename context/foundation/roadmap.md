@@ -3,7 +3,7 @@ project: Veriffica
 version: 1
 status: draft
 created: 2026-06-09
-updated: 2026-07-01
+updated: 2026-07-07
 prd_version: 1
 main_goal: quality
 top_blocker: skills
@@ -51,7 +51,7 @@ is the _complete, reliable_ loop, not a partial demo.
 | S-03 | part-1-config-validation        | fill & validate Part 1 config and unlock Parts 2–5                            | S-02          | FR-011, FR-012, FR-013, US-01          | implemented |
 | S-04 | personalized-question-engine    | open the session screen and see questions personalized to their car           | S-03          | FR-010, FR-014, US-01                  | implemented |
 | S-05 | question-card-answering         | answer Parts 2–5 as swipeable cards, with education pop-ups and notes         | S-04          | FR-015, FR-017, FR-018, US-01          | implemented |
-| S-06 | summary-scoring-finalize        | view the Summary distribution, edit inline, and finalize to Completed         | S-05          | FR-019, FR-020, FR-021, US-01          | proposed    |
+| S-06 | summary-scoring-finalize        | view the Summary distribution, edit inline, and finalize to Completed         | S-05          | FR-019, FR-020, FR-021, US-01          | implemented |
 | S-07 | config-change-smart-pruning     | change config and keep valid answers while orphans are pruned (recompute)     | S-04, S-05    | FR-016, US-02                          | proposed    |
 | S-08 | offline-inspection-survival     | lose/regain connectivity mid-inspection with no loss and no logout            | F-02, S-05    | FR-023, US-03                          | proposed    |
 | S-09 | account-recovery-deletion       | reset a forgotten password and permanently delete their account               | F-01          | FR-001, FR-002, FR-003, FR-004, FR-025 | proposed    |
@@ -185,7 +185,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** The validation milestone (north star) — reaching a finalized Summary proves the full personalize → answer → aggregate loop works end-to-end. Sequenced as the culmination of the north-star chain; everything after it is refinement or non-core surface. The pure distribution (no weighting/verdict) is a deliberate liability-bounding choice, not an oversight.
-- **Status:** proposed
+- **Status:** implemented (PR #37; branch `feat/summary-scoring-finalize`)
 
 ### S-07: Config-change Smart Pruning
 
@@ -247,7 +247,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 | S-03       | part-1-config-validation        | Part 1 config form, validation & Parts 2–5 unlock  | in progress           | S-02 done; branch `feat/part-1-config-validation`                     |
 | S-04       | personalized-question-engine    | Session screen + personalized question generation  | implemented           | Archived → `context/archive/2026-06-15-personalized-question-engine/` |
 | S-05       | question-card-answering         | Swipeable answer cards + education + notes         | implemented           | Archived → `context/archive/2026-06-28-question-card-answering/`      |
-| S-06       | summary-scoring-finalize        | Summary distribution, inline edit & finalize       | no                    | North star; needs S-05                                                |
+| S-06       | summary-scoring-finalize        | Summary distribution, inline edit & finalize       | implemented           | Archived → `context/archive/2026-07-06-summary-scoring-finalize/`     |
 | S-07       | config-change-smart-pruning     | Smart Pruning on config change                     | no                    | Needs S-04, S-05                                                      |
 | S-08       | offline-inspection-survival     | Offline inspection survival end-to-end             | no                    | Needs F-02, S-05                                                      |
 | S-09       | account-recovery-deletion       | Password reset + account deletion                  | no                    | Needs F-01                                                            |
@@ -288,3 +288,4 @@ and lives in S-04, not here.
 - **S-04: open the session screen and see questions personalized to their car** — Archived 2026-06-19 → `context/archive/2026-06-15-personalized-question-engine/`. Lesson: —.
 - **S-05: answer Parts 2–5 as full-screen swipeable cards (Yes/No/Don't know) with mandatory answers, lossless back-navigation, per-Part progress, education pop-ups, and per-question contextual notes.** — Archived 2026-06-30 → `context/archive/2026-06-28-question-card-answering/`. Lesson: —.
 - **S-10: user can view a profile page and control font size and theme (dark/light, following the device system setting by default until overridden), and re-enable the startup instruction pop-up they previously dismissed via "Don't show again".** — Archived 2026-07-01 → `context/archive/2026-07-01-settings-profile/`. Lesson: —.
+- **S-06: view the Summary (per-Part and global Positive/Negative/Don't-know distribution + Total Score), edit answers inline, and explicitly finalize to `Completed` as a read-only report (north star — the personalize → answer → aggregate loop end-to-end).** — Archived 2026-07-07 → `context/archive/2026-07-06-summary-scoring-finalize/`. Lesson: verify new client navigation targets against the SW precache in offline flows; per-section answer polarity is interpretation, not severity weighting (see `context/foundation/lessons.md`).

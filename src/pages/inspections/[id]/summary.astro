@@ -1,0 +1,119 @@
+---
+import camelcaseKeys from "camelcase-keys";
+import Layout from "@/layouts/Layout.astro";
+import AppHeader from "@/components/AppHeader.astro";
+import SummaryScreen, { type SummaryCard } from "@/components/inspections/SummaryScreen";
+import { createClient } from "@/lib/supabase";
+import {
+  activeFlagsFromInspection,
+  configFromInspection,
+  relevantToggles,
+  selectCardDeck,
+  sessionCounts,
+  sessionQuestionIds,
+  type PartId,
+} from "@/lib/questions";
+import type { AnswersMap } from "@/lib/answers";
+
+// The Summary report (S-06, FR-019/FR-020/FR-021). SSR-load the inspection under RLS (same
+// template as `session.astro`): a foreign/absent id is hidden by RLS → null → redirect to the
+// dashboard. Reachable at any time for a Draft (the finalize surface) and for a Completed
+// inspection (the read-only report); the `[id].astro` dispatcher opens Completed rows here.
+//
+// The FR-014 visibility engine runs HERE, server-side: the 80 KB catalogue is imported only in
+// this frontmatter, the personalized per-Part card decks are computed, and ONLY the count/ID
+// payloads + the ordered per-Part card METADATA ({ id, label, section, subsection }) + the raw
+// answers map cross to the `client:only` island — the bank never ships to the browser.
+const { id } = Astro.params;
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+
+const { data: row } = supabase
+  ? await supabase
+      .from("inspections")
+      .select(
+        "id,name,status,price,make,model,year,registration_number,vin,mileage,fuel_type,transmission,drive,color,body_type,door_count,address,notes,global_notes,charging_port_equipped,ev_battery_docs_available,turbo_equipped,mechanical_compressor_equipped,imported_from_eu,answers",
+      )
+      .eq("id", id ?? "")
+      .maybeSingle()
+  : { data: null };
+
+// Absent row (RLS hid a foreign/missing id → null) → dashboard.
+if (!row) {
+  return Astro.redirect("/dashboard");
+}
+
+// Single snake→camel boundary (lessons.md "Field casing"). Exclude the jsonb `answers` map from
+// the deep transform so its opaque `q_…` question-ID keys survive verbatim (mirrors part/[part]).
+const inspection = camelcaseKeys(row, { deep: true, stopPaths: ["answers"] });
+
+// The FR-014 engine (server-side, with the catalogue): the count/ID payloads (base + per-flag
+// deltas) the island recomputes live counts from, the relevant-flag column↔flag bindings, and
+// the ordered per-Part card decks (honoring the persisted equipment flags) mapped down to the
+// display metadata the modal needs. The catalogue stays here, never shipped to the browser.
+const config = configFromInspection(inspection);
+const flags = activeFlagsFromInspection(inspection);
+const counts = sessionCounts(config);
+const questionIds = sessionQuestionIds(config);
+const flagBindings = relevantToggles(config);
+
+const toMeta = (part: PartId): SummaryCard[] =>
+  selectCardDeck(config, flags, part).map((c) => ({
+    id: c.id,
+    label: c.label,
+    section: c.section,
+    subsection: c.subsection,
+  }));
+const cards: Record<PartId, SummaryCard[]> = {
+  part2: toMeta("part2"),
+  part3: toMeta("part3"),
+  part4: toMeta("part4"),
+  part5: toMeta("part5"),
+};
+
+// Read the answers map off the RAW snake_case `row` (not the camelized `inspection`): forcing the
+// deep camel transform over the jsonb `Json` type blows the type checker up (ts2589). `answers` is
+// a single word, so casing is moot; its `q_…` keys are opaque IDs kept verbatim.
+const initialAnswers = (row.answers ?? {}) as AnswersMap;
+---
+
+<Layout title="Inspection summary">
+  <div class="app-gradient safe-area min-h-screen w-full">
+    <main class="mx-auto max-w-3xl p-4 sm:p-8">
+      <AppHeader userEmail={Astro.locals.user?.email} />
+      <SummaryScreen
+        client:only="react"
+        inspection={{
+          id: inspection.id,
+          name: inspection.name,
+          status: inspection.status,
+          globalNotes: inspection.globalNotes,
+          price: inspection.price,
+          make: inspection.make,
+          model: inspection.model,
+          year: inspection.year,
+          registrationNumber: inspection.registrationNumber,
+          vin: inspection.vin,
+          mileage: inspection.mileage,
+          fuelType: inspection.fuelType,
+          transmission: inspection.transmission,
+          drive: inspection.drive,
+          color: inspection.color,
+          bodyType: inspection.bodyType,
+          doorCount: inspection.doorCount,
+          address: inspection.address,
+          notes: inspection.notes,
+          chargingPortEquipped: inspection.chargingPortEquipped,
+          evBatteryDocsAvailable: inspection.evBatteryDocsAvailable,
+          turboEquipped: inspection.turboEquipped,
+          mechanicalCompressorEquipped: inspection.mechanicalCompressorEquipped,
+          importedFromEu: inspection.importedFromEu,
+        }}
+        counts={counts}
+        questionIds={questionIds}
+        initialAnswers={initialAnswers}
+        flagBindings={flagBindings}
+        cards={cards}
+      />
+    </main>
+  </div>
+</Layout>
