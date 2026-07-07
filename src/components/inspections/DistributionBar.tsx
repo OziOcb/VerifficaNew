@@ -58,7 +58,7 @@ export default function DistributionBar({ positive, negative, unknown, total }: 
 
       {/* Legend: each slice's count and its share of answered. `answered of total` gives the
           denominator context without a single combined quality % (FR-019). */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+      <div className="flex flex-col gap-y-1 text-sm sm:flex-row sm:flex-nowrap sm:items-center sm:gap-x-4">
         {SLICES.map((s) => {
           const value = counts[s.key];
           const share = answered > 0 ? Math.round((value / answered) * 100) : 0;

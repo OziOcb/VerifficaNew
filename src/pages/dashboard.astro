@@ -1,9 +1,12 @@
 ---
 import camelcaseKeys from "camelcase-keys";
 import Layout from "@/layouts/Layout.astro";
-import DashboardBoard from "@/components/dashboard/DashboardBoard";
+import DashboardBoard, { type InspectionScore } from "@/components/dashboard/DashboardBoard";
 import AppHeader from "@/components/AppHeader.astro";
 import { createClient } from "@/lib/supabase";
+import { activeFlagsFromInspection, configFromInspection, selectCardDeck, type PartId } from "@/lib/questions";
+import { isConfigUnlocked, rowToInput } from "@/lib/part1-config";
+import { positiveAnswer, sentimentDistribution, type AnswersMap } from "@/lib/answers";
 import type { Inspection } from "@/lib/inspections";
 
 // SSR read surface (NOT offline-first): fetch this owner's inspections under RLS
@@ -14,14 +17,51 @@ import type { Inspection } from "@/lib/inspections";
 const { user } = Astro.locals;
 const supabase = createClient(Astro.request.headers, Astro.cookies);
 
+// The scored Parts (2–5) — Part 1 is config, not answered. Global sentiment sums these.
+const SCORED_PARTS: PartId[] = ["part2", "part3", "part4", "part5"];
+
 let inspections: Inspection[] = [];
+let scores: Record<string, InspectionScore> = {};
 let configured = true;
 if (supabase) {
+  // Select the config + flags + answers too, so the FR-014 visibility engine can compute each
+  // inspection's Total Score HERE (server-side, with the 80 KB catalogue — ≤2 rows, so trivial).
   const { data } = await supabase
     .from("inspections")
-    .select("id,status,name,created_at,updated_at")
+    .select(
+      "id,status,name,created_at,updated_at,price,make,model,year,registration_number,vin,mileage,fuel_type,transmission,drive,color,body_type,door_count,address,notes,charging_port_equipped,ev_battery_docs_available,turbo_equipped,mechanical_compressor_equipped,imported_from_eu,answers",
+    )
     .order("created_at", { ascending: false });
-  inspections = camelcaseKeys(data ?? [], { deep: true });
+  const raw = data ?? [];
+  // Single snake→camel boundary. Exclude the jsonb `answers` from the deep transform (its opaque
+  // `q_…` keys must survive verbatim); read the answers map off the RAW snake row instead —
+  // camelizing over the `Json` type blows the checker up (ts2589, see summary.astro).
+  const rows = camelcaseKeys(raw, { deep: true, stopPaths: ["answers"] });
+  inspections = rows;
+  const answersById = new Map<string, AnswersMap>();
+  for (const r of raw) answersById.set(r.id, (r.answers ?? {}) as AnswersMap);
+
+  // Per-inspection Total Score: run the engine for each row that has a valid Part 1 config
+  // (an un-configured draft has no visible questions → no score → the card shows none). The
+  // per-Part visible deck's IDs feed `sentimentDistribution` under that Part's polarity, summed —
+  // exactly what SessionScreen / SummaryScreen render for a single inspection.
+  scores = {};
+  for (const insp of rows) {
+    if (!isConfigUnlocked(rowToInput(insp))) continue;
+    const config = configFromInspection(insp);
+    const flags = activeFlagsFromInspection(insp);
+    const answers = answersById.get(insp.id) ?? {};
+    const acc: InspectionScore = { positive: 0, negative: 0, unknown: 0, total: 0 };
+    for (const part of SCORED_PARTS) {
+      const ids = selectCardDeck(config, flags, part).map((c) => c.id);
+      acc.total += ids.length;
+      const d = sentimentDistribution(ids, answers, positiveAnswer(part));
+      acc.positive += d.positive;
+      acc.negative += d.negative;
+      acc.unknown += d.unknown;
+    }
+    scores[insp.id] = acc;
+  }
 } else {
   configured = false;
 }
@@ -35,7 +75,7 @@ if (supabase) {
         configured ? (
           <div class="mx-auto max-w-3xl">
             <AppHeader userEmail={user?.email} />
-            <DashboardBoard client:load inspections={inspections} userId={user?.id ?? ""} />
+            <DashboardBoard client:load inspections={inspections} userId={user?.id ?? ""} scores={scores} />
           </div>
         ) : (
           <div class="border-border bg-card text-muted-foreground mx-auto max-w-3xl rounded-xl border p-6 text-center">

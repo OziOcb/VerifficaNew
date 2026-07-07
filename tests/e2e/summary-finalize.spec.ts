@@ -65,6 +65,8 @@ test("finalize → read-only report → dashboard opens report → reopen → re
   const partDialog = page.getByRole("dialog");
   await expect(partDialog).toBeVisible();
   await partDialog.getByRole("button", { name: "Edit answers" }).click();
+  // Sections start collapsed (all-collapsed by default); expand the first to reveal its questions.
+  await partDialog.getByRole("button", { expanded: false }).first().click();
   await partDialog.getByRole("button", { name: "No" }).first().click();
   // Close the modal (the answer persisted optimistically on tap — no Save button).
   await page.keyboard.press("Escape");

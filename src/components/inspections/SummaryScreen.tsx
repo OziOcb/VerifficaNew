@@ -92,21 +92,26 @@ const SENTIMENT_TEXT: Record<AnswerSentiment, string> = {
 const ANSWER_LABEL: Record<string, string> = { yes: "Yes", no: "No", dont_know: "Don't know" };
 
 // The three legal answers as an inline-edit segmented control (FR-020) — the SAME styling tokens
-// as the card deck's action bar (QuestionCards.tsx:45), so a retoggle here reads identically to
-// answering on a card. Presentational-only; the value is the opaque catalogue token.
-const EDIT_OPTIONS: { value: Answer; label: string; selected: string }[] = [
-  {
-    value: "yes",
-    label: "Yes",
-    selected: "border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-200",
-  },
-  { value: "no", label: "No", selected: "border-red-500 bg-red-500/15 text-red-700 dark:text-red-200" },
-  {
-    value: "dont_know",
-    label: "Don't know",
-    selected: "border-blue-500 bg-blue-500/15 text-blue-700 dark:text-blue-200",
-  },
+// as the card deck's action bar (QuestionCards.tsx), so a retoggle here reads identically to
+// answering on a card. The selected accent follows the open Part's SENTIMENT polarity (good =
+// emerald, bad = red, Don't-know = blue), matching the deck: on Parts 2–4 a selected "Yes" lights
+// red and "No" emerald, Part 5 keeps Yes emerald. Coloring, not weighting (polarity lesson).
+const EDIT_OPTIONS: { value: Answer; label: string }[] = [
+  { value: "yes", label: "Yes" },
+  { value: "no", label: "No" },
+  { value: "dont_know", label: "Don't know" },
 ];
+
+// Selected-state accent for an answer under a Part's polarity (`positive` = the good answer here).
+const SENTIMENT_SELECTED = {
+  positive: "border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-200",
+  negative: "border-red-500 bg-red-500/15 text-red-700 dark:text-red-200",
+  unknown: "border-blue-500 bg-blue-500/15 text-blue-700 dark:text-blue-200",
+};
+function selectedAccent(value: Answer, positive: Answer): string {
+  if (value === "dont_know") return SENTIMENT_SELECTED.unknown;
+  return value === positive ? SENTIMENT_SELECTED.positive : SENTIMENT_SELECTED.negative;
+}
 
 /** The per-Part ordered question metadata the route passes in (catalogue-derived server-side). */
 export interface SummaryCard {
@@ -121,11 +126,37 @@ interface SummaryInspection {
   name: string | null;
   status: string;
   globalNotes: string | null;
+  // Part 1 (config) fields — surfaced read-only in the compact Vehicle card (FR-020 report context).
+  price: number | null;
+  make: string | null;
+  model: string | null;
+  year: number | null;
+  registrationNumber: string | null;
+  vin: string | null;
+  mileage: number | null;
+  fuelType: string | null;
+  transmission: string | null;
+  drive: string | null;
+  color: string | null;
+  bodyType: string | null;
+  doorCount: number | null;
+  address: string | null;
+  notes: string | null;
   chargingPortEquipped: boolean | null;
   evBatteryDocsAvailable: boolean | null;
   turboEquipped: boolean | null;
   mechanicalCompressorEquipped: boolean | null;
   importedFromEu: boolean | null;
+}
+
+// Humanize a config enum slug for display: title-case words, upper-case known acronyms
+// (petrol → Petrol, 4wd → 4WD, suv → SUV). Free-text fields (color/VIN/address) are shown raw.
+const ACRONYMS = new Set(["suv", "2wd", "4wd", "vin"]);
+function humanize(value: string): string {
+  return value
+    .split(/[\s_-]+/)
+    .map((w) => (ACRONYMS.has(w.toLowerCase()) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))
+    .join(" ");
 }
 
 interface Props {
@@ -246,7 +277,8 @@ export default function SummaryScreen({ inspection, counts, questionIds, initial
   }
 
   function openModal(part: PartId) {
-    setCollapsed(new Set()); // reset to all-expanded each open (closing resets transient state)
+    // Start with every section collapsed — the user expands only the ones they want to review.
+    setCollapsed(new Set(cards[part].map((c) => c.section)));
     setEditMode(false); // the modal always reopens read-only (FR-020)
     setAnswerSaveError(false);
     setOpenPart(part);
@@ -324,6 +356,27 @@ export default function SummaryScreen({ inspection, counts, questionIds, initial
     );
   }
 
+  // The Part 1 config as an ordered label/value list — only populated fields render (compact
+  // Vehicle card). Enums are humanized; free-text (color/registration/VIN/address) shown raw.
+  const vehicleFields: { label: string; value: string }[] = (
+    [
+      { label: "Make", value: inspection.make },
+      { label: "Model", value: inspection.model },
+      { label: "Year", value: inspection.year !== null ? String(inspection.year) : null },
+      { label: "Price", value: inspection.price !== null ? inspection.price.toLocaleString() : null },
+      { label: "Mileage", value: inspection.mileage !== null ? inspection.mileage.toLocaleString() : null },
+      { label: "Fuel", value: inspection.fuelType ? humanize(inspection.fuelType) : null },
+      { label: "Transmission", value: inspection.transmission ? humanize(inspection.transmission) : null },
+      { label: "Drive", value: inspection.drive ? humanize(inspection.drive) : null },
+      { label: "Body", value: inspection.bodyType ? humanize(inspection.bodyType) : null },
+      { label: "Doors", value: inspection.doorCount !== null ? String(inspection.doorCount) : null },
+      { label: "Color", value: inspection.color },
+      { label: "Registration", value: inspection.registrationNumber },
+      { label: "VIN", value: inspection.vin },
+      { label: "Address", value: inspection.address },
+    ] satisfies { label: string; value: string | null }[]
+  ).flatMap((f) => (f.value !== null && f.value.trim() !== "" ? [{ label: f.label, value: f.value }] : []));
+
   return (
     <div className="space-y-8">
       <header>
@@ -334,10 +387,6 @@ export default function SummaryScreen({ inspection, counts, questionIds, initial
           &larr; {readOnly ? "Back to dashboard" : "Back to session"}
         </a>
         <h1 className="text-foreground mt-4 text-2xl font-bold">{inspection.name ?? "Inspection"} — Summary</h1>
-        <p className="text-muted-foreground mt-1">
-          The Positive / Negative / Don&apos;t-know distribution for this car — overall and per part. Tap a part to
-          review its answers.
-        </p>
       </header>
 
       {/* Global Total Score — the summed per-Part sentiment across Parts 2–5 (FR-019, no quality %). */}
@@ -355,9 +404,40 @@ export default function SummaryScreen({ inspection, counts, questionIds, initial
         </CardContent>
       </Card>
 
+      {/* Vehicle — the Part 1 config as a compact read-only reference, so the report is
+          self-contained (FR-020). Only populated fields render; enums are humanized. */}
+      {(vehicleFields.length > 0 || (inspection.notes !== null && inspection.notes.trim() !== "")) && (
+        <Card className={PANEL}>
+          <CardHeader>
+            <CardTitle className="text-foreground">Vehicle</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {vehicleFields.length > 0 && (
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+                {vehicleFields.map((f) => (
+                  <div key={f.label} className="min-w-0">
+                    <dt className="text-muted-foreground text-xs tracking-wider uppercase">{f.label}</dt>
+                    <dd className="text-foreground mt-0.5 text-sm font-medium break-words">{f.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            {inspection.notes !== null && inspection.notes.trim() !== "" && (
+              <div className="border-border mt-4 border-t pt-3">
+                <dt className="text-muted-foreground text-xs tracking-wider uppercase">Part 1 notes</dt>
+                <p className="text-foreground mt-1 text-sm whitespace-pre-line">{inspection.notes}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Per-Part charts — each tappable to open its read-only question/answer modal. */}
       <section className="space-y-3">
-        <h2 className="text-foreground text-lg font-semibold">By part</h2>
+        <div>
+          <h2 className="text-foreground text-lg font-semibold">By part</h2>
+          <p className="text-muted-foreground mt-1 text-sm">Tap a part to review its answers.</p>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {SCORED_PARTS.map((part) => {
             const s = perPart(part);
@@ -615,7 +695,7 @@ export default function SummaryScreen({ inspection, counts, questionIds, initial
                                             aria-pressed={isSelected}
                                             className={`focus-visible:ring-ring/50 rounded-lg border px-2 py-1.5 text-center text-sm font-medium shadow-xs transition-all outline-none focus-visible:ring-[3px] ${
                                               isSelected
-                                                ? `${opt.selected} shadow-sm`
+                                                ? `${selectedAccent(opt.value, positiveAnswer(openPart))} shadow-sm`
                                                 : "border-border bg-muted text-foreground hover:bg-accent"
                                             }`}
                                           >

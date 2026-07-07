@@ -38,8 +38,18 @@ import {
   type InspectionStatus,
 } from "@/lib/inspections";
 import { StartupInstructions } from "@/components/dashboard/StartupInstructions";
+import DistributionBar from "@/components/inspections/DistributionBar";
 
 const LIMIT = 2;
+
+/** Per-inspection Total Score summary (S-06 sentiment), computed server-side in the frontmatter
+ *  and keyed by inspection id — DistributionBar is pure, so it renders here without Dexie. */
+export interface InspectionScore {
+  positive: number;
+  negative: number;
+  unknown: number;
+  total: number;
+}
 
 // Caffeine token palette (S-10). tailwind-merge lets these later utilities win over
 // the shadcn primitive defaults; flipping the `.dark` class recolors them per-mode.
@@ -67,9 +77,11 @@ function formatDate(iso: string): string {
 interface Props {
   inspections: Inspection[];
   userId: string;
+  // Total Score per inspection id (only for rows with a valid Part 1 config; absent = "not started").
+  scores: Record<string, InspectionScore | undefined>;
 }
 
-export default function DashboardBoard({ inspections: initial, userId }: Props) {
+export default function DashboardBoard({ inspections: initial, userId, scores }: Props) {
   const [inspections, setInspections] = useState<Inspection[]>(initial);
   const [showStartup, setShowStartup] = useState(false);
   const [showLimit, setShowLimit] = useState(false);
@@ -153,6 +165,7 @@ export default function DashboardBoard({ inspections: initial, userId }: Props) 
           <InspectionGroup
             title="Draft"
             rows={drafts}
+            scores={scores}
             onResume={(id) => {
               window.location.assign(`/inspections/${id}`);
             }}
@@ -161,6 +174,7 @@ export default function DashboardBoard({ inspections: initial, userId }: Props) 
           <InspectionGroup
             title="Completed"
             rows={completed}
+            scores={scores}
             onResume={(id) => {
               window.location.assign(`/inspections/${id}`);
             }}
@@ -258,11 +272,12 @@ export default function DashboardBoard({ inspections: initial, userId }: Props) 
 interface GroupProps {
   title: string;
   rows: Inspection[];
+  scores: Record<string, InspectionScore | undefined>;
   onResume: (id: string) => void;
   onDelete: (inspection: Inspection) => void;
 }
 
-function InspectionGroup({ title, rows, onResume, onDelete }: GroupProps) {
+function InspectionGroup({ title, rows, scores, onResume, onDelete }: GroupProps) {
   if (rows.length === 0) return null;
   return (
     <section>
@@ -270,40 +285,54 @@ function InspectionGroup({ title, rows, onResume, onDelete }: GroupProps) {
         {title} ({rows.length})
       </h2>
       <div className="grid gap-4 sm:grid-cols-2">
-        {rows.map((row) => (
-          <Card key={row.id} className={GLASS_PANEL}>
-            <CardHeader>
-              <CardTitle className="text-foreground truncate">{row.name ?? "Untitled inspection"}</CardTitle>
-            </CardHeader>
-            <CardContent className="text-muted-foreground text-sm">Started {formatDate(row.createdAt)}</CardContent>
-            <CardFooter className="gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  onResume(row.id);
-                }}
-                className={OUTLINE_BTN}
-              >
-                <PlayCircle className="size-4" />
-                Resume
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  onDelete(row);
-                }}
-                className="text-destructive hover:bg-accent hover:text-destructive"
-              >
-                <Trash2 className="size-4" />
-                Delete
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
+        {rows.map((row) => {
+          const score = scores[row.id];
+          return (
+            <Card key={row.id} className={GLASS_PANEL}>
+              <CardHeader>
+                <CardTitle className="text-foreground truncate">{row.name ?? "Untitled inspection"}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <p className="text-muted-foreground">Started {formatDate(row.createdAt)}</p>
+                {/* Total Score (S-06 sentiment) — only for rows with a valid Part 1 config. */}
+                {score && score.total > 0 && (
+                  <DistributionBar
+                    positive={score.positive}
+                    negative={score.negative}
+                    unknown={score.unknown}
+                    total={score.total}
+                  />
+                )}
+              </CardContent>
+              <CardFooter className="gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    onResume(row.id);
+                  }}
+                  className={OUTLINE_BTN}
+                >
+                  <PlayCircle className="size-4" />
+                  Resume
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    onDelete(row);
+                  }}
+                  className="text-destructive hover:bg-accent hover:text-destructive"
+                >
+                  <Trash2 className="size-4" />
+                  Delete
+                </Button>
+              </CardFooter>
+            </Card>
+          );
+        })}
       </div>
     </section>
   );

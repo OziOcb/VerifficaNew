@@ -191,35 +191,37 @@ export default function SessionScreen({
       </header>
 
       <div className="relative">
-        {/* Total Score + Completion are meaningless before there is a config: blur them
-            until Part 1 is valid, with an overlay explaining how to reveal them. */}
+        {/* The Total Score is meaningless before there is a config: blur it until Part 1 is
+            valid, with an overlay explaining how to reveal it. Once unlocked it also hosts the
+            View Summary entry point (the S-06 north-star surface). */}
         <div
-          className={`grid gap-4 sm:grid-cols-2 ${unlocked ? "" : "pointer-events-none blur-sm select-none"}`}
+          className={unlocked ? "" : "pointer-events-none blur-sm select-none"}
           aria-hidden={unlocked ? undefined : true}
         >
           <Card className={PANEL}>
             <CardHeader>
               <CardTitle className="text-foreground">Total Score</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-5">
               <DistributionBar
                 positive={globalSentiment.positive}
                 negative={globalSentiment.negative}
                 unknown={globalSentiment.unknown}
                 total={totalVisible}
               />
-            </CardContent>
-          </Card>
 
-          <Card className={PANEL}>
-            <CardHeader>
-              <CardTitle className="text-foreground">Completion</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-foreground text-3xl font-bold">
-                0 <span className="text-muted-foreground text-base font-normal">of {totalVisible}</span>
-              </p>
-              <p className="text-muted-foreground mt-3 text-sm">questions answered for this car</p>
+              {/* View Summary — the S-06 north-star entry point (PRD "Summary reach rate"),
+                  reachable once the config is unlocked. Reads the per-Part + global distribution
+                  and hosts finalize; "Don't know" means no one is ever stuck getting here. */}
+              {unlocked && (
+                <a
+                  href={`/inspections/${inspection.id}/summary`}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring/50 inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium shadow-xs transition-colors outline-none focus-visible:ring-[3px]"
+                >
+                  <FileText className="size-4 shrink-0" />
+                  View Summary
+                </a>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -227,26 +229,11 @@ export default function SessionScreen({
           <div className="absolute inset-0 flex items-center justify-center p-4">
             <div className="border-border bg-card text-foreground flex items-center gap-2 rounded-lg border px-4 py-3 text-center text-sm">
               <Lock className="text-muted-foreground size-4 shrink-0" />
-              Complete Part 1 (Info) to reveal the Total Score and Completion.
+              Complete Part 1 (Info) to reveal the Total Score.
             </div>
           </div>
         )}
       </div>
-
-      {/* View Summary — reachable at any time once Parts 2–5 exist (config unlocked), the S-06
-          north-star entry point (PRD "Summary reach rate"). Reads the per-Part + global
-          distribution and hosts finalize; "Don't know" means no one is ever stuck getting here. */}
-      {unlocked && (
-        <div>
-          <a
-            href={`/inspections/${inspection.id}/summary`}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring/50 inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium shadow-xs transition-colors outline-none focus-visible:ring-[3px]"
-          >
-            <FileText className="size-4 shrink-0" />
-            View Summary
-          </a>
-        </div>
-      )}
 
       <section className={`rounded-xl border p-5 ${PANEL}`}>
         <div className="mb-3 flex items-center gap-2">

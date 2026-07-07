@@ -38,23 +38,28 @@ import type { QuestionCard } from "@/lib/questions";
 const PANEL = "border bg-card text-card-foreground";
 const FIELD_INPUT = "border-input bg-background text-foreground placeholder:text-muted-foreground";
 
-// The three legal answers (FR-015), in the order the action bar presents them. Each carries the
-// accent it lights up in when selected; the value is the opaque catalogue token. The
-// semantic status hues stay (green=present, red=absent, blue=unknown) but are tuned to
-// read in both Caffeine light and dark modes.
-const ANSWER_OPTIONS: { value: Answer; label: string; selected: string }[] = [
-  {
-    value: "yes",
-    label: "Yes",
-    selected: "border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-200",
-  },
-  { value: "no", label: "No", selected: "border-red-500 bg-red-500/15 text-red-700 dark:text-red-200" },
-  {
-    value: "dont_know",
-    label: "Don't know",
-    selected: "border-blue-500 bg-blue-500/15 text-blue-700 dark:text-blue-200",
-  },
+// The three legal answers (FR-015), in the order the action bar presents them; the value is the
+// opaque catalogue token. The selected-state accent follows SENTIMENT polarity, not the literal
+// yes/no: the POSITIVE (good) answer for this Part lights emerald, the negative red, Don't-know
+// blue. So on the condition Parts (2–4, where No = good) a selected "Yes" lights red and "No"
+// emerald, while Part 5 (Yes = good) keeps Yes emerald. Coloring, not weighting (polarity lesson).
+const ANSWER_OPTIONS: { value: Answer; label: string }[] = [
+  { value: "yes", label: "Yes" },
+  { value: "no", label: "No" },
+  { value: "dont_know", label: "Don't know" },
 ];
+
+// Selected-state accent for an answer under a Part's polarity (`positive` = the good answer here),
+// tuned to read in both Caffeine light and dark modes.
+const SENTIMENT_SELECTED = {
+  positive: "border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-200",
+  negative: "border-red-500 bg-red-500/15 text-red-700 dark:text-red-200",
+  unknown: "border-blue-500 bg-blue-500/15 text-blue-700 dark:text-blue-200",
+};
+function selectedAccent(value: Answer, positive: Answer): string {
+  if (value === "dont_know") return SENTIMENT_SELECTED.unknown;
+  return value === positive ? SENTIMENT_SELECTED.positive : SENTIMENT_SELECTED.negative;
+}
 
 interface Props {
   // The inspection id — the answer-map's owning row + the session-screen link target.
@@ -70,9 +75,12 @@ interface Props {
   // The human Part label (e.g. "Part 2 — Standstill") prefixed onto each note's block header,
   // so a note in the global doc reads with its part context (FR-018 header).
   partLabel: string;
+  // The raw answer that counts as POSITIVE (good) for this Part (`positiveAnswer(part)`, computed
+  // server-side) — drives the selected-answer accent so it matches the Part's sentiment polarity.
+  positive: Answer;
 }
 
-export default function QuestionCards({ id, cards, initialAnswers, initialGlobalNotes, partLabel }: Props) {
+export default function QuestionCards({ id, cards, initialAnswers, initialGlobalNotes, partLabel, positive }: Props) {
   const sessionHref = `/inspections/${id}/session`;
   const orderedIds = cards.map((c) => c.id);
   const length = orderedIds.length;
@@ -377,7 +385,9 @@ export default function QuestionCards({ id, cards, initialAnswers, initialGlobal
                   }}
                   aria-pressed={isSelected}
                   className={`focus-visible:ring-ring/50 rounded-lg border px-2 py-3 text-center font-medium shadow-xs transition-all outline-none focus-visible:ring-[3px] sm:px-4 ${
-                    isSelected ? `${opt.selected} shadow-sm` : "border-border bg-muted text-foreground hover:bg-accent"
+                    isSelected
+                      ? `${selectedAccent(opt.value, positive)} shadow-sm`
+                      : "border-border bg-muted text-foreground hover:bg-accent"
                   }`}
                 >
                   {opt.label}
