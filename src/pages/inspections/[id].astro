@@ -1,9 +1,29 @@
 ---
-// The inspection entry point now lives under the session hub (S-04): the Part 1 config
-// form moved to `/inspections/[id]/session/part/1` and the hub is `/inspections/[id]/session`.
-// Keep this path working (the dashboard still links to `/inspections/${id}`) by redirecting
-// to the session hub, which itself bounces to the Part 1 form when the config is not yet
-// valid. RLS / not-found handling lives in the hub route.
+// The inspection entry point (the dashboard links here as `/inspections/${id}`). It is a thin
+// status DISPATCHER — no rendering: a Completed inspection opens as the read-only Summary report
+// (S-06, FR-021); a Draft (or anything else) lands on the session hub, which itself bounces to
+// the Part 1 form when the config is not yet valid. RLS / not-found → dashboard.
+import { createClient } from "@/lib/supabase";
+
 const { id } = Astro.params;
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+
+// A minimal RLS-scoped read: a foreign/absent id is hidden by RLS → null. `status` drives the
+// dispatch below; the session/summary routes re-load the full row they render.
+const { data: row } = supabase
+  ? await supabase
+      .from("inspections")
+      .select("id,status")
+      .eq("id", id ?? "")
+      .maybeSingle()
+  : { data: null };
+
+if (!row) {
+  return Astro.redirect("/dashboard");
+}
+
+if (row.status === "completed") {
+  return Astro.redirect(`/inspections/${id ?? ""}/summary`);
+}
 return Astro.redirect(`/inspections/${id ?? ""}/session`);
 ---

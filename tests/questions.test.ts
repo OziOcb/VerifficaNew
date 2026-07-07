@@ -23,6 +23,7 @@ import {
 } from "@/lib/questions";
 import { countsForFlags, questionIdsForFlags, totalCount } from "@/lib/session-counts";
 import {
+  answerSentiment,
   positiveAnswer,
   sentimentDistribution,
   sumSentiments,
@@ -670,6 +671,75 @@ describe("S-06 sentiment glue: per-Part polarity + summed global (Total Score)",
     expect(global).toEqual(sumSentiments(PARTS.map((p) => expectedPerPart[p])));
     const answered = PARTS.reduce((s, p) => s + Math.floor((liveIds[p].length * 2) / 3), 0);
     expect(global.positive + global.negative + global.unknown).toBe(answered);
+  });
+});
+
+describe("S-06 Summary glue: per-Part decks + modal answer coloring", () => {
+  const PARTS: PartId[] = ["part2", "part3", "part4", "part5"];
+
+  // The Summary route ships each Part's `selectCardDeck(...)` metadata to the island; the modal
+  // groups it by section and the charts sum the per-Part sentiment over those same ids. This pins
+  // that the deck the modal iterates and the ID set the chart tallies are the SAME set — so a
+  // colored row and the chart can never disagree — over the real engine output, with per-Part
+  // polarity and orphan exclusion. Independent oracle: tally straight off the deck, not via
+  // `questionIdsForFlags`.
+  it.each([
+    ["petrol", PETROL],
+    ["EV", EV],
+    ["hybrid", HYBRID],
+  ])("charts sum the same per-Part decks the modal shows, with polarity + orphan exclusion (%s)", (_name, cfg) => {
+    const flagSet = relevantFlags(cfg);
+    const deckIds: Record<PartId, string[]> = {
+      part2: selectCardDeck(cfg, flagSet, "part2").map((c) => c.id),
+      part3: selectCardDeck(cfg, flagSet, "part3").map((c) => c.id),
+      part4: selectCardDeck(cfg, flagSet, "part4").map((c) => c.id),
+      part5: selectCardDeck(cfg, flagSet, "part5").map((c) => c.id),
+    };
+
+    // The deck the modal iterates and the ID payload the charts tally are the SAME SET (the
+    // tally is order-independent; the deck is group/question-ordered, the payload is
+    // base+flag-delta-ordered — so compare as sets, not sequences).
+    const liveIds = questionIdsForFlags(sessionQuestionIds(cfg), flagSet);
+    for (const part of PARTS) expect([...deckIds[part]].sort()).toEqual([...liveIds[part]].sort());
+
+    const cycle: Answer[] = ["yes", "no", "dont_know"];
+    const answers: AnswersMap = { q_orphan_not_visible: "yes" };
+    const zero = (): Sentiment => ({ positive: 0, negative: 0, unknown: 0 });
+    const expected: Record<PartId, Sentiment> = { part2: zero(), part3: zero(), part4: zero(), part5: zero() };
+    for (const part of PARTS) {
+      const pos: Answer = part === "part5" ? "yes" : "no";
+      const half = Math.floor(deckIds[part].length / 2);
+      for (let i = 0; i < half; i++) {
+        const a = cycle[i % 3];
+        answers[deckIds[part][i]] = a;
+        if (a === "dont_know") expected[part].unknown++;
+        else if (a === pos) expected[part].positive++;
+        else expected[part].negative++;
+      }
+    }
+
+    for (const part of PARTS) {
+      expect(sentimentDistribution(deckIds[part], answers, positiveAnswer(part))).toEqual(expected[part]);
+    }
+    const global = sumSentiments(PARTS.map((p) => sentimentDistribution(deckIds[p], answers, positiveAnswer(p))));
+    expect(global).toEqual(sumSentiments(PARTS.map((p) => expected[p]))); // orphan "yes" excluded
+  });
+
+  it("answerSentiment colors the literal answer by the Part's polarity", () => {
+    // The load-bearing modal-coloring rule: the SAME raw No reads positive (emerald) in a
+    // condition Part and negative (red) in the documents Part — else a clean car looks alarming.
+    expect(answerSentiment("no", positiveAnswer("part2"))).toBe("positive");
+    expect(answerSentiment("no", positiveAnswer("part5"))).toBe("negative");
+    expect(answerSentiment("yes", positiveAnswer("part2"))).toBe("negative");
+    expect(answerSentiment("yes", positiveAnswer("part5"))).toBe("positive");
+    expect(answerSentiment("dont_know", positiveAnswer("part2"))).toBe("unknown");
+    // Unanswered is distinct from Don't-know (muted vs. blue).
+    expect(answerSentiment(undefined, positiveAnswer("part2"))).toBe("unanswered");
+  });
+
+  it("a Part with zero visible questions yields an all-zero sentiment (empty modal + chart)", () => {
+    const s = sentimentDistribution([], {}, positiveAnswer("part2"));
+    expect(s).toEqual({ positive: 0, negative: 0, unknown: 0 });
   });
 });
 

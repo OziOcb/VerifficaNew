@@ -106,6 +106,20 @@ export function sentimentDistribution(ids: readonly string[], answers: AnswersMa
   return s;
 }
 
+/**
+ * The sentiment of a SINGLE answer under a Part's polarity — the per-question coloring the
+ * Summary's per-Part modal uses. `"unanswered"` is distinct from `"unknown"` (`dont_know`): an
+ * unanswered row reads muted, a Don't-know row reads blue. Pass `positiveAnswer(part)` as
+ * `positive` so the same raw `no` reads positive in a condition Part and negative in Part 5.
+ */
+export type AnswerSentiment = "positive" | "negative" | "unknown" | "unanswered";
+
+export function answerSentiment(answer: Answer | undefined, positive: Answer): AnswerSentiment {
+  if (answer === undefined) return "unanswered";
+  if (answer === "dont_know") return "unknown";
+  return answer === positive ? "positive" : "negative";
+}
+
 /** Add up several per-Part sentiment tallies into the global (Total Score) sentiment. */
 export function sumSentiments(parts: readonly Sentiment[]): Sentiment {
   const total: Sentiment = { positive: 0, negative: 0, unknown: 0 };
