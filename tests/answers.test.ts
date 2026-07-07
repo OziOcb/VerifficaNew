@@ -3,7 +3,10 @@ import {
   answeredCount,
   distribution,
   firstUnansweredIndex,
+  positiveAnswer,
   readNoteBlock,
+  sentimentDistribution,
+  sumSentiments,
   upsertNoteBlock,
   type AnswersMap,
 } from "@/lib/answers";
@@ -53,6 +56,54 @@ describe("distribution", () => {
 
   it("is all-zero for an unanswered deck", () => {
     expect(distribution(IDS, {})).toEqual({ yes: 0, no: 0, dontKnow: 0 });
+  });
+});
+
+describe("positiveAnswer (per-Part polarity)", () => {
+  it("is No for the condition Parts (2–4) and Yes for the documents Part (5)", () => {
+    expect(positiveAnswer("part2")).toBe("no");
+    expect(positiveAnswer("part3")).toBe("no");
+    expect(positiveAnswer("part4")).toBe("no");
+    expect(positiveAnswer("part5")).toBe("yes");
+  });
+});
+
+describe("sentimentDistribution", () => {
+  it("classifies by the given polarity: positive = the good answer, dont_know = unknown", () => {
+    // Condition Part (positive = "no"): No is good, Yes is bad, dont_know unknown.
+    const answers: AnswersMap = { q_a: "no", q_b: "yes", q_c: "dont_know", q_d: "no" };
+    expect(sentimentDistribution(IDS, answers, "no")).toEqual({ positive: 2, negative: 1, unknown: 1 });
+    // Documents Part (positive = "yes"): the SAME answers flip good↔bad.
+    expect(sentimentDistribution(IDS, answers, "yes")).toEqual({ positive: 1, negative: 2, unknown: 1 });
+  });
+
+  it("skips unanswered ids and excludes ids outside the visible set (orphans)", () => {
+    // Only q_a is visible+answered; the orphan q_hidden must not count.
+    expect(sentimentDistribution(IDS, { q_a: "no", q_hidden: "yes" }, "no")).toEqual({
+      positive: 1,
+      negative: 0,
+      unknown: 0,
+    });
+  });
+
+  it("is all-zero for an unanswered set", () => {
+    expect(sentimentDistribution(IDS, {}, "no")).toEqual({ positive: 0, negative: 0, unknown: 0 });
+  });
+});
+
+describe("sumSentiments", () => {
+  it("adds per-Part tallies into the global sentiment", () => {
+    expect(
+      sumSentiments([
+        { positive: 3, negative: 1, unknown: 2 },
+        { positive: 0, negative: 4, unknown: 1 },
+        { positive: 5, negative: 0, unknown: 0 },
+      ]),
+    ).toEqual({ positive: 8, negative: 5, unknown: 3 });
+  });
+
+  it("is all-zero for an empty list", () => {
+    expect(sumSentiments([])).toEqual({ positive: 0, negative: 0, unknown: 0 });
   });
 });
 

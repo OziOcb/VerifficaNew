@@ -3,11 +3,20 @@
 ## Overview
 
 Build the Summary page — the north-star culmination of the personalize → answer → aggregate
-loop (roadmap S-06; FR-019, FR-020, FR-021, US-01). The user reaches a Summary that shows the
-`Yes`/`No`/`Don't know` distribution per Part and globally (equal weighting, **no single
-quality score**), edits answers inline via per-Part modals, and explicitly finalizes the
-inspection to `Completed` — after which the same page renders as a closed read-only report,
-reopenable only through a deliberate, confirmed action that reverts it to `Draft`.
+loop (roadmap S-06; FR-019, FR-020, FR-021, US-01). The user reaches a Summary that shows a
+`Positive`/`Negative`/`Don't know` **sentiment** distribution per Part and globally (equal
+weighting, **no single quality score**), edits answers inline via per-Part modals, and
+explicitly finalizes the inspection to `Completed` — after which the same page renders as a
+closed read-only report, reopenable only through a deliberate, confirmed action that reverts
+it to `Draft`.
+
+**Answer polarity (per-section, equal-weight — NOT question weighting):** the _sentiment_ of a
+raw answer depends on the Part (idea/veriffica-instruction.md:25-27, reconciled with FR-019).
+Parts 2–4 are defect/symptom checks, so **No = positive, Yes = negative**; Part 5 is
+presence/validity, so **Yes = positive, No = negative**; `dont_know` is `unknown` everywhere.
+Every question still counts equally — this is a coloring/interpretation rule, not severity
+weighting (which stays an FR-019 non-goal). Charts show Positive (emerald) / Negative (red) /
+Don't-know (blue); per-question rows show the literal Yes/No but are colored by sentiment.
 
 The slice is reuse-heavy: the scoring primitive (`distribution()`), the personalization engine,
 and the optimistic offline write path (`saveInspection`) already exist and are tested. The new
@@ -80,8 +89,9 @@ distribution with **no headline quality %**; `npm run lint` and `npm run build` 
   delete them or warn on config change.
 - **No offline-survival hardening beyond the existing path** — that is S-08. Finalize/reopen and
   inline edits ride the already-proven `saveInspection` outbox; no new sync work.
-- **No weighting, no single quality score, no buy/don't-buy verdict, no deal-breakers** — PRD
-  Non-Goals / Business Logic. Equal weighting only; the "Total Score" is a distribution.
+- **No _severity_ weighting, no single quality score, no buy/don't-buy verdict, no deal-breakers**
+  — PRD Non-Goals / Business Logic. Every question counts equally. (Per-section answer POLARITY —
+  which raw answer is "positive" — IS in scope; it is interpretation, not weighting. See Overview.)
 - **No new DB migration** — `status` already exists; answers already persist.
 - **No PDF/export/share of the report** — PRD Non-Goals.
 - **No edit of global notes from within the per-Part answer modal** — notes are edited in the
@@ -111,6 +121,12 @@ All scoring/aggregation stays in pure, server-safe helpers (`@/lib/answers`,
 - **Answers are read off the RAW snake_case row**, not the camelized projection: forcing the
   deep camel transform over the `answers` jsonb `Json` type triggers ts2589
   (`session.astro:59-62`). Reuse that exact pattern.
+- **Answer polarity is per-Part and lives in `@/lib/answers`** (catalogue-free). A
+  `positiveAnswer(part)` returns `"no"` for Parts 2–4 and `"yes"` for Part 5; a
+  `sentimentDistribution(ids, answers, positiveAnswer)` tallies `{ positive, negative, unknown }`.
+  Because sentiment needs each id's Part, aggregation runs PER-PART over the existing per-Part ID
+  lists (`liveIds.part2…part5`) and sums; there is no flat all-parts sentiment tally that ignores
+  Part. `distribution()` (raw yes/no) stays for any raw need, but the charts consume sentiment.
 - **Read-only mode is derived from `status`, live.** The island must read `status` from the
   live Dexie row (falling back to the SSR prop) so an optimistic finalize/reopen flips the mode
   without a server round-trip and survives an offline reload — the `SessionScreen` live-row
@@ -133,28 +149,32 @@ quality score" everywhere and de-risks the shared chart before Phase 2 depends o
 
 **File**: `src/components/inspections/DistributionBar.tsx` (new)
 
-**Intent**: A presentational, catalogue-free component that renders a `{ yes, no, dontKnow }`
-tally (plus the answered/total denominator) as a CSS/SVG stacked horizontal bar with a legend —
-the single visual used by the session-hub Total Score, the Summary global chart, and each
-per-Part chart. Shows counts and each slice's share of _answered_; renders an explicit empty
-state when nothing is answered or a Part has zero visible questions. **No combined headline %.**
+**Intent**: A presentational, catalogue-free component that renders a
+`{ positive, negative, unknown }` sentiment tally (plus the answered/total denominator) as a CSS
+stacked horizontal bar with a legend — the single visual used by the session-hub Total Score, the
+Summary global chart, and each per-Part chart. Legend labels are **Positive / Negative / Don't
+know**. Shows counts and each slice's share of _answered_; renders an explicit empty state when
+nothing is answered or a Part has zero visible questions. **No combined headline %.**
 
-**Contract**: Props `{ yes: number; no: number; dontKnow: number; total: number }` (`total` =
-visible-question denominator). Uses the Caffeine status hues already established in
-`QuestionCards.tsx:45` (emerald / red / blue, light+dark tuned). Theme-aware via existing
-tokens. Pure — no Dexie/catalogue import, so it renders on any island.
+**Contract**: Props `{ positive: number; negative: number; unknown: number; total: number }`
+(`total` = visible-question denominator). Emerald = Positive, red = Negative, blue = Don't-know
+(the Caffeine status hues, light+dark tuned). Theme-aware via existing tokens. Pure — no
+Dexie/catalogue import, so it renders on any island. The caller maps raw answers → sentiment via
+`sentimentDistribution()`; the bar itself is polarity-agnostic (just three colored counts).
 
 #### 2. Wire the live distribution into the session hub
 
 **File**: `src/components/inspections/SessionScreen.tsx`
 
-**Intent**: Compute the global distribution from the live answers intersected with the live
-visible ID set (across Parts 2–5), and render it through `DistributionBar` in place of the
-static `0%`/all-zero block (`SessionScreen.tsx:186-198`). The completion card's `N of M` stays.
+**Intent**: Compute the global SENTIMENT distribution from the live answers intersected with the
+live visible ID set (per-Part, across Parts 2–5, summed), and render it through `DistributionBar`
+in place of the static `0%`/all-zero block (`SessionScreen.tsx:186-198`). The completion card's
+`N of M` stays.
 
-**Contract**: Reuse `distribution()` from `@/lib/answers` over the flattened live visible IDs
-(`liveIds.part2…part5`, already computed at `SessionScreen.tsx:151`) and the live `answers` map
-(`:150`). Denominator = `totalVisible` (`:144`). No new props from the route.
+**Contract**: Sum `sentimentDistribution(liveIds[part], answers, positiveAnswer(part))` from
+`@/lib/answers` across Parts 2–5 (per-Part so each Part's polarity applies), using the live
+`answers` map (`SessionScreen.tsx:150`) and per-Part visible IDs (`:151`). Denominator =
+`totalVisible` (`:144`). No new props from the route.
 
 #### 3. "View Summary" entry point
 
@@ -173,13 +193,14 @@ config is unlocked (Parts 2–5 exist to summarize).
 
 - [ ] Type checking + type-checked lint pass: `npm run lint`
 - [ ] Production build passes: `npm run build`
-- [ ] Unit test: the session-hub global distribution equals `distribution()` over the flattened
-      visible IDs for a representative config+answers fixture (`tests/` addition)
+- [ ] Unit test: the session-hub global sentiment distribution equals the summed per-Part
+      `sentimentDistribution()` over the visible IDs, with correct per-Part polarity (Parts 2–4
+      No=positive, Part 5 Yes=positive) and orphan exclusion (`tests/` addition)
 
 #### Manual Verification:
 
-- [ ] The session hub shows real Yes/No/Don't-know counts + per-slice % of answered, with **no**
-      combined quality %, and updates as answers change on another tab/card
+- [ ] The session hub shows Positive/Negative/Don't-know counts + per-slice % of answered, with
+      **no** combined quality %, correct polarity (a Part-2 "No" reads Positive), updates live
 - [ ] The Total Score block reads sensibly at 0 answered (empty state) and at full completion
 - [ ] "View Summary" navigates to `/inspections/[id]/summary` (404/placeholder acceptable until
       Phase 2)
@@ -226,8 +247,9 @@ fallback, exactly like `SessionScreen`.
 
 **Contract**: Props mirror `SessionScreen`'s (`counts`, `questionIds`, `initialAnswers`,
 `flagBindings`, `globalNotes`, flag columns, `status`, `unlocked`) plus a per-Part ordered
-`cards` map (`Record<PartId, {id,label,section,subsection}[]>`). Per-Part distribution =
-`distribution(liveIds[part], answers)`; global = `distribution(allVisibleIds, answers)`. Notes
+`cards` map (`Record<PartId, {id,label,section,subsection}[]>`). Per-Part chart =
+`sentimentDistribution(liveIds[part], answers, positiveAnswer(part))`; global = the sum of those
+across Parts 2–5 (per-Part so each Part's polarity applies — never a flat all-parts tally). Notes
 textarea + debounced persist copied from `SessionScreen.tsx:109-126` (single shared live row).
 
 #### 3. Per-Part question/answer modal (read-only)
@@ -236,12 +258,15 @@ textarea + debounced persist copied from `SessionScreen.tsx:109-126` (single sha
 
 **Intent**: Tapping a Part's chart opens a `Dialog` listing that Part's questions grouped by
 `section` (each group a collapsible block), showing each question's `label` and its current
-answer (Yes/No/Don't know or "Not answered"), read-only. Closing resets any transient state.
+answer (the literal Yes/No/Don't know or "Not answered"), **colored by SENTIMENT** — a good
+answer reads emerald and a bad one red regardless of whether it is Yes or No (so a Part-2 "No"
+is emerald, a Part-5 "No" is red). Read-only. Closing resets any transient state.
 
 **Contract**: Uses the existing `@/components/ui/dialog`. Groups the passed-in ordered `cards`
 for that Part by `section` preserving catalogue order; collapsible via local state. Answer value
-read from the live `answers` map by card `id` (verbatim key). Read-only in this phase (Edit
-arrives in Phase 3).
+read from the live `answers` map by card `id` (verbatim key); its hue derived from
+`positiveAnswer(part)` (emerald when the answer equals it, red for the opposite, blue for
+`dont_know`, muted for unanswered). Read-only in this phase (Edit arrives in Phase 3).
 
 #### 4. Dispatch Completed inspections to the report
 
@@ -260,16 +285,17 @@ branch the redirect. Keep it a thin dispatcher — no rendering.
 
 - [ ] Type-checked lint passes: `npm run lint`
 - [ ] Production build passes: `npm run build`
-- [ ] Unit test: per-Part and global distributions computed by the Summary glue match
-      `distribution()` over the corresponding visible ID sets (incl. an orphaned-answer fixture
-      that must be excluded)
+- [ ] Unit test: per-Part and global SENTIMENT distributions computed by the Summary glue match
+      the summed `sentimentDistribution()` over the corresponding visible ID sets with per-Part
+      polarity (incl. an orphaned-answer fixture that must be excluded)
 
 #### Manual Verification:
 
 - [ ] `/inspections/[id]/summary` shows the global chart on top, a chart per Part, and the
       editable notes textarea; charts reflect current answers
 - [ ] Tapping a Part chart opens the modal with that Part's questions grouped by section,
-      collapsible, read-only, showing each answer
+      collapsible, read-only, showing each answer colored by sentiment (a Part-2 "No" reads
+      emerald; a Part-5 "No" reads red)
 - [ ] Editing the notes textarea persists (survives reload; reflects on the session hub too)
 - [ ] A Completed inspection opened from the dashboard lands on `/summary`; a Draft lands on
       `/session`
@@ -314,7 +340,7 @@ answer may either no-op or re-affirm — pick no-op; do not clear an answer (the
 - [ ] Type-checked lint passes: `npm run lint`
 - [ ] Production build passes: `npm run build`
 - [ ] Unit test: applying an inline edit to the answers map yields the expected recomputed
-      per-Part + global distribution (pure-function level)
+      per-Part + global SENTIMENT distribution (pure-function level)
 
 #### Manual Verification:
 
@@ -414,9 +440,11 @@ re-finalize.
 
 ### Unit Tests:
 
-- Per-Part + global distribution glue equals `distribution()` over the correct visible ID sets.
+- `positiveAnswer(part)` returns `"no"` for Parts 2–4 and `"yes"` for Part 5.
+- `sentimentDistribution()` classifies each answer to positive/negative/unknown by the given
+  polarity; per-Part + global glue equals the summed per-Part sentiment over the visible ID sets.
 - Orphaned answers (answers for now-hidden questions) are excluded from every distribution.
-- Inline-edit answer-map update recomputes distributions correctly (pure level).
+- Inline-edit answer-map update recomputes sentiment distributions correctly (pure level).
 - Empty cases: zero-visible-question Part, fully-unanswered inspection.
 
 ### Integration / E2E Tests:
@@ -450,7 +478,10 @@ data migration.
 
 - Roadmap slice: `context/foundation/roadmap.md` → S-06 (north star)
 - PRD: FR-019, FR-020, FR-021, US-01; Business Logic (equal weighting, no verdict)
-- Scoring primitive: `src/lib/answers.ts:46` (`distribution`)
+- Answer polarity (per-section sentiment): `idea/veriffica-instruction.md:25-27` (reconciled with
+  FR-019 — interpretation only, not severity weighting)
+- Scoring primitives: `src/lib/answers.ts` (`distribution` raw; `sentimentDistribution` +
+  `positiveAnswer` for the charts)
 - Denominators: `src/lib/session-counts.ts`
 - Optimistic write path: `src/lib/sync.ts:109` (`saveInspection`)
 - Answer-write reference: `src/components/inspections/QuestionCards.tsx:154`
@@ -465,15 +496,15 @@ data migration.
 
 #### Automated
 
-- [ ] 1.1 Type-checked lint passes: `npm run lint`
-- [ ] 1.2 Production build passes: `npm run build`
-- [ ] 1.3 Unit test: session-hub global distribution matches `distribution()` over flattened visible IDs
+- [x] 1.1 Type-checked lint passes: `npm run lint`
+- [x] 1.2 Production build passes: `npm run build`
+- [x] 1.3 Unit test: session-hub global sentiment distribution matches summed per-Part `sentimentDistribution()` with correct polarity
 
 #### Manual
 
-- [ ] 1.4 Session hub shows real Yes/No/Don't-know counts + per-slice %, no combined quality %, updates live
-- [ ] 1.5 Total Score block reads sensibly at 0 answered and at full completion
-- [ ] 1.6 "View Summary" navigates to `/inspections/[id]/summary`
+- [x] 1.4 Session hub shows Positive/Negative/Don't-know counts + per-slice %, correct polarity, no combined quality %, updates live
+- [x] 1.5 Total Score block reads sensibly at 0 answered and at full completion
+- [x] 1.6 "View Summary" navigates to `/inspections/[id]/summary`
 
 ### Phase 2: Summary route + charts + read-only per-Part modals
 
@@ -481,12 +512,12 @@ data migration.
 
 - [ ] 2.1 Type-checked lint passes: `npm run lint`
 - [ ] 2.2 Production build passes: `npm run build`
-- [ ] 2.3 Unit test: per-Part + global distributions match `distribution()` (incl. orphaned-answer exclusion)
+- [ ] 2.3 Unit test: per-Part + global sentiment distributions match summed `sentimentDistribution()` with polarity (incl. orphaned-answer exclusion)
 
 #### Manual
 
 - [ ] 2.4 Summary shows global chart on top, per-Part charts, editable notes textarea
-- [ ] 2.5 Tapping a Part chart opens a section-grouped, collapsible, read-only modal with answers
+- [ ] 2.5 Tapping a Part chart opens a section-grouped, collapsible, read-only modal with answers colored by sentiment
 - [ ] 2.6 Notes edit persists (survives reload; reflects on the session hub)
 - [ ] 2.7 Completed opens on `/summary`, Draft on `/session` (dashboard dispatch)
 - [ ] 2.8 Charts render correctly for a zero-question Part and a fully-unanswered inspection
@@ -497,7 +528,7 @@ data migration.
 
 - [ ] 3.1 Type-checked lint passes: `npm run lint`
 - [ ] 3.2 Production build passes: `npm run build`
-- [ ] 3.3 Unit test: inline edit recomputes per-Part + global distributions correctly
+- [ ] 3.3 Unit test: inline edit recomputes per-Part + global sentiment distributions correctly
 
 #### Manual
 

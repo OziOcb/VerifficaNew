@@ -7,13 +7,14 @@
 // visibility engine server-side and passes ONLY the per-Part counts + the inspection's
 // scalar fields in as props; the 80 KB catalogue never reaches the browser.
 //
-// Phase 3 has no answer store yet, so the score/completion render their 0-answer state
-// (US-01: they reflect only answered questions) — completion `0 of N`, an all-zero
-// Yes/No/Don't-know distribution at 0%, with `totalVisible` as the denominator so the
-// score/completion never drift from what the nav shows. S-05 fills the numerators; S-04
-// equipment toggles (Phase 4) move the denominator.
+// The Total Score is the live Positive/Negative/Don't-know SENTIMENT distribution (S-06 Phase 1,
+// FR-019) rendered through the shared `DistributionBar` — equal weighting, NO single quality %.
+// Each Part's polarity applies (Parts 2–4 No=positive, Part 5 Yes=positive; `positiveAnswer`),
+// summed across Parts, computed from the live answers intersected with the visible set, with
+// `totalVisible` as the denominator so it never drifts from what the nav shows. S-04 equipment
+// toggles move that denominator. (Completion's numerator is still the S-05 stub `0`; out of scope.)
 import { useEffect, useState } from "react";
-import { CircleAlert, Lock } from "lucide-react";
+import { CircleAlert, FileText, Lock } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
@@ -26,8 +27,12 @@ import {
   type SessionQuestionIds,
 } from "@/lib/session-counts";
 import { MAX_GLOBAL_NOTES_LENGTH, M } from "@/lib/part1-config";
-import { answeredCount, type AnswersMap } from "@/lib/answers";
+import { answeredCount, positiveAnswer, sentimentDistribution, sumSentiments, type AnswersMap } from "@/lib/answers";
+import DistributionBar from "@/components/inspections/DistributionBar";
 import type { PartId, RelevantToggle, RuntimeFlag } from "@/lib/questions";
+
+// The scored Parts (2–5) — Part 1 is the config form, not answered. Global sentiment sums these.
+const SCORED_PARTS: PartId[] = ["part2", "part3", "part4", "part5"];
 
 // Caffeine token palette — matches Part1Form / the dashboard shell.
 const PANEL = "border bg-card text-card-foreground";
@@ -151,6 +156,15 @@ export default function SessionScreen({
   const liveIds = questionIdsForFlags(questionIds, activeFlags);
   const answeredByPart = (part: PartId) => answeredCount(liveIds[part], answers);
 
+  // The Total Score (FR-019): the global SENTIMENT distribution — Positive / Negative / Don't-know
+  // — across every visible question in Parts 2–5. Computed PER-PART (each Part's polarity applies:
+  // Parts 2–4 No=positive, Part 5 Yes=positive; `positiveAnswer`) then summed, and intersected with
+  // the live visible set so an orphaned answer (pre-S-07) is never counted. Equal weighting, NO
+  // single quality %. `totalVisible` is the denominator so it never drifts from the nav counts.
+  const globalSentiment = sumSentiments(
+    SCORED_PARTS.map((p) => sentimentDistribution(liveIds[p], answers, positiveAnswer(p))),
+  );
+
   // Part names + order are the PRD's five parts (prd.md:56) — the real-world physical
   // inspection order (Info → Standstill → Engine → Drive → Documents; prd.md:194).
   const parts = [
@@ -188,12 +202,12 @@ export default function SessionScreen({
               <CardTitle className="text-foreground">Total Score</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-foreground text-3xl font-bold">0%</p>
-              <div className="mt-3 flex gap-4 text-sm">
-                <span className="text-emerald-600 dark:text-emerald-400">Yes 0</span>
-                <span className="text-red-600 dark:text-red-400">No 0</span>
-                <span className="text-muted-foreground">Don&apos;t know 0</span>
-              </div>
+              <DistributionBar
+                positive={globalSentiment.positive}
+                negative={globalSentiment.negative}
+                unknown={globalSentiment.unknown}
+                total={totalVisible}
+              />
             </CardContent>
           </Card>
 
@@ -218,6 +232,21 @@ export default function SessionScreen({
           </div>
         )}
       </div>
+
+      {/* View Summary — reachable at any time once Parts 2–5 exist (config unlocked), the S-06
+          north-star entry point (PRD "Summary reach rate"). Reads the per-Part + global
+          distribution and hosts finalize; "Don't know" means no one is ever stuck getting here. */}
+      {unlocked && (
+        <div>
+          <a
+            href={`/inspections/${inspection.id}/summary`}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring/50 inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium shadow-xs transition-colors outline-none focus-visible:ring-[3px]"
+          >
+            <FileText className="size-4 shrink-0" />
+            View Summary
+          </a>
+        </div>
+      )}
 
       <section className={`rounded-xl border p-5 ${PANEL}`}>
         <div className="mb-3 flex items-center gap-2">

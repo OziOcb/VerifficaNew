@@ -22,6 +22,14 @@ import {
   type VisibilityConfig,
 } from "@/lib/questions";
 import { countsForFlags, questionIdsForFlags, totalCount } from "@/lib/session-counts";
+import {
+  positiveAnswer,
+  sentimentDistribution,
+  sumSentiments,
+  type Answer,
+  type AnswersMap,
+  type Sentiment,
+} from "@/lib/answers";
 import bankJson from "@/data/questions/question-bank.json";
 import mappingJson from "@/data/questions/question-mapping-config.json";
 // The authored originals the runtime copies under `src/data/questions/` are hand-copied
@@ -593,6 +601,75 @@ describe("sessionQuestionIds ⇄ questionIdsForFlags equals the engine for any f
       const liveCounts = countsForFlags(sessionCounts(cfg), active);
       for (const part of PARTS) expect(live[part].length).toBe(liveCounts[part]);
     }
+  });
+});
+
+describe("S-06 sentiment glue: per-Part polarity + summed global (Total Score)", () => {
+  const PARTS: PartId[] = ["part2", "part3", "part4", "part5"];
+
+  it("positiveAnswer is No for the condition Parts (2–4) and Yes for the documents Part (5)", () => {
+    expect(positiveAnswer("part2")).toBe("no");
+    expect(positiveAnswer("part3")).toBe("no");
+    expect(positiveAnswer("part4")).toBe("no");
+    expect(positiveAnswer("part5")).toBe("yes");
+  });
+
+  it("the SAME raw No reads positive in a condition Part but negative in the documents Part", () => {
+    // The load-bearing polarity behavior: identical answers, opposite sentiment by Part.
+    const ids = ["q_x"];
+    expect(sentimentDistribution(ids, { q_x: "no" }, positiveAnswer("part2"))).toEqual({
+      positive: 1,
+      negative: 0,
+      unknown: 0,
+    });
+    expect(sentimentDistribution(ids, { q_x: "no" }, positiveAnswer("part5"))).toEqual({
+      positive: 0,
+      negative: 1,
+      unknown: 0,
+    });
+  });
+
+  // The session-hub Total Score (and the Summary's global chart) sum, across Parts 2–5,
+  // `sentimentDistribution(liveIds[part], answers, positiveAnswer(part))`. This pins that glue
+  // over the real engine output: correct per-Part polarity, correct summation, orphan exclusion.
+  it.each([
+    ["petrol", PETROL],
+    ["EV", EV],
+    ["hybrid", HYBRID],
+  ])("classifies %s answers by per-Part polarity, sums to the global, excludes orphans", (_name, cfg) => {
+    const liveIds = questionIdsForFlags(sessionQuestionIds(cfg), relevantFlags(cfg));
+    const cycle: Answer[] = ["yes", "no", "dont_know"];
+    const answers: AnswersMap = { q_orphan_not_visible: "yes" };
+
+    // Independent oracle: answer two-thirds of each Part and tally the expected sentiment with the
+    // Part's own polarity (Part 5 → yes positive, else no positive) — never via the code under test.
+    const zero = (): Sentiment => ({ positive: 0, negative: 0, unknown: 0 });
+    const expectedPerPart: Record<PartId, Sentiment> = { part2: zero(), part3: zero(), part4: zero(), part5: zero() };
+    for (const part of PARTS) {
+      const ids = liveIds[part];
+      const pos: Answer = part === "part5" ? "yes" : "no";
+      const n = Math.floor((ids.length * 2) / 3);
+      for (let i = 0; i < n; i++) {
+        const a = cycle[i % 3];
+        answers[ids[i]] = a;
+        if (a === "dont_know") expectedPerPart[part].unknown++;
+        else if (a === pos) expectedPerPart[part].positive++;
+        else expectedPerPart[part].negative++;
+      }
+    }
+
+    // Per-Part sentiment matches the oracle (polarity applied), and the denominator is real.
+    for (const part of PARTS) {
+      expect(sentimentDistribution(liveIds[part], answers, positiveAnswer(part))).toEqual(expectedPerPart[part]);
+    }
+    const denom = totalCount(countsForFlags(sessionCounts(cfg), relevantFlags(cfg)));
+    expect(PARTS.reduce((s, p) => s + liveIds[p].length, 0)).toBe(denom);
+
+    // Global (Total Score) = the sum across Parts; the orphan "yes" never inflates positive.
+    const global = sumSentiments(PARTS.map((p) => sentimentDistribution(liveIds[p], answers, positiveAnswer(p))));
+    expect(global).toEqual(sumSentiments(PARTS.map((p) => expectedPerPart[p])));
+    const answered = PARTS.reduce((s, p) => s + Math.floor((liveIds[p].length * 2) / 3), 0);
+    expect(global.positive + global.negative + global.unknown).toBe(answered);
   });
 });
 
