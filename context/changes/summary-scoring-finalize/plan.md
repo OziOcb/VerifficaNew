@@ -510,17 +510,17 @@ data migration.
 
 #### Automated
 
-- [x] 2.1 Type-checked lint passes: `npm run lint`
-- [x] 2.2 Production build passes: `npm run build`
-- [x] 2.3 Unit test: per-Part + global sentiment distributions match summed `sentimentDistribution()` with polarity (incl. orphaned-answer exclusion)
+- [x] 2.1 Type-checked lint passes: `npm run lint` — 633ef21
+- [x] 2.2 Production build passes: `npm run build` — 633ef21
+- [x] 2.3 Unit test: per-Part + global sentiment distributions match summed `sentimentDistribution()` with polarity (incl. orphaned-answer exclusion) — 633ef21
 
 #### Manual
 
-- [x] 2.4 Summary shows global chart on top, per-Part charts, editable notes textarea
-- [x] 2.5 Tapping a Part chart opens a section-grouped, collapsible, read-only modal with answers colored by sentiment
-- [x] 2.6 Notes edit persists (survives reload; reflects on the session hub)
-- [x] 2.7 Completed opens on `/summary`, Draft on `/session` (dashboard dispatch)
-- [x] 2.8 Charts render correctly for a zero-question Part and a fully-unanswered inspection
+- [x] 2.4 Summary shows global chart on top, per-Part charts, editable notes textarea — 633ef21
+- [x] 2.5 Tapping a Part chart opens a section-grouped, collapsible, read-only modal with answers colored by sentiment — 633ef21
+- [x] 2.6 Notes edit persists (survives reload; reflects on the session hub) — 633ef21
+- [x] 2.7 Completed opens on `/summary`, Draft on `/session` (dashboard dispatch) — 633ef21
+- [x] 2.8 Charts render correctly for a zero-question Part and a fully-unanswered inspection — 633ef21
 
 ### Phase 3: Inline answer editing in the per-Part modal
 
