@@ -169,7 +169,7 @@ difference from the primary persona.
 
 ### Summary & scoring
 
-- FR-019: User can view a Summary page with a chart per Part and a global chart, each showing only the `Yes`/`No`/`Don't know` answer distribution (equal weighting, no single quality score), plus a Total Score expressed as that distribution across the whole inspection. Priority: must-have
+- FR-019: User can view a Summary page with a chart per Part and a global chart, each showing only a three-way `Positive`/`Negative`/`Don't know` answer distribution (equal weighting, no single quality score), plus a Total Score expressed as that distribution across the whole inspection. The `Positive`/`Negative` buckets apply per-Part answer POLARITY as interpretation only — Parts 2–4 (defect/symptom checks): `No` = positive, `Yes` = negative; Part 5 (presence/validity): `Yes` = positive, `No` = negative; `Don't know` = unknown everywhere. Every question still counts equally; this is coloring, not severity weighting, and produces no single collapsed quality score or buy/don't-buy verdict (see Business Logic). Priority: must-have
   > Socrates: Counter-argument considered: "a layperson wants a buy/don't-buy verdict; a flat unweighted distribution may feel like data without an answer." Resolution: kept pure distribution — severity weighting and deal-breakers imply false precision and liability the helper-tool framing must avoid; weighted scoring and deal-breakers are explicit non-goals.
 - FR-020: User can edit answers inline on the Summary page (without returning to card view), with charts, progress, and Total Score updating immediately. Priority: must-have
 - FR-021: User can manually finalize an inspection to `Completed` via an explicit button on the Summary page; a Completed inspection opens by default as a closed read-only report, and returning to edit requires a deliberate confirmed action that reverts it to `Draft` and requires re-finalization. Priority: must-have
@@ -214,7 +214,11 @@ knows" what to ask about _their_ car, and never as a wall of generic questions.
 As the buyer answers, the rule classifies and aggregates: each answer is `Yes`,
 `No`, or `Don't know`, every question counts equally (no severity weighting, no
 buy/don't-buy verdict, no deal-breaker disqualification), and the output is a
-distribution shown per Part and across the whole inspection. When the car's
+distribution shown per Part and across the whole inspection. The distribution is
+expressed as `Positive`/`Negative`/`Don't know` by applying each Part's answer
+polarity (Parts 2–4: `No` = positive; Part 5: `Yes` = positive) — a per-section
+interpretation of which raw answer is favorable, not a per-question weight. All
+questions remain equally weighted and no single collapsed score is produced. When the car's
 configuration changes, the relevant-question set is recomputed: still-valid answers
 are kept, answers to now-irrelevant questions are dropped, and the distribution is
 re-derived (Smart Pruning).

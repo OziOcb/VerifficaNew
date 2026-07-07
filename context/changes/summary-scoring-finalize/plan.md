@@ -374,6 +374,12 @@ Playwright e2e.
 (finalize-anytime, per decision); the read-only mode derives from the live `status`, so the UI
 flips without a reload.
 
+> **Superseded by `refinements.md` #1 (shipped):** finalize REDIRECTS to `/dashboard` once the
+> write has synced (`redirectWhenSynced()` drains the outbox first); the in-place read-only flip
+> described here/below is retained only as the OFFLINE fallback when the redirect target isn't
+> reachable. Read the "no reload" wording in this phase, the Desired End State, Critical
+> Implementation Details, and Manual Verification 4.5 through that lens.
+
 **Contract**: Reuses the optimistic status write (`SaveInput.status` already supported,
 `sync.ts:93`). No confirm dialog on finalize (it is reversible via Reopen). Failure surfaces
 inline.

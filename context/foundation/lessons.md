@@ -154,3 +154,20 @@ ON CONFLICT DO UPDATE`, BEFORE Postgres detects the conflict and routes it to th
   score or buy/don't-buy verdict. Polarity ≠ weighting: the first is in scope, the second is
   an FR-019 non-goal.
 - **Applies to**: frame, plan, plan-review, implement, impl-review
+
+## Verify new navigation targets against the SW precache in offline flows
+
+- **Context**: Any change to an offline-first (PWA) surface that adds or changes a
+  client-side navigation/redirect target — e.g. a post-action redirect, a status-driven
+  dispatcher, a "back" link — on this Astro + `@vite-pwa/astro` + Cloudflare Workers stack.
+- **Problem**: S-06 finalize redirected to `/dashboard`, a route not in the service-worker
+  precache, so finalizing while OFFLINE hit `ERR_INTERNET_DISCONNECTED` (the browser dino
+  page). The data write was offline-safe (optimistic `saveInspection` outbox), which masked
+  the risk — the failure came purely from navigating to an un-cached route. Fix that shipped:
+  `redirectWhenSynced()` drains the outbox and only navigates once it is empty; offline it
+  bails and stays on the in-place read-only page.
+- **Rule**: Whenever a change adds or changes a client-side navigation/redirect target in an
+  offline-first app, confirm the destination is in the SW precache, OR gate the navigation on
+  the write having synced (drain the outbox first; stay put when offline). Never assume "the
+  write is offline-safe" covers "the navigation is offline-safe."
+- **Applies to**: plan, plan-review, implement, impl-review
