@@ -46,3 +46,4 @@ CLAUDE.local.md
 # playwright auth files
 playwright/.auth/
 .playwright-cli
+.playwright-mcp

@@ -17,6 +17,9 @@
       "Bash(grep *)",
       "Bash(find *)",
       "Bash(echo *)",
+      "plugin:playwright:*",
+      "Bash(npx playwright *)",
+      "Bash(playwright *)",
       "Read",
       "Edit",
       "Write"
