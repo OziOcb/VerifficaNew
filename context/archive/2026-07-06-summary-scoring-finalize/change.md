@@ -1,10 +1,10 @@
 ---
 change_id: summary-scoring-finalize
 title: Summary distribution, inline edit & finalize
-status: implemented
+status: archived
 created: 2026-07-06
 updated: 2026-07-07
-archived_at: null
+archived_at: 2026-07-07T19:51:50Z
 ---
 
 ## Notes
