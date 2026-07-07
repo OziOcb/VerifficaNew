@@ -496,15 +496,15 @@ data migration.
 
 #### Automated
 
-- [x] 1.1 Type-checked lint passes: `npm run lint`
-- [x] 1.2 Production build passes: `npm run build`
-- [x] 1.3 Unit test: session-hub global sentiment distribution matches summed per-Part `sentimentDistribution()` with correct polarity
+- [x] 1.1 Type-checked lint passes: `npm run lint` — ceb6e0a
+- [x] 1.2 Production build passes: `npm run build` — ceb6e0a
+- [x] 1.3 Unit test: session-hub global sentiment distribution matches summed per-Part `sentimentDistribution()` with correct polarity — ceb6e0a
 
 #### Manual
 
-- [x] 1.4 Session hub shows Positive/Negative/Don't-know counts + per-slice %, correct polarity, no combined quality %, updates live
-- [x] 1.5 Total Score block reads sensibly at 0 answered and at full completion
-- [x] 1.6 "View Summary" navigates to `/inspections/[id]/summary`
+- [x] 1.4 Session hub shows Positive/Negative/Don't-know counts + per-slice %, correct polarity, no combined quality %, updates live — ceb6e0a
+- [x] 1.5 Total Score block reads sensibly at 0 answered and at full completion — ceb6e0a
+- [x] 1.6 "View Summary" navigates to `/inspections/[id]/summary` — ceb6e0a
 
 ### Phase 2: Summary route + charts + read-only per-Part modals
 
