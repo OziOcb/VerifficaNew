@@ -34,6 +34,7 @@ import {
   positiveAnswer,
   sentimentDistribution,
   sumSentiments,
+  type Answer,
   type AnswerSentiment,
   type AnswersMap,
 } from "@/lib/answers";
@@ -70,6 +71,23 @@ const SENTIMENT_TEXT: Record<AnswerSentiment, string> = {
   unanswered: "text-muted-foreground",
 };
 const ANSWER_LABEL: Record<string, string> = { yes: "Yes", no: "No", dont_know: "Don't know" };
+
+// The three legal answers as an inline-edit segmented control (FR-020) — the SAME styling tokens
+// as the card deck's action bar (QuestionCards.tsx:45), so a retoggle here reads identically to
+// answering on a card. Presentational-only; the value is the opaque catalogue token.
+const EDIT_OPTIONS: { value: Answer; label: string; selected: string }[] = [
+  {
+    value: "yes",
+    label: "Yes",
+    selected: "border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-200",
+  },
+  { value: "no", label: "No", selected: "border-red-500 bg-red-500/15 text-red-700 dark:text-red-200" },
+  {
+    value: "dont_know",
+    label: "Don't know",
+    selected: "border-blue-500 bg-blue-500/15 text-blue-700 dark:text-blue-200",
+  },
+];
 
 /** The per-Part ordered question metadata the route passes in (catalogue-derived server-side). */
 export interface SummaryCard {
@@ -134,6 +152,12 @@ export default function SummaryScreen({ inspection, counts, questionIds, initial
   const [openPart, setOpenPart] = useState<PartId | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
+  // Inline-edit state (FR-020), local to the modal: `editMode` reveals the per-question toggles;
+  // `answerSaveError` surfaces a failed local write inline (mirrors QuestionCards' `saveError`).
+  // Both reset to false on open/close (transient — the modal always reopens read-only).
+  const [editMode, setEditMode] = useState(false);
+  const [answerSaveError, setAnswerSaveError] = useState(false);
+
   useEffect(() => startAutoSync(), []);
 
   const liveRow = useLiveQuery(() => db.inspections.get(inspection.id), [inspection.id]);
@@ -168,6 +192,11 @@ export default function SummaryScreen({ inspection, counts, questionIds, initial
   const activeFlags = new Set<RuntimeFlag>();
   for (const t of flagBindings) if (flagRow[t.column]) activeFlags.add(t.flag);
 
+  // The inspection lifecycle status, live (SSR fallback) — a Completed report is read-only, so the
+  // inline-edit affordance only appears while Draft. (Full finalize/reopen enforcement is Phase 4.)
+  const liveStatus = liveRow?.status ?? inspection.status;
+  const isDraft = liveStatus !== "completed";
+
   const liveCounts = countsForFlags(counts, activeFlags);
   const totalVisible = totalCount(liveCounts);
 
@@ -191,7 +220,27 @@ export default function SummaryScreen({ inspection, counts, questionIds, initial
 
   function openModal(part: PartId) {
     setCollapsed(new Set()); // reset to all-expanded each open (closing resets transient state)
+    setEditMode(false); // the modal always reopens read-only (FR-020)
+    setAnswerSaveError(false);
     setOpenPart(part);
+  }
+
+  // Inline answer edit (FR-020): write the whole map through the read-merge optimistic path then
+  // flush — identical to QuestionCards.handleAnswer (QuestionCards.tsx:154). Because `answers`
+  // derives from the live Dexie row, every chart recomputes the instant the local write lands.
+  // Re-tapping the current answer is a no-op (there is no "unanswer" in the domain). A local write
+  // failure surfaces inline and drops nothing.
+  function handleEditAnswer(cardId: string, value: Answer) {
+    if (answers[cardId] === value) return;
+    setAnswerSaveError(false);
+    void saveInspection({ id: inspection.id, answers: { ...answers, [cardId]: value } }).then(
+      () => {
+        void flushQueue();
+      },
+      () => {
+        setAnswerSaveError(true);
+      },
+    );
   }
 
   return (
@@ -296,11 +345,16 @@ export default function SummaryScreen({ inspection, counts, questionIds, initial
         </CardContent>
       </Card>
 
-      {/* Per-Part read-only question/answer modal (Phase 2). Controlled open via `openPart`. */}
+      {/* Per-Part question/answer modal. Read-only by default; the Edit toggle (Draft only) reveals
+          per-question answer controls (FR-020). Controlled open via `openPart`. */}
       <Dialog
         open={openPart !== null}
         onOpenChange={(open) => {
-          if (!open) setOpenPart(null);
+          if (!open) {
+            setOpenPart(null);
+            setEditMode(false); // reopen always read-only
+            setAnswerSaveError(false);
+          }
         }}
       >
         <DialogContent className={`${PANEL} max-h-[85vh] overflow-y-auto`}>
@@ -311,9 +365,39 @@ export default function SummaryScreen({ inspection, counts, questionIds, initial
                   Part {PART_NUMBERS[openPart]} — {PART_TITLES[openPart]}
                 </DialogTitle>
                 <DialogDescription className="text-muted-foreground">
-                  Your answers, colored by whether they&apos;re good or bad for this car.
+                  {editMode
+                    ? "Tap an answer to update it — changes save on this device instantly."
+                    : "Your answers, colored by whether they're good or bad for this car."}
                 </DialogDescription>
               </DialogHeader>
+
+              {/* Edit toggle — Draft only (a Completed report is read-only, Phase 4). No Save
+                  button: each toggle persists immediately via the optimistic path. */}
+              {isDraft && cards[openPart].length > 0 && (
+                <div className="flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditMode((v) => !v);
+                      setAnswerSaveError(false);
+                    }}
+                    aria-pressed={editMode}
+                    className={`focus-visible:ring-ring/50 rounded-lg border px-3 py-1.5 text-sm font-medium shadow-xs transition-colors outline-none focus-visible:ring-[3px] ${
+                      editMode
+                        ? "border-primary/40 bg-primary/10 text-primary"
+                        : "border-border bg-muted text-foreground hover:bg-accent"
+                    }`}
+                  >
+                    {editMode ? "Done" : "Edit answers"}
+                  </button>
+                  {answerSaveError && (
+                    <span className="text-destructive flex items-center gap-1 text-xs">
+                      <CircleAlert className="size-3 shrink-0" />
+                      Could not save on this device.
+                    </span>
+                  )}
+                </div>
+              )}
 
               {cards[openPart].length === 0 ? (
                 <p className="text-muted-foreground text-sm">No questions apply to this car for this part.</p>
@@ -346,18 +430,46 @@ export default function SummaryScreen({ inspection, counts, questionIds, initial
                               const answer = answers[card.id];
                               const sentiment = answerSentiment(answer, positiveAnswer(openPart));
                               return (
-                                <li key={card.id} className="flex items-start justify-between gap-3 px-3 py-2.5">
-                                  <div className="min-w-0">
-                                    {card.subsection && (
-                                      <p className="text-muted-foreground text-xs tracking-wider uppercase">
-                                        {card.subsection}
-                                      </p>
+                                <li key={card.id} className="px-3 py-2.5">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      {card.subsection && (
+                                        <p className="text-muted-foreground text-xs tracking-wider uppercase">
+                                          {card.subsection}
+                                        </p>
+                                      )}
+                                      <p className="text-foreground text-sm">{card.label}</p>
+                                    </div>
+                                    {!editMode && (
+                                      <span className={`shrink-0 text-sm font-medium ${SENTIMENT_TEXT[sentiment]}`}>
+                                        {answer ? ANSWER_LABEL[answer] : "Not answered"}
+                                      </span>
                                     )}
-                                    <p className="text-foreground text-sm">{card.label}</p>
                                   </div>
-                                  <span className={`shrink-0 text-sm font-medium ${SENTIMENT_TEXT[sentiment]}`}>
-                                    {answer ? ANSWER_LABEL[answer] : "Not answered"}
-                                  </span>
+                                  {editMode && (
+                                    <div className="mt-2 grid grid-cols-3 gap-2">
+                                      {EDIT_OPTIONS.map((opt) => {
+                                        const isSelected = answer === opt.value;
+                                        return (
+                                          <button
+                                            key={opt.value}
+                                            type="button"
+                                            onClick={() => {
+                                              handleEditAnswer(card.id, opt.value);
+                                            }}
+                                            aria-pressed={isSelected}
+                                            className={`focus-visible:ring-ring/50 rounded-lg border px-2 py-1.5 text-center text-sm font-medium shadow-xs transition-all outline-none focus-visible:ring-[3px] ${
+                                              isSelected
+                                                ? `${opt.selected} shadow-sm`
+                                                : "border-border bg-muted text-foreground hover:bg-accent"
+                                            }`}
+                                          >
+                                            {opt.label}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
                                 </li>
                               );
                             })}

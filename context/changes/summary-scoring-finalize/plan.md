@@ -526,16 +526,16 @@ data migration.
 
 #### Automated
 
-- [ ] 3.1 Type-checked lint passes: `npm run lint`
-- [ ] 3.2 Production build passes: `npm run build`
-- [ ] 3.3 Unit test: inline edit recomputes per-Part + global sentiment distributions correctly
+- [x] 3.1 Type-checked lint passes: `npm run lint`
+- [x] 3.2 Production build passes: `npm run build`
+- [x] 3.3 Unit test: inline edit recomputes per-Part + global sentiment distributions correctly
 
 #### Manual
 
-- [ ] 3.4 Modal Edit button reveals per-question toggles; tapping saves with no Save button; charts move live
-- [ ] 3.5 Closing/reopening the modal returns it to read-only
-- [ ] 3.6 Offline edit reflects in charts without a round-trip and syncs on reconnect
-- [ ] 3.7 Failed local save surfaces an inline error and doesn't drop the change
+- [x] 3.4 Modal Edit button reveals per-question toggles; tapping saves with no Save button; charts move live
+- [x] 3.5 Closing/reopening the modal returns it to read-only
+- [x] 3.6 Offline edit reflects in charts without a round-trip and syncs on reconnect
+- [x] 3.7 Failed local save surfaces an inline error and doesn't drop the change
 
 ### Phase 4: Finalize + reopen state machine
 

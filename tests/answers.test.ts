@@ -107,6 +107,44 @@ describe("sumSentiments", () => {
   });
 });
 
+describe("inline edit recompute (FR-020)", () => {
+  // The Summary's inline edit writes `{ ...answers, [id]: value }` then the charts recompute from
+  // that new map (SummaryScreen.handleEditAnswer). This asserts the pure recompute: per-Part
+  // sentiment + the global sum both reflect the edit, honoring each Part's polarity.
+  const P2 = ["q2_a", "q2_b"]; // condition Part → positive = "no"
+  const P5 = ["q5_a", "q5_b"]; // documents Part → positive = "yes"
+
+  const recompute = (answers: AnswersMap) =>
+    sumSentiments([
+      sentimentDistribution(P2, answers, positiveAnswer("part2")),
+      sentimentDistribution(P5, answers, positiveAnswer("part5")),
+    ]);
+
+  it("re-tallies the edited Part and the global sum after an inline answer change", () => {
+    const before: AnswersMap = { q2_a: "yes", q2_b: "no", q5_a: "yes" };
+    // Part 2: yes=negative, no=positive → {pos1,neg1}; Part 5: yes=positive → {pos1}.
+    expect(sentimentDistribution(P2, before, positiveAnswer("part2"))).toEqual({
+      positive: 1,
+      negative: 1,
+      unknown: 0,
+    });
+    expect(recompute(before)).toEqual({ positive: 2, negative: 1, unknown: 0 });
+
+    // Flip q2_a yes → no: the defect clears, so Part 2 becomes all-positive and the global shifts.
+    const after: AnswersMap = { ...before, q2_a: "no" };
+    expect(sentimentDistribution(P2, after, positiveAnswer("part2"))).toEqual({ positive: 2, negative: 0, unknown: 0 });
+    expect(recompute(after)).toEqual({ positive: 3, negative: 0, unknown: 0 });
+  });
+
+  it("answering a previously-unanswered question adds it to the distribution", () => {
+    const before: AnswersMap = { q2_a: "no" };
+    expect(recompute(before)).toEqual({ positive: 1, negative: 0, unknown: 0 });
+    // Answer q5_b "no" (a missing/invalid document → negative in the documents Part).
+    const after: AnswersMap = { ...before, q5_b: "no" };
+    expect(recompute(after)).toEqual({ positive: 1, negative: 1, unknown: 0 });
+  });
+});
+
 describe("upsertNoteBlock", () => {
   const H1 = "Car Body — Bonnet";
   const H2 = "Front suspension — cracked rubber parts";
